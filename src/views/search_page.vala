@@ -38,7 +38,7 @@ public class SearchPage : Adw.NavigationPage {
         // выпадающий список веток
         try {
             var branches_model = new Gtk.StringList (null);
-            string[] branch_names = { "sisyphus", "p11", "p10" };
+            string[] branch_names = { "sisyphus", "p11"};
             foreach (string b in branch_names) {
                 branches_model.append (b);
                 debug ("[SearchPage] добавлена ветка: %s", b);

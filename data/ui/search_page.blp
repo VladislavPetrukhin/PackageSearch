@@ -7,13 +7,20 @@ template $SearchPage : Adw.NavigationPage {
   Gtk.Box {
     orientation: vertical;
 
-    Adw.HeaderBar {
-      [start]
-      Gtk.DropDown branch_dropdown {}
+   Adw.HeaderBar {
+    show-start-title-buttons: false;
+    show-end-title-buttons: false;
+    decoration-layout: ":";
+    show-back-button: false;
 
-      [end]
-      Gtk.SearchEntry search_entry { placeholder-text: _("Введите имя пакета…"); }
+    [start]
+    Gtk.DropDown branch_dropdown {}
+
+    [end]
+    Gtk.SearchEntry search_entry {
+      placeholder-text: _("Введите имя пакета…");
     }
+  }
 
     Adw.Clamp {
       maximum-size: 1100;

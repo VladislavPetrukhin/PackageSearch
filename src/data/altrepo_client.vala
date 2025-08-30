@@ -1,4 +1,3 @@
-// src/data/altrepo_client.vala
 using Gee;
 using AltRepo;
 
@@ -48,7 +47,7 @@ public class AltRepoClient : GLib.Object {
         var pkghash = int64.parse (h.pkghash);
 
         var info = yield cli.get_site_package_info_pkghash_async (
-            branch, pkghash, 20, "source", Priority.DEFAULT, cancellable
+            branch, pkghash, 100, "source", Priority.DEFAULT, cancellable
         );
 
         details.version     = info.version;

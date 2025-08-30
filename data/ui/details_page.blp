@@ -6,14 +6,29 @@ template $DetailsPage : Adw.NavigationPage {
 
   child: Gtk.Box {
     orientation: vertical;
+    spacing: 0;
 
-    Gtk.Button back_btn {
-      icon-name: "go-previous-symbolic";
-      tooltip-text: "Back";
-      halign: start;
-      margin-start: 12;
-      margin-top: 12;
-      margin-bottom: 6;
+    Gtk.Box {
+      orientation: horizontal;
+      spacing: 8;
+      halign: fill;
+
+      Gtk.Button back_btn {
+        icon-name: "go-previous-symbolic";
+        tooltip-text: "Back";
+        margin-start: 12;
+        margin-top: 12;
+        margin-bottom: 6;
+      }
+
+      Gtk.Label title_lbl {
+        css-classes: ["title-1"];
+        margin-top: 12;
+        margin-end: 12;
+        margin-bottom: 6;
+        hexpand: true;
+        ellipsize: end;
+      }
     }
 
     Gtk.ScrolledWindow {
@@ -23,17 +38,12 @@ template $DetailsPage : Adw.NavigationPage {
         maximum-size: 1100;
         margin-start: 12;
         margin-end: 12;
-        margin-top: 12;
+        margin-top: 6;
         margin-bottom: 12;
 
         Gtk.Box {
           orientation: vertical;
           spacing: 8;
-
-          Gtk.Label title_lbl {
-            xalign: 0;
-            css-classes: ["title-2"];
-          }
 
           Adw.PreferencesGroup info_group { title: "Info"; }
           Adw.PreferencesGroup bins_group { title: "Binaries"; }

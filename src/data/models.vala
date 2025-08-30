@@ -32,7 +32,6 @@ public class PackageDetails : GLib.Object {
     public string? homepage    { get; set; }
     public string? summary     { get; set; }
     public string? description { get; set; }
-    // В твоей версии libalt-repo поле group может отсутствовать — делаем опциональным
     public string? group       { get; set; }
 
     public Gee.ArrayList<BinaryPackage> binaries { get; construct set; }
