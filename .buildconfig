@@ -12,3 +12,4 @@ run-command=
 default=true
 
 [default.environment]
+G_MESSAGES_DEBUG=all
