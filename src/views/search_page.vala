@@ -1,105 +1,49 @@
 using Gtk;
 using Adw;
 
-namespace Views {
+[GtkTemplate (ui = "/org/example/PackageSearch/ui/search_page.ui")]
+public class SearchPage : Adw.NavigationPage {
+    [GtkChild] private unowned Gtk.SearchEntry search_entry;
+    [GtkChild] private unowned Gtk.DropDown    branch_dropdown;
+    [GtkChild] private unowned Gtk.ListView    list_view;
 
-public class SearchPage : Adw.Bin {
-    private void toast (string msg) {
-    var w = (Gtk.Widget) this;
-    while (w != null) {
-        if (w is Adw.ToastOverlay) {
-            ((Adw.ToastOverlay) w).add_toast (new Adw.Toast (msg));
-            return;
-        }
-        w = w.get_parent ();
-    }
-    warning (msg);
-}
-
-    private Data.AltRepoClient client = new Data.AltRepoClient ();
     private GLib.ListStore store;
 
-    private Gtk.SearchEntry search_entry;
-    private Gtk.Button      search_btn;
-    private Gtk.ListView    list_view;
-
-    public SearchPage () {
-        Object ();
-
+    construct {
         store = new GLib.ListStore (typeof (Data.SourceGroup));
+        var sel = new Gtk.SingleSelection (store);
+        list_view.set_model (sel);
 
-        search_entry = new Gtk.SearchEntry ();
-        search_btn   = new Gtk.Button.with_label ("Search");
+        // открытие деталей по activate
+        list_view.activate.connect ((pos) => {
+            var item = sel.get_selected_item ();
+            var sg = item as Data.SourceGroup;
+            if (sg == null) return;
 
-        var factory = new Gtk.SignalListItemFactory ();
-
-        factory.setup.connect ((obj) => {
-            var item = (Gtk.ListItem) obj;
-            var row = new Gtk.Label ("");
-            row.xalign = 0.0f;
-            item.set_child (row);
+            var w = this.get_root () as MainWindow;
+            if (w != null) w.show_details (sg, current_branch ());
         });
 
-      factory.bind.connect ((obj) => {
-        var item = (Gtk.ListItem) obj;
-        var row = (Gtk.Label) item.get_child ();
-        var sg  = item.get_item () as Data.SourceGroup;
-        row.label = (sg != null) ? sg.src_name : "";
-    });
-
-
-
-        var selection = new Gtk.SingleSelection (store);
-        list_view = new Gtk.ListView (selection, factory);
-
-        var box = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
-        var hb  = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
-        hb.append (search_entry);
-        hb.append (search_btn);
-        box.append (hb);
-        box.append (list_view);
-
-        this.set_child (box);
-
-        search_btn.clicked.connect (() => { do_search.begin (); });
-        search_entry.activate.connect (() => { do_search.begin (); });
-
-        do_search.begin ();
+        // поиск: по вводу и по Enter
+        search_entry.search_changed.connect (() => do_search.begin ());
+        search_entry.activate.connect       (() => do_search.begin ());
     }
 
     private string current_branch () {
+        // TODO: прочитать реальную ветку из branch_dropdown
         return "sisyphus";
     }
 
-private async void do_search () {
-    var term = search_entry.get_text ().strip ();
-    stdout.printf ("[SearchPage] do_search term='%s' branch='%s'\n", term, current_branch ());
-
-    if (term.length == 0) {
-        toast ("Введите запрос");
-        return;
-    }
-
-    try {
-        var results = yield client.search_source (term, current_branch ());
-        stdout.printf ("[SearchPage] search_source returned %u results\n", results.size);
-
-        store.remove_all ();
-        foreach (var g in results) {
-            store.append (g);
-            stdout.printf ("[SearchPage] appended result: %s\n", g.src_name);
+    private async void do_search () {
+        var term = (search_entry.get_text () ?? "").strip ();
+        var api = new Data.AltRepoClient ();
+        try {
+            var results = yield api.search_source (current_branch (), term);
+            store.remove_all ();
+            foreach (var g in results) store.append (g);
+        } catch (Error e) {
+            warning (@"[SearchPage] search failed: $(e.message)");
         }
-
-        if (results.size == 0) {
-            toast ("Ничего не найдено");
-        }
-    } catch (Error e) {
-        warning (@"[SearchPage] search failed: $(e.message)");
-        toast ("Ошибка поиска");
     }
-}
-
-}
-
 }
 

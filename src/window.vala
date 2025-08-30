@@ -32,12 +32,13 @@ public class MainWindow : Adw.ApplicationWindow {
         var hb = new Adw.HeaderBar ();
         toolbar_view.add_top_bar (hb);
 
-        var search = new Views.SearchPage ();
+        var search = new SearchPage ();
         var search_page = new Adw.NavigationPage (search, "Search");
         nav_view.push (search_page);
     }
 
     public void show_details (Data.SourceGroup group, string branch) {
+
         var details = new DetailsPage (group, branch, this);
         var details_page = new Adw.NavigationPage (details, "Details");
         nav_view.push (details_page);
