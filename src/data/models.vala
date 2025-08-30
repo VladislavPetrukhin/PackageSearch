@@ -28,11 +28,11 @@ public class PackageDetails : GLib.Object {
     public string? version     { get; set; }
     public string? release     { get; set; }
     public string? maintainer  { get; set; }
+    public string? group       { get; set; }
     public string? license     { get; set; }
     public string? homepage    { get; set; }
     public string? summary     { get; set; }
     public string? description { get; set; }
-    public string? group       { get; set; }
 
     public Gee.ArrayList<BinaryPackage> binaries { get; construct set; }
 

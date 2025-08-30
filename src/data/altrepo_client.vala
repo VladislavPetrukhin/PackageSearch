@@ -47,7 +47,7 @@ public class AltRepoClient : GLib.Object {
         var pkghash = int64.parse (h.pkghash);
 
         var info = yield cli.get_site_package_info_pkghash_async (
-            branch, pkghash, 100, "source", Priority.DEFAULT, cancellable
+            branch, pkghash, 50, "source", Priority.DEFAULT, cancellable
         );
 
         details.version     = info.version;
@@ -57,7 +57,7 @@ public class AltRepoClient : GLib.Object {
         details.homepage    = info.url;
         details.summary     = info.summary;
         details.description = info.description;
-        // details.group = info.group;
+        details.group = info.category;
 
         foreach (var pa in info.package_archs) {
             if (pa.name == src_name) continue;
