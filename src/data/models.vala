@@ -1,4 +1,3 @@
-// src/data/models.vala
 using Gee;
 
 namespace Data {

@@ -4,16 +4,42 @@ using Adw 1;
 template $DetailsPage : Adw.NavigationPage {
   title: "Details";
 
-  Gtk.ScrolledWindow {
-    Gtk.Box {
-      orientation: vertical;
-      spacing: 12;
-      margin-start: 12; margin-end: 12; margin-top: 12; margin-bottom: 12;
+  child: Gtk.Box {
+    orientation: vertical;
 
-      Gtk.Label title_lbl { xalign: 0; hexpand: true; margin-bottom: 6; }
-
-      Adw.PreferencesGroup info_group { title: _("Общее"); }
-      Adw.PreferencesGroup bins_group { title: _("Бинарные пакеты"); }
+    Gtk.Button back_btn {
+      icon-name: "go-previous-symbolic";
+      tooltip-text: "Back";
+      halign: start;
+      margin-start: 12;
+      margin-top: 12;
+      margin-bottom: 6;
     }
-  }
+
+    Gtk.ScrolledWindow {
+      vexpand: true;
+
+      Adw.Clamp {
+        maximum-size: 1100;
+        margin-start: 12;
+        margin-end: 12;
+        margin-top: 12;
+        margin-bottom: 12;
+
+        Gtk.Box {
+          orientation: vertical;
+          spacing: 8;
+
+          Gtk.Label title_lbl {
+            xalign: 0;
+            css-classes: ["title-2"];
+          }
+
+          Adw.PreferencesGroup info_group { title: "Info"; }
+          Adw.PreferencesGroup bins_group { title: "Binaries"; }
+          Adw.PreferencesGroup changelog_group { title: "Changelog"; }
+        }
+      }
+    }
+  };
 }

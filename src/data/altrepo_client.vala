@@ -58,10 +58,10 @@ public class AltRepoClient : GLib.Object {
         details.homepage    = info.url;
         details.summary     = info.summary;
         details.description = info.description;
-        // details.group = info.group; // если в твоей .vapi это свойство появится — раскомментируй
+        // details.group = info.group;
 
         foreach (var pa in info.package_archs) {
-            if (pa.name == src_name) continue; // это сам source
+            if (pa.name == src_name) continue;
             foreach (var arch in pa.archs) {
                 details.binaries.add (new BinaryPackage () {
                     name     = pa.name,

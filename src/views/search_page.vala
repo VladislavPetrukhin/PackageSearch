@@ -9,18 +9,33 @@ public class SearchPage : Adw.NavigationPage {
     [GtkChild] private unowned Gtk.DropDown    branch_dropdown;
     [GtkChild] private unowned Gtk.ListView    list_view;
 
-    // Хранилище результатов поиска (список групп SourceGroup)
     private GLib.ListStore store;
+    private Gtk.SingleSelection sel;
+
 
     construct {
-        // Инициализируем модель для ListView
+        // модель списка
         store = new GLib.ListStore (typeof (Data.SourceGroup));
-        var sel = new Gtk.SingleSelection (store);
+        sel = new Gtk.SingleSelection (store);
         sel.autoselect = false;
         sel.can_unselect = true;
         list_view.model = sel;
 
-        // Выпадающий список веток
+        // Активировать по одиночному клику
+        var click = new Gtk.GestureClick ();
+        click.released.connect ((n_press, x, y) => {
+            // Одиночный ЛКМ
+            if (n_press == 1) {
+                int idx = (int) sel.selected;
+                if (idx >= 0) {
+                    list_view.activate ((uint) idx);
+                }
+            }
+        });
+        list_view.add_controller (click);
+
+
+        // выпадающий список веток
         try {
             var branches_model = new Gtk.StringList (null);
             string[] branch_names = { "sisyphus", "p11", "p10" };
@@ -34,21 +49,15 @@ public class SearchPage : Adw.NavigationPage {
             warning ("[SearchPage] не удалось инициализировать список веток: %s", e.message);
         }
 
-        // Фабрика строк
+        // фабрика строк
         var factory = new Gtk.SignalListItemFactory ();
 
         factory.setup.connect ((obj) => {
             var item = obj as Gtk.ListItem;
-            if (item == null) {
-                warning ("[SearchPage] setup: obj is not Gtk.ListItem");
-                return;
-            }
+            if (item == null) { warning ("[SearchPage] setup: obj is not Gtk.ListItem"); return; }
 
             var row = new Gtk.Box (Orientation.VERTICAL, 0);
-            row.margin_top = 8;
-            row.margin_bottom = 8;
-            row.margin_start = 12;
-            row.margin_end = 12;
+            row.margin_top = 8; row.margin_bottom = 8; row.margin_start = 12; row.margin_end = 12;
 
             var title = new Gtk.Label ("");
             title.halign = Align.START;
@@ -62,16 +71,12 @@ public class SearchPage : Adw.NavigationPage {
 
             row.append (title);
             row.append (subtitle);
-
             item.set_child (row);
         });
 
         factory.bind.connect ((obj) => {
             var item = obj as Gtk.ListItem;
-            if (item == null) {
-                warning ("[SearchPage] bind: obj is not Gtk.ListItem");
-                return;
-            }
+            if (item == null) { warning ("[SearchPage] bind: obj is not Gtk.ListItem"); return; }
 
             var row = item.get_child () as Gtk.Box;
             if (row == null) return;
@@ -80,63 +85,39 @@ public class SearchPage : Adw.NavigationPage {
             var subtitle = (title != null) ? (title.get_next_sibling () as Gtk.Label) : null;
 
             var sg = item.get_item () as Data.SourceGroup;
-            if (sg == null) {
-                warning ("[SearchPage] bind: item.get_item() null/invalid");
-                return;
-            }
+            if (sg == null) { warning ("[SearchPage] bind: item.get_item() null/invalid"); return; }
 
-            if (title != null)
-                title.label = sg.name;
+            if (title != null) title.label = sg.name;
 
             string vr = "";
-            if (sg.version != null && sg.version.strip () != "")
-                vr = sg.version;
+            if (sg.version != null && sg.version.strip () != "") vr = sg.version;
             if (sg.release != null && sg.release.strip () != "")
                 vr = (vr == "") ? sg.release : vr + "-" + sg.release;
 
-            if (subtitle != null)
-                subtitle.label = vr;
+            if (subtitle != null) subtitle.label = vr;
         });
 
         list_view.factory = factory;
 
-        // Открытие деталей по активации строки
+        // активация строки
         list_view.activate.connect ((pos) => {
-        uint position = (uint) pos;
-        debug ("[SearchPage] activate: pos=%u", position);
+            uint position = (uint) pos;
+            debug ("[SearchPage] activate: pos=%u", position);
+            var obj = store.get_item ((int) position);
+            var sg = obj as Data.SourceGroup;
+            if (sg == null) { warning ("[SearchPage] activate: выбранный элемент null/invalid"); return; }
+            var branch = current_branch ();
+            debug ("[SearchPage] открыть детали: %s, branch=%s", sg.name, branch);
 
-        var obj = store.get_item ((int) position);
-        var sg = obj as Data.SourceGroup;
-        if (sg == null) {
-            warning ("[SearchPage] activate: выбранный элемент null/invalid");
-            return;
-        }
-        var branch = current_branch ();
-        debug ("[SearchPage] открыть детали: %s, branch=%s", sg.name, branch);
-
-        var root = this.get_root ();
-        var win = root as MainWindow;
-        if (win != null) {
-            win.show_details (sg, branch);
-        } else {
-            warning ("[SearchPage] MainWindow не найден — детали не открыты");
-        }
-    });
-
-        // Сигналы поиска/ветки
-        search_entry.search_changed.connect (() => {
-            debug ("[SearchPage] search_changed: %s", search_entry.text);
-            do_search.begin ();
-        });
-        search_entry.activate.connect (() => {
-            debug ("[SearchPage] activate (Enter) на поиске");
-            do_search.begin ();
+            var win = this.get_root () as MainWindow;
+            if (win != null) win.show_details (sg, branch);
+            else warning ("[SearchPage] MainWindow не найден — детали не открыты");
         });
 
-        branch_dropdown.notify["selected"].connect (() => {
-            debug ("[SearchPage] ветка выбрана: %s", current_branch ());
-            do_search.begin ();
-        });
+        // события поиска/ветки
+        search_entry.search_changed.connect (() => { debug ("[SearchPage] search_changed: %s", search_entry.text); do_search.begin (); });
+        search_entry.activate.connect (() => { debug ("[SearchPage] activate (Enter) на поиске"); do_search.begin (); });
+        branch_dropdown.notify["selected"].connect (() => { debug ("[SearchPage] ветка выбрана: %s", current_branch ()); do_search.begin (); });
     }
 
     private string current_branch () {
@@ -146,12 +127,26 @@ public class SearchPage : Adw.NavigationPage {
         return m.get_string ((uint) idx);
     }
 
+    private static bool is_reasonable_term (string? s) {
+        if (s == null) return false;
+        string term = s.strip ();
+        if (term.length < 2) return false;
+        try {
+            var re = new Regex ("^[A-Za-z0-9._+-]+$");
+            return re.match (term);
+        } catch (Error e) {
+            // если Regex недоступен — просто проверим длину
+            return term.length >= 2;
+        }
+    }
+
     private async void do_search () {
         var term = (search_entry.text ?? "").strip ();
         var branch = current_branch ();
         debug ("[SearchPage] do_search(): term='%s', branch='%s'", term, branch);
 
-        if (term == "") {
+        if (!is_reasonable_term (term)) {
+            debug ("[SearchPage] term too short/invalid -> clear list");
             store.remove_all ();
             return;
         }
@@ -165,15 +160,14 @@ public class SearchPage : Adw.NavigationPage {
             Idle.add (() => {
                 store.remove_all ();
                 if (results != null) {
-                    foreach (var g in results) {
-                        if (g != null) store.append (g);
-                    }
+                    foreach (var g in results) if (g != null) store.append (g);
                 }
                 debug ("[SearchPage] список обновлён, всего: %u", store.get_n_items ());
                 return Source.REMOVE;
             });
         } catch (Error e) {
             warning ("[SearchPage] do_search(): ошибка поиска: %s", e.message);
+            store.remove_all ();
         }
     }
 }
