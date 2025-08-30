@@ -18,12 +18,29 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-[GtkTemplate (ui = "/org/gnome/Example/window.ui")]
-public class Packagescan.Window : Adw.ApplicationWindow {
-    [GtkChild]
-    private unowned Gtk.Label label;
+using Gtk;
+using Adw;
 
-    public Window (Gtk.Application app) {
+[GtkTemplate (ui = "/org/example/PackageSearch/ui/main_window.ui")]
+public class MainWindow : Adw.ApplicationWindow {
+    [GtkChild] private unowned Adw.ToolbarView toolbar_view;
+    [GtkChild] private unowned Adw.NavigationView nav_view;
+
+    public MainWindow (Adw.Application app) {
         Object (application: app);
+
+        var hb = new Adw.HeaderBar ();
+        toolbar_view.add_top_bar (hb);
+
+        var search = new Views.SearchPage ();
+        var search_page = new Adw.NavigationPage (search, "Search");
+        nav_view.push (search_page);
+    }
+
+    public void show_details (Data.SourceGroup group, string branch) {
+        var details = new DetailsPage (group, branch, this);
+        var details_page = new Adw.NavigationPage (details, "Details");
+        nav_view.push (details_page);
     }
 }
+

@@ -1,46 +1,39 @@
-desktop_file = i18n.merge_file(
-        input: 'org.gnome.Example.desktop.in',
-       output: 'org.gnome.Example.desktop',
-         type: 'desktop',
-       po_dir: '../po',
-      install: true,
-  install_dir: get_option('datadir') / 'applications'
+bp = find_program('blueprint-compiler', required: true)
+
+ui_main = custom_target(
+  'main_window.ui',
+  input: files('ui/main_window.blp'),
+  output: 'main_window.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
 )
 
-desktop_utils = find_program('desktop-file-validate', required: false)
-if desktop_utils.found()
-  test('Validate desktop file', desktop_utils, args: [desktop_file])
-endif
-
-appstream_file = i18n.merge_file(
-        input: 'org.gnome.Example.metainfo.xml.in',
-       output: 'org.gnome.Example.metainfo.xml',
-       po_dir: '../po',
-      install: true,
-  install_dir: get_option('datadir') / 'metainfo'
+ui_search = custom_target(
+  'search_page.ui',
+  input: files('ui/search_page.blp'),
+  output: 'search_page.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
 )
 
-appstreamcli = find_program('appstreamcli', required: false, disabler: true)
-test('Validate appstream file', appstreamcli,
-     args: ['validate', '--no-net', '--explain', appstream_file])
-
-install_data('org.gnome.Example.gschema.xml',
-  install_dir: get_option('datadir') / 'glib-2.0' / 'schemas'
+ui_details = custom_target(
+  'details_page.ui',
+  input: files('ui/details_page.blp'),
+  output: 'details_page.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
 )
 
-compile_schemas = find_program('glib-compile-schemas', required: false, disabler: true)
-test('Validate schema file',
-     compile_schemas,
-     args: ['--strict', '--dry-run', meson.current_source_dir()])
-
-
-service_conf = configuration_data()
-service_conf.set('bindir', get_option('prefix') / get_option('bindir'))
-configure_file(
-  input: 'org.gnome.Example.service.in',
-  output: 'org.gnome.Example.service',
-  configuration: service_conf,
-  install_dir: get_option('datadir') / 'dbus-1' / 'services'
+gresource_xml = configure_file(
+  input: files('resources.gresource.xml.in'),
+  output: 'resources.gresource.xml',
+  configuration: { 'PREFIX': '/org/example/PackageSearch' }
 )
 
-subdir('icons')
+resources = gnome.compile_resources(
+  'packagesearch-resources',
+  gresource_xml,
+  source_dir: meson.current_build_dir(),
+  dependencies: [ui_main, ui_search, ui_details],
+  c_name: 'packagesearch'
+)

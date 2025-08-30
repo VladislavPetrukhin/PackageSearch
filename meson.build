@@ -1,34 +1,33 @@
-project('packagescan', ['c', 'vala'],
-          version: '0.1.0',
-    meson_version: '>= 1.0.0',
-  default_options: [ 'warning_level=2', 'werror=false', ],
-)
+project('PackageSearch', 'vala', version: '0.1.0', meson_version: '>= 0.61')
 
-i18n = import('i18n')
 gnome = import('gnome')
-valac = meson.get_compiler('vala')
 
+app_id = 'org.example.PackageSearch'
 
-srcdir = meson.project_source_root() / 'src'
+gtk4_dep = dependency('gtk4', version: '>=4.12')
+adw_dep  = dependency('libadwaita-1', version: '>=1.4')
+json_dep = dependency('json-glib-1.0')
+soup_dep = dependency('libsoup-3.0')
+gee_dep  = dependency('gee-0.8')
 
-config_h = configuration_data()
-config_h.set_quoted('PACKAGE_VERSION', meson.project_version ())
-config_h.set_quoted('GETTEXT_PACKAGE', 'packagescan')
-config_h.set_quoted('LOCALEDIR', get_option('prefix') / get_option('localedir'))
-configure_file(output: 'config.h', configuration: config_h)
-
-config_dep = valac.find_library ('config', dirs: srcdir)
-config_inc = include_directories('.')
-
-add_project_arguments('-DGETTEXT_PACKAGE="' + meson.project_name () + '"', language: 'c')
-
+# blueprint-compiler
+bp = find_program('blueprint-compiler', required: true)
 
 subdir('data')
 subdir('src')
-subdir('po')
 
-gnome.post_install(
-     glib_compile_schemas: true,
-    gtk_update_icon_cache: true,
-  update_desktop_database: true,
+executable(
+  'packagesearch',
+  src,
+  resources,
+  dependencies: [gtk4_dep, adw_dep, json_dep, soup_dep, gee_dep],
+  vala_args: [
+    '--target-glib=2.74',
+    '--pkg=gtk4',
+    '--pkg=libadwaita-1',
+    '--pkg=json-glib-1.0',
+    '--pkg=libsoup-3.0',
+    '--pkg=gee-0.8',
+  ],
+  install: true
 )

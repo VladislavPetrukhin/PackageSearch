@@ -1,0 +1,28 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $SearchPage : Adw.NavigationPage {
+  title: _("Search");
+
+  Gtk.Box {
+    orientation: vertical;
+
+    Adw.HeaderBar {
+      [start]
+      Gtk.DropDown branch_dropdown {}
+
+      [end]
+      Gtk.SearchEntry search_entry { placeholder-text: _("Введите имя пакета…"); }
+    }
+
+    Adw.Clamp {
+      maximum-size: 1100;
+      margin-start: 12; margin-end: 12; margin-top: 12; margin-bottom: 12;
+
+      Gtk.ScrolledWindow {
+        vexpand: true;
+        Gtk.ListView list_view {}
+      }
+    }
+  }
+}
