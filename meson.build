@@ -23,7 +23,7 @@ vala_extra_args = [
   '--pkg=libadwaita-1',
   '--pkg=json-glib-1.0',
   '--pkg=gee-0.8',
-  '--pkg=libalt-repo-1',   # пакет для valac
+  '--pkg=libalt-repo-1',
 ]
 
 executable(
