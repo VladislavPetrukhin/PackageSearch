@@ -17,9 +17,10 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
 using Gtk;
 using Adw;
+using GLib;
+using Intl;
 
 [GtkTemplate (ui = "/org/example/PackageSearch/ui/main_window.ui")]
 public class MainWindow : Adw.ApplicationWindow {
@@ -36,7 +37,7 @@ public class MainWindow : Adw.ApplicationWindow {
 
         menu_btn = new Gtk.MenuButton () {
             icon_name = "open-menu-symbolic",
-            tooltip_text = ("Menu")
+            tooltip_text = _("Menu")
         };
         hb.pack_end (menu_btn);
 
@@ -49,17 +50,18 @@ public class MainWindow : Adw.ApplicationWindow {
         vbox.margin_start = 6;
         vbox.margin_end = 6;
 
-        var btn_about = new Gtk.Button.with_label ("About");
+        // Верхние пункты меню
+        var btn_about = new Gtk.Button.with_label (_("About"));
         btn_about.add_css_class ("flat");
         btn_about.halign = Gtk.Align.FILL;
 
-        var btn_prefs = new Gtk.Button.with_label ("Preferences");
+        var btn_prefs = new Gtk.Button.with_label (_("Preferences"));
         btn_prefs.add_css_class ("flat");
         btn_prefs.halign = Gtk.Align.FILL;
 
         var sep = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
 
-        var btn_quit = new Gtk.Button.with_label ("Quit");
+        var btn_quit = new Gtk.Button.with_label (_("Quit"));
         btn_quit.add_css_class ("flat");
         btn_quit.halign = Gtk.Align.FILL;
 
@@ -70,17 +72,13 @@ public class MainWindow : Adw.ApplicationWindow {
 
         pop.set_child (vbox);
 
-        btn_about.clicked.connect (() => {
+        // Обработчики
+        btn_about.clicked.connect (() => { pop.popdown (); show_about (); });
+        btn_prefs.clicked.connect (() => { pop.popdown (); var pw = new PrefsWindow (this); pw.present (); });
+        btn_quit.clicked.connect  (() => {
             pop.popdown ();
-            show_about ();
-        });
-
-        btn_prefs.clicked.connect (() => {
-            pop.popdown ();
-            var dlg = new Adw.AlertDialog ("Preferences", "Not implemented yet");
-            dlg.add_response ("ok", "OK");
-            dlg.set_default_response ("ok");
-            dlg.present (this);
+            var a = this.application as Adw.Application;
+            if (a != null) a.quit ();
         });
 
         btn_quit.clicked.connect (() => {
@@ -89,6 +87,8 @@ public class MainWindow : Adw.ApplicationWindow {
             if (a != null) a.quit ();
         });
 
+
+        // хоткеи
         var shortcuts = new Gtk.ShortcutController ();
         shortcuts.add_shortcut (new Gtk.Shortcut (
             Gtk.ShortcutTrigger.parse_string ("<Control>q"),
@@ -101,7 +101,7 @@ public class MainWindow : Adw.ApplicationWindow {
         shortcuts.add_shortcut (new Gtk.Shortcut (
             Gtk.ShortcutTrigger.parse_string ("<Control>comma"),
             new Gtk.CallbackAction ((self, args) => {
-                var dlg = new Adw.AlertDialog ("Preferences", "Not implemented yet");
+                var dlg = new Adw.AlertDialog ("Preferences", _("Not implemented yet"));
                 dlg.add_response ("ok", "OK");
                 dlg.set_default_response ("ok");
                 dlg.present (this);
@@ -110,6 +110,7 @@ public class MainWindow : Adw.ApplicationWindow {
         ));
         this.add_controller (shortcuts);
 
+        // первая страница
         var search = new SearchPage ();
         var search_page = new Adw.NavigationPage (search, "Search");
         nav_view.push (search_page);
@@ -131,5 +132,29 @@ public class MainWindow : Adw.ApplicationWindow {
         var details_page = new Adw.NavigationPage (details, "Details");
         nav_view.push (details_page);
     }
+
+    public void apply_language (string? lang_code) {
+    var cur = Environment.get_variable ("LANGUAGE");
+    if ((lang_code == null || lang_code == "")
+        ? (cur == null || cur == "")
+        : (cur != null && cur.has_prefix (lang_code)))
+        return;
+
+    if (lang_code == null || lang_code == "")
+        Environment.unset_variable ("LANGUAGE");
+    else
+        Environment.set_variable ("LANGUAGE", lang_code, true);
+
+    PackageSearchApp.init_gettext ();
+
+    var app = (Adw.Application) this.application;
+    var newwin = new MainWindow (app);
+    newwin.present ();
+
+    Idle.add (() => {
+        this.destroy ();
+        return Source.REMOVE;
+    });
+}
 }
 

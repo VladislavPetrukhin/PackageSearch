@@ -2,7 +2,7 @@ using Gtk 4.0;
 using Adw 1;
 
 template $DetailsPage : Adw.NavigationPage {
-  title: "Details";
+  title: _("Details");
 
   child: Gtk.Box {
     orientation: vertical;
@@ -15,7 +15,7 @@ template $DetailsPage : Adw.NavigationPage {
 
       Gtk.Button back_btn {
         icon-name: "go-previous-symbolic";
-        tooltip-text: "Back";
+        tooltip-text: _("Back");
         margin-start: 12;
         margin-top: 12;
         margin-bottom: 6;
@@ -51,9 +51,9 @@ template $DetailsPage : Adw.NavigationPage {
             margin-bottom: 12;
 
             child: Adw.PreferencesPage {
-              Adw.PreferencesGroup info_group      { title: "Info"; }
-              Adw.PreferencesGroup bins_group      { title: "Binaries"; }
-              Adw.PreferencesGroup changelog_group { title: "Changelog"; }
+              Adw.PreferencesGroup info_group      { title: _("Info"); }
+              Adw.PreferencesGroup bins_group      { title: _("Binaries"); }
+              Adw.PreferencesGroup changelog_group { title: _("Changelog"); }
             };
           }
         };
@@ -79,7 +79,7 @@ template $DetailsPage : Adw.NavigationPage {
                 width-request: 40;
                 height-request: 40;
               }
-              Gtk.Label { label: "Loading data…"; }
+              Gtk.Label { label: _("Loading data…"); }
             };
           };
         }

@@ -1,0 +1,7 @@
+# List of source files containing translatable strings.
+# Please keep this file sorted alphabetically.
+src/application.vala
+src/window.vala
+src/views/search_page.vala
+src/views/details_page.vala
+src/prefs_window.vala

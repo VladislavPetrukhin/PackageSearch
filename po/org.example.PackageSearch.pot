@@ -1,0 +1,123 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the org.example.PackageSearch package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: org.example.PackageSearch\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-31 17:38+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. DetailsPage
+#: src/application.vala:51
+msgid "Details"
+msgstr ""
+
+#: src/application.vala:51
+msgid "Back"
+msgstr ""
+
+#: src/application.vala:51
+msgid "Info"
+msgstr ""
+
+#: src/application.vala:51
+msgid "Binaries"
+msgstr ""
+
+#: src/application.vala:51
+msgid "Changelog"
+msgstr ""
+
+#: src/application.vala:51
+msgid "Loading data…"
+msgstr ""
+
+#. SearchPage
+#: src/application.vala:53
+msgid "Search"
+msgstr ""
+
+#: src/application.vala:53
+msgid "Type a package name…"
+msgstr ""
+
+#: src/application.vala:53
+msgid "Search packages"
+msgstr ""
+
+#: src/application.vala:54
+msgid "Start typing a source package name, then pick it from the results."
+msgstr ""
+
+#: src/application.vala:55
+msgid "Loading results…"
+msgstr ""
+
+#: src/application.vala:55
+msgid "No results"
+msgstr ""
+
+#: src/application.vala:55
+msgid "Try refining your query or choose another branch."
+msgstr ""
+
+#: src/application.vala:56
+msgid "Error"
+msgstr ""
+
+#: src/application.vala:56
+msgid "Failed to fetch data. Check your connection and package name."
+msgstr ""
+
+#: src/window.vala:21
+msgid "Menu"
+msgstr ""
+
+#. --- верхние пункты ---
+#: src/window.vala:35
+msgid "About"
+msgstr ""
+
+#: src/window.vala:39 src/prefs_window.vala:13
+msgid "Preferences"
+msgstr ""
+
+#: src/window.vala:45
+msgid "Quit"
+msgstr ""
+
+#. --- язык ---
+#: src/window.vala:55
+msgid "System Language"
+msgstr ""
+
+#: src/window.vala:101
+msgid "Not implemented yet"
+msgstr ""
+
+#: src/prefs_window.vala:17
+msgid "General"
+msgstr ""
+
+#. Combo: System / English / Русский
+#: src/prefs_window.vala:21
+msgid "Language"
+msgstr ""
+
+#: src/prefs_window.vala:22
+msgid "Restartless language switch"
+msgstr ""
+
+#: src/prefs_window.vala:25
+msgid "System"
+msgstr ""

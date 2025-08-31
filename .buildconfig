@@ -13,3 +13,4 @@ default=true
 
 [default.environment]
 G_MESSAGES_DEBUG=all
+LOCALEDIR=/home/vladislav/.gnome-builder/projects/PackageScan/install/host/share/locale\n
