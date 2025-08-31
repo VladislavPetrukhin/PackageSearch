@@ -31,25 +31,59 @@ template $DetailsPage : Adw.NavigationPage {
       }
     }
 
-    Gtk.ScrolledWindow {
-      vexpand: true;
+    Adw.ToastOverlay toast_overlay {
+      hexpand: true; vexpand: true;
 
-      Adw.Clamp {
-        maximum-size: 1100;
-        margin-start: 12;
-        margin-end: 12;
-        margin-top: 6;
-        margin-bottom: 12;
+      child: Gtk.Overlay {
+        hexpand: true; vexpand: true;
 
-        Gtk.Box {
-          orientation: vertical;
-          spacing: 8;
+        child: Gtk.ScrolledWindow {
+          hexpand: true; vexpand: true;
+          hscrollbar-policy: never;
+          vscrollbar-policy: automatic;
+          propagate-natural-height: true;
 
-          Adw.PreferencesGroup info_group { title: "Info"; }
-          Adw.PreferencesGroup bins_group { title: "Binaries"; }
-          Adw.PreferencesGroup changelog_group { title: "Changelog"; }
+          Adw.ClampScrollable {
+            maximum-size: 1100;
+            margin-start: 12;
+            margin-end: 12;
+            margin-top: 6;
+            margin-bottom: 12;
+
+            child: Adw.PreferencesPage {
+              Adw.PreferencesGroup info_group      { title: "Info"; }
+              Adw.PreferencesGroup bins_group      { title: "Binaries"; }
+              Adw.PreferencesGroup changelog_group { title: "Changelog"; }
+            };
+          }
+        };
+
+        [overlay]
+        Gtk.Revealer loading_revealer {
+          transition-type: crossfade;
+          reveal-child: false;
+          can-target: false;
+
+          child: Gtk.CenterBox {
+            valign: center;
+            halign: center;
+
+            center-widget: Gtk.Box {
+              orientation: vertical;
+              spacing: 12;
+              halign: center;
+              valign: center;
+
+              Gtk.Spinner {
+                spinning: true;
+                width-request: 40;
+                height-request: 40;
+              }
+              Gtk.Label { label: "Loading data…"; }
+            };
+          };
         }
-      }
+      };
     }
   };
 }
