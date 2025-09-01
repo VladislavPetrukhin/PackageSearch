@@ -55,21 +55,19 @@ template $SearchPage : Adw.NavigationPage {
                 halign: center;
                 valign: center;
 
-                Gtk.Spinner {
-                  spinning: true;
-                  width-request: 42;
-                  height-request: 42;
-                }
+                Gtk.Spinner { spinning: true; width-request: 42; height-request: 42; }
                 Gtk.Label { label: _("Loading results…"); }
               };
             };
           }
 
+          /* back to a single-column list */
           Gtk.StackPage {
             name: "results";
-            child: Gtk.ScrolledWindow {
+            child: Gtk.ScrolledWindow results_scroller {
+              css-classes: ["results-scroll"];
+              has-frame: false;
               vexpand: true;
-
               Gtk.ListView list_view { }
             };
           }
