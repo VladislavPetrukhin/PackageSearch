@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.example.PackageSearch\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-31 17:38+0300\n"
+"POT-Creation-Date: 2025-09-01 23:06+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,104 +18,151 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #. DetailsPage
-#: src/application.vala:51
+#: src/application.vala:47 src/window.vala:54
 msgid "Details"
 msgstr ""
 
-#: src/application.vala:51
+#: src/application.vala:47
 msgid "Back"
 msgstr ""
 
-#: src/application.vala:51
+#: src/application.vala:47
 msgid "Info"
 msgstr ""
 
-#: src/application.vala:51
+#: src/application.vala:47
 msgid "Binaries"
 msgstr ""
 
-#: src/application.vala:51
+#: src/application.vala:47 src/views/details_page.vala:182
 msgid "Changelog"
 msgstr ""
 
-#: src/application.vala:51
+#: src/application.vala:47
 msgid "Loading data…"
 msgstr ""
 
 #. SearchPage
-#: src/application.vala:53
+#. Top bar не добавляем — у страниц свои HeaderBar'ы
+#. первая страница
+#: src/application.vala:49 src/window.vala:37
 msgid "Search"
 msgstr ""
 
-#: src/application.vala:53
+#: src/application.vala:49
 msgid "Type a package name…"
 msgstr ""
 
-#: src/application.vala:53
+#: src/application.vala:49
 msgid "Search packages"
 msgstr ""
 
-#: src/application.vala:54
+#: src/application.vala:50
 msgid "Start typing a source package name, then pick it from the results."
 msgstr ""
 
-#: src/application.vala:55
+#: src/application.vala:51
 msgid "Loading results…"
 msgstr ""
 
-#: src/application.vala:55
+#: src/application.vala:51
 msgid "No results"
 msgstr ""
 
-#: src/application.vala:55
+#: src/application.vala:51
 msgid "Try refining your query or choose another branch."
 msgstr ""
 
-#: src/application.vala:56
+#: src/application.vala:52
 msgid "Error"
 msgstr ""
 
-#: src/application.vala:56
+#: src/application.vala:52
 msgid "Failed to fetch data. Check your connection and package name."
 msgstr ""
 
-#: src/window.vala:21
-msgid "Menu"
+#: src/window.vala:59
+msgid "Not implemented yet"
 msgstr ""
 
-#. --- верхние пункты ---
-#: src/window.vala:35
+#: src/views/search_page.vala:69 src/views/details_page.vala:38
 msgid "About"
 msgstr ""
 
-#: src/window.vala:39 src/prefs_window.vala:13
-msgid "Preferences"
-msgstr ""
-
-#: src/window.vala:45
+#: src/views/search_page.vala:72 src/views/details_page.vala:41
 msgid "Quit"
 msgstr ""
 
-#. --- язык ---
-#: src/window.vala:55
-msgid "System Language"
+#: src/views/details_page.vala:114
+msgid "Copy"
 msgstr ""
 
-#: src/window.vala:101
-msgid "Not implemented yet"
+#: src/views/details_page.vala:124
+msgid "Close"
+msgstr ""
+
+#: src/views/details_page.vala:164
+msgid "Version"
+msgstr ""
+
+#: src/views/details_page.vala:165
+msgid "Release"
+msgstr ""
+
+#: src/views/details_page.vala:166
+msgid "Maintainer"
+msgstr ""
+
+#: src/views/details_page.vala:167
+msgid "Group"
+msgstr ""
+
+#: src/views/details_page.vala:168
+msgid "License"
+msgstr ""
+
+#: src/views/details_page.vala:169
+msgid "Homepage"
+msgstr ""
+
+#: src/views/details_page.vala:170
+msgid "Summary"
+msgstr ""
+
+#: src/views/details_page.vala:171
+msgid "Description"
+msgstr ""
+
+#: src/views/details_page.vala:202
+msgid "Change"
+msgstr ""
+
+#: src/views/details_page.vala:215
+msgid "No changes found"
+msgstr ""
+
+#: src/views/details_page.vala:222
+msgid "Changelog unavailable"
+msgstr ""
+
+#: src/views/details_page.vala:232
+msgid "Failed to load package details"
+msgstr ""
+
+#: src/prefs_window.vala:14
+msgid "Preferences"
 msgstr ""
 
 #: src/prefs_window.vala:17
 msgid "General"
 msgstr ""
 
-#. Combo: System / English / Русский
-#: src/prefs_window.vala:21
+#: src/prefs_window.vala:20
 msgid "Language"
 msgstr ""
 
-#: src/prefs_window.vala:22
-msgid "Restartless language switch"
+#: src/prefs_window.vala:21
+msgid "Language switch"
 msgstr ""
 
 #: src/prefs_window.vala:25

@@ -8,26 +8,35 @@ template $DetailsPage : Adw.NavigationPage {
     orientation: vertical;
     spacing: 0;
 
-    Gtk.Box {
-      orientation: horizontal;
-      spacing: 8;
-      halign: fill;
+    Adw.HeaderBar {
+      show-back-button: true;
+      show-start-title-buttons: false;
+      show-end-title-buttons: false;
 
-      Gtk.Button back_btn {
-        icon-name: "go-previous-symbolic";
-        tooltip-text: _("Back");
-        margin-start: 12;
-        margin-top: 12;
-        margin-bottom: 6;
-      }
-
-      Gtk.Label title_lbl {
-        css-classes: ["title-1"];
-        margin-top: 12;
-        margin-end: 12;
-        margin-bottom: 6;
+      title-widget: Gtk.Label title_lbl {
+        css-classes: ["title-3"];
         hexpand: true;
         ellipsize: end;
+        halign: center;
+      };
+
+      [end]
+      Gtk.Box {
+        spacing: 6;
+
+        Gtk.MenuButton menu_btn {
+          icon-name: "open-menu-symbolic";
+          tooltip-text: _("Menu");
+          css-classes: ["flat"];
+        }
+
+        Gtk.Button close_btn {
+          icon-name: "window-close-symbolic";
+          tooltip-text: _("Close");
+          css-classes: ["flat"];
+          can-focus: false;
+          focus-on-click: false;
+        }
       }
     }
 
@@ -44,7 +53,8 @@ template $DetailsPage : Adw.NavigationPage {
           propagate-natural-height: true;
 
           Adw.ClampScrollable {
-            maximum-size: 1100;
+            maximum-size: 1500;
+            tightening-threshold: 1200;
             margin-start: 12;
             margin-end: 12;
             margin-top: 6;
