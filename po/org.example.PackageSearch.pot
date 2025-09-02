@@ -1,14 +1,26 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the org.example.PackageSearch package.
+# This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: org.example.PackageSearch\n"
+"#-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-01 23:06+0300\n"
+"POT-Creation-Date: 2025-09-02 20:44+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"#-#-#-#-#  tmp.ui.pot (PACKAGE VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-02 20:45+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,8 +29,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. DetailsPage
-#: src/application.vala:47 src/window.vala:54
+#: src/application.vala:47 src/window.vala:52 build/data/details_page.ui:10
 msgid "Details"
 msgstr ""
 
@@ -26,127 +39,64 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
-#: src/application.vala:47
+#: src/application.vala:47 build/data/details_page.ui:78
 msgid "Info"
 msgstr ""
 
-#: src/application.vala:47
+#: src/application.vala:47 build/data/details_page.ui:83
 msgid "Binaries"
 msgstr ""
 
-#: src/application.vala:47 src/views/details_page.vala:182
+#: src/application.vala:47 src/views/details_page.vala:222
+#: build/data/details_page.ui:88
 msgid "Changelog"
 msgstr ""
 
-#: src/application.vala:47
+#: src/application.vala:47 build/data/details_page.ui:121
 msgid "Loading data…"
 msgstr ""
 
+#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. SearchPage
-#. Top bar не добавляем — у страниц свои HeaderBar'ы
 #. первая страница
-#: src/application.vala:49 src/window.vala:37
+#: src/application.vala:49 src/window.vala:35 build/data/search_page.ui:10
 msgid "Search"
 msgstr ""
 
-#: src/application.vala:49
+#: src/application.vala:49 build/data/search_page.ui:29
 msgid "Type a package name…"
 msgstr ""
 
-#: src/application.vala:49
+#: src/application.vala:49 build/data/search_page.ui:71
 msgid "Search packages"
 msgstr ""
 
-#: src/application.vala:50
+#: src/application.vala:50 build/data/search_page.ui:72
 msgid "Start typing a source package name, then pick it from the results."
 msgstr ""
 
-#: src/application.vala:51
+#: src/application.vala:51 build/data/search_page.ui:99
 msgid "Loading results…"
 msgstr ""
 
-#: src/application.vala:51
+#: src/application.vala:51 build/data/search_page.ui:143
 msgid "No results"
 msgstr ""
 
-#: src/application.vala:51
+#: src/application.vala:51 build/data/search_page.ui:144
 msgid "Try refining your query or choose another branch."
 msgstr ""
 
-#: src/application.vala:52
+#: src/application.vala:52 build/data/search_page.ui:155
 msgid "Error"
 msgstr ""
 
-#: src/application.vala:52
+#: src/application.vala:52 build/data/search_page.ui:156
 msgid "Failed to fetch data. Check your connection and package name."
 msgstr ""
 
-#: src/window.vala:59
+#: src/window.vala:57
 msgid "Not implemented yet"
-msgstr ""
-
-#: src/views/search_page.vala:69 src/views/details_page.vala:38
-msgid "About"
-msgstr ""
-
-#: src/views/search_page.vala:72 src/views/details_page.vala:41
-msgid "Quit"
-msgstr ""
-
-#: src/views/details_page.vala:114
-msgid "Copy"
-msgstr ""
-
-#: src/views/details_page.vala:124
-msgid "Close"
-msgstr ""
-
-#: src/views/details_page.vala:164
-msgid "Version"
-msgstr ""
-
-#: src/views/details_page.vala:165
-msgid "Release"
-msgstr ""
-
-#: src/views/details_page.vala:166
-msgid "Maintainer"
-msgstr ""
-
-#: src/views/details_page.vala:167
-msgid "Group"
-msgstr ""
-
-#: src/views/details_page.vala:168
-msgid "License"
-msgstr ""
-
-#: src/views/details_page.vala:169
-msgid "Homepage"
-msgstr ""
-
-#: src/views/details_page.vala:170
-msgid "Summary"
-msgstr ""
-
-#: src/views/details_page.vala:171
-msgid "Description"
-msgstr ""
-
-#: src/views/details_page.vala:202
-msgid "Change"
-msgstr ""
-
-#: src/views/details_page.vala:215
-msgid "No changes found"
-msgstr ""
-
-#: src/views/details_page.vala:222
-msgid "Changelog unavailable"
-msgstr ""
-
-#: src/views/details_page.vala:232
-msgid "Failed to load package details"
 msgstr ""
 
 #: src/prefs_window.vala:14
@@ -157,7 +107,9 @@ msgstr ""
 msgid "General"
 msgstr ""
 
-#: src/prefs_window.vala:20
+#. ---------- Language dialog ----------
+#: src/prefs_window.vala:20 src/views/search_page.vala:229
+#: src/views/details_page.vala:89
 msgid "Language"
 msgstr ""
 
@@ -165,6 +117,88 @@ msgstr ""
 msgid "Language switch"
 msgstr ""
 
-#: src/prefs_window.vala:25
+#: src/prefs_window.vala:25 src/views/search_page.vala:230
+#: src/views/details_page.vala:90
 msgid "System"
+msgstr ""
+
+#. Language…
+#: src/views/search_page.vala:70 src/views/details_page.vala:37
+msgid "Language…"
+msgstr ""
+
+#. About
+#: src/views/search_page.vala:78 src/views/details_page.vala:45
+msgid "About"
+msgstr ""
+
+#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
+#. Quit
+#: src/views/search_page.vala:94 src/views/details_page.vala:49
+#: build/data/search_page.ui:49
+msgid "Quit"
+msgstr ""
+
+#: src/views/search_page.vala:229 src/views/details_page.vala:89
+msgid "Choose interface language"
+msgstr ""
+
+#: src/views/details_page.vala:154
+msgid "Copy"
+msgstr ""
+
+#: src/views/details_page.vala:164 build/data/details_page.ui:41
+msgid "Close"
+msgstr ""
+
+#: src/views/details_page.vala:204
+msgid "Version"
+msgstr ""
+
+#: src/views/details_page.vala:205
+msgid "Release"
+msgstr ""
+
+#: src/views/details_page.vala:206
+msgid "Maintainer"
+msgstr ""
+
+#: src/views/details_page.vala:207
+msgid "Group"
+msgstr ""
+
+#: src/views/details_page.vala:208
+msgid "License"
+msgstr ""
+
+#: src/views/details_page.vala:209
+msgid "Homepage"
+msgstr ""
+
+#: src/views/details_page.vala:210
+msgid "Summary"
+msgstr ""
+
+#: src/views/details_page.vala:211
+msgid "Description"
+msgstr ""
+
+#: src/views/details_page.vala:242
+msgid "Change"
+msgstr ""
+
+#: src/views/details_page.vala:255
+msgid "No changes found"
+msgstr ""
+
+#: src/views/details_page.vala:262
+msgid "Changelog unavailable"
+msgstr ""
+
+#: src/views/details_page.vala:272
+msgid "Failed to load package details"
+msgstr ""
+
+#: build/data/search_page.ui:42 build/data/details_page.ui:34
+msgid "Menu"
 msgstr ""
