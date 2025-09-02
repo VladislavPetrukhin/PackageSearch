@@ -6,21 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"#-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#\n"
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-02 20:44+0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"#-#-#-#-#  tmp.ui.pot (PACKAGE VERSION)  #-#-#-#-#\n"
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-02 20:45+0300\n"
+"POT-Creation-Date: 2025-09-02 22:15+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -31,7 +19,7 @@ msgstr ""
 
 #. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. DetailsPage
-#: src/application.vala:47 src/window.vala:52 build/data/details_page.ui:10
+#: src/application.vala:47 src/window.vala:54 build/data/details_page.ui:10
 msgid "Details"
 msgstr ""
 
@@ -95,7 +83,13 @@ msgstr ""
 msgid "Failed to fetch data. Check your connection and package name."
 msgstr ""
 
-#: src/window.vala:57
+#: src/window.vala:47 src/views/search_page.vala:91
+msgid ""
+"GTK4/Libadwaita application for searching for packages in the ALT Linux "
+"Sisyphus and p11 repositories and viewing detailed package information."
+msgstr ""
+
+#: src/window.vala:59
 msgid "Not implemented yet"
 msgstr ""
 
@@ -108,7 +102,7 @@ msgid "General"
 msgstr ""
 
 #. ---------- Language dialog ----------
-#: src/prefs_window.vala:20 src/views/search_page.vala:229
+#: src/prefs_window.vala:20 src/views/search_page.vala:234
 #: src/views/details_page.vala:89
 msgid "Language"
 msgstr ""
@@ -117,7 +111,7 @@ msgstr ""
 msgid "Language switch"
 msgstr ""
 
-#: src/prefs_window.vala:25 src/views/search_page.vala:230
+#: src/prefs_window.vala:25 src/views/search_page.vala:235
 #: src/views/details_page.vala:90
 msgid "System"
 msgstr ""
@@ -134,12 +128,12 @@ msgstr ""
 
 #. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. Quit
-#: src/views/search_page.vala:94 src/views/details_page.vala:49
+#: src/views/search_page.vala:99 src/views/details_page.vala:49
 #: build/data/search_page.ui:49
 msgid "Quit"
 msgstr ""
 
-#: src/views/search_page.vala:229 src/views/details_page.vala:89
+#: src/views/search_page.vala:234 src/views/details_page.vala:89
 msgid "Choose interface language"
 msgstr ""
 
@@ -199,6 +193,6 @@ msgstr ""
 msgid "Failed to load package details"
 msgstr ""
 
-#: build/data/search_page.ui:42 build/data/details_page.ui:34
+#: build/data/details_page.ui:34 build/data/search_page.ui:42
 msgid "Menu"
 msgstr ""

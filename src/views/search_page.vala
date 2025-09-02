@@ -80,6 +80,7 @@ public class SearchPage : Adw.NavigationPage {
         btn_about.clicked.connect (() => {
             pop.popdown ();
             var win = this.get_root () as Gtk.Window;
+
             var about = new Adw.AboutDialog ();
             about.set_application_name ("PackageSearch");
             about.set_application_icon ("org.example.PackageSearch");
@@ -87,8 +88,13 @@ public class SearchPage : Adw.NavigationPage {
             about.set_version ("0.1");
             about.set_issue_url ("https://altlinux.space/vladislavpetrukhin/PackageScan");
             about.set_license_type (Gtk.License.GPL_3_0);
+            about.set_comments (_("GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus and p11 repositories and viewing detailed package information."));
+            about.set_website ("https://altlinux.space/vladislavpetrukhin/PackageScan");
+
             about.present (win);
         });
+
+
 
         // Quit
         var btn_quit_menu = new Gtk.Button.with_label (_("Quit"));
@@ -105,9 +111,6 @@ public class SearchPage : Adw.NavigationPage {
         pv.append (btn_quit_menu);
         pop.set_child (pv);
 
-        quit_btn.add_css_class ("flat");
-        quit_btn.set_can_focus (false);
-        quit_btn.set_focus_on_click (false);
         quit_btn.clicked.connect (() => {
             var win = this.get_root () as Gtk.Window;
             var app = (win != null) ? (win.application as Adw.Application) : null;

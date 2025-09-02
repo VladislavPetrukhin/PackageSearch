@@ -66,9 +66,6 @@ public class DetailsPage : Adw.NavigationPage {
             if (root != null) root.quit_app ();
         });
 
-        close_btn.add_css_class ("flat");
-        close_btn.set_can_focus (false);
-        close_btn.set_focus_on_click (false);
         close_btn.clicked.connect (() => {
             var root = this.get_root () as MainWindow;
             if (root != null) root.quit_app ();

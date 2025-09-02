@@ -24,19 +24,19 @@ template $DetailsPage : Adw.NavigationPage {
       Gtk.Box {
         spacing: 6;
 
-        Gtk.MenuButton menu_btn {
-          icon-name: "open-menu-symbolic";
-          tooltip-text: _("Menu");
-          css-classes: ["flat"];
-        }
+     Gtk.MenuButton menu_btn {
+        icon-name: "open-menu-symbolic";
+        tooltip-text: _("Menu");
+        css-classes: ["flat", "circular"];
+      }
 
-        Gtk.Button close_btn {
-          icon-name: "window-close-symbolic";
-          tooltip-text: _("Close");
-          css-classes: ["flat"];
-          can-focus: false;
-          focus-on-click: false;
-        }
+      Gtk.Button close_btn {
+        icon-name: "window-close-symbolic";
+        tooltip-text: _("Close");
+        css-classes: ["flat", "circular"];
+      }
+
+
       }
     }
 

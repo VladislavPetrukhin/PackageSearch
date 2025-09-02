@@ -31,19 +31,19 @@ template $SearchPage : Adw.NavigationPage {
       Gtk.Box {
         spacing: 6;
 
-        Gtk.MenuButton menu_btn {
-          icon-name: "open-menu-symbolic";
-          tooltip-text: _("Menu");
-          css-classes: ["flat"];
-        }
+      Gtk.MenuButton menu_btn {
+        icon-name: "open-menu-symbolic";
+        tooltip-text: _("Menu");
+        css-classes: ["flat", "circular"];
+      }
 
-        Gtk.Button quit_btn {
-          icon-name: "window-close-symbolic";
-          tooltip-text: _("Quit");
-          css-classes: ["flat"];
-          can-focus: false;
-          focus-on-click: false;
-        }
+      Gtk.Button quit_btn {
+        icon-name: "window-close-symbolic";
+        tooltip-text: _("Quit");
+        css-classes: ["flat", "circular"];
+      }
+
+
       }
     }
 

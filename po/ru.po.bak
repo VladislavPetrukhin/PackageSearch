@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.example.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"POT-Creation-Date: 2025-09-02 20:44+0300\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -11,158 +11,193 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/window.vala
-msgid "Menu"
-msgstr "Меню"
-
-#: src/window.vala
-msgid "About"
-msgstr "О приложении"
-
-#: src/window.vala
-msgid "Preferences"
-msgstr "Настройки"
-
-#: src/window.vala
-msgid "Quit"
-msgstr "Выход"
-
-#: src/window.vala
-msgid "System Language"
-msgstr "Системный язык"
-
-#: src/window.vala
-msgid "Not implemented yet"
-msgstr "Пока не реализовано"
-
-#: src/window.vala
-msgid "Restart failed"
-msgstr "Не удалось перезапустить"
-
-#: src/prefs_window.vala
-msgid "General"
-msgstr "Общие"
-
-#: src/prefs_window.vala
-msgid "Language"
-msgstr "Язык"
-
-#: src/prefs_window.vala
-msgid "Language switch"
-msgstr "Смена языка"
-
-#: src/details_page.vala
-msgid "Copy"
-msgstr "Копировать"
-
-#: src/details_page.vala
-msgid "Close"
-msgstr "Закрыть"
-
-#: src/details_page.vala
-msgid "Version"
-msgstr "Версия"
-
-#: src/details_page.vala
-msgid "Release"
-msgstr "Релиз"
-
-#: src/details_page.vala
-msgid "Maintainer"
-msgstr "Сопровождающий"
-
-#: src/details_page.vala
-msgid "Group"
-msgstr "Группа"
-
-#: src/details_page.vala
-msgid "License"
-msgstr "Лицензия"
-
-#: src/details_page.vala
-msgid "Homepage"
-msgstr "Домашняя страница"
-
-#: src/details_page.vala
-msgid "Summary"
-msgstr "Краткое описание"
-
-#: src/details_page.vala
-msgid "Description"
-msgstr "Описание"
-
-#: src/details_page.vala
-msgid "Changelog"
-msgstr "История изменений"
-
-#: src/details_page.vala
-msgid "Change"
-msgstr "Изменение"
-
-#: src/details_page.vala
-msgid "No changes found"
-msgstr "Изменений не найдено"
-
-#: src/details_page.vala
-msgid "Changelog unavailable"
-msgstr "История изменений недоступна"
-
-#: src/details_page.vala
-msgid "Failed to load package details"
-msgstr "Не удалось загрузить сведения о пакете"
-
-#: data/ui/details_page.blp
+#. DetailsPage
+#: src/application.vala:47 src/window.vala:52 build/data/details_page.ui:10
 msgid "Details"
 msgstr "Подробности"
 
-#: data/ui/details_page.blp
+#: src/application.vala:47
 msgid "Back"
 msgstr "Назад"
 
-#: data/ui/details_page.blp
+#: src/application.vala:47 build/data/details_page.ui:78
 msgid "Info"
 msgstr "Информация"
 
-#: data/ui/details_page.blp
+#: src/application.vala:47 build/data/details_page.ui:83
 msgid "Binaries"
 msgstr "Бинарные пакеты"
 
-#: data/ui/details_page.blp
+#: src/application.vala:47 src/views/details_page.vala:222
+#: build/data/details_page.ui:88
+msgid "Changelog"
+msgstr "История изменений"
+
+#: src/application.vala:47 build/data/details_page.ui:121
 msgid "Loading data…"
 msgstr "Загрузка данных…"
 
-#: data/ui/search_page.blp
+#. SearchPage
+#. первая страница
+#: src/application.vala:49 src/window.vala:35 build/data/search_page.ui:10
 msgid "Search"
 msgstr "Поиск"
 
-#: data/ui/search_page.blp
+#: src/application.vala:49 build/data/search_page.ui:29
 msgid "Type a package name…"
 msgstr "Введите имя пакета…"
 
-#: data/ui/search_page.blp
+#: src/application.vala:49 build/data/search_page.ui:71
 msgid "Search packages"
 msgstr "Поиск пакетов"
 
-#: data/ui/search_page.blp
+#: src/application.vala:50 build/data/search_page.ui:72
 msgid "Start typing a source package name, then pick it from the results."
 msgstr "Начните вводить имя исходного пакета и выберите его из результатов."
 
-#: data/ui/search_page.blp
+#: src/application.vala:51 build/data/search_page.ui:99
 msgid "Loading results…"
 msgstr "Загрузка результатов…"
 
-#: data/ui/search_page.blp
+#: src/application.vala:51 build/data/search_page.ui:143
 msgid "No results"
 msgstr "Нет результатов"
 
-#: data/ui/search_page.blp
+#: src/application.vala:51 build/data/search_page.ui:144
 msgid "Try refining your query or choose another branch."
 msgstr "Попробуйте уточнить запрос или выберите другую ветку."
 
-#: data/ui/search_page.blp
+#: src/application.vala:52 build/data/search_page.ui:155
 msgid "Error"
 msgstr "Ошибка"
 
-#: data/ui/search_page.blp
+#: src/application.vala:52 build/data/search_page.ui:156
 msgid "Failed to fetch data. Check your connection and package name."
 msgstr "Не удалось получить данные. Проверьте соединение и имя пакета."
+
+#: src/window.vala:57
+msgid "Not implemented yet"
+msgstr "Пока не реализовано"
+
+#: src/prefs_window.vala:14
+msgid "Preferences"
+msgstr "Настройки"
+
+#: src/prefs_window.vala:17
+msgid "General"
+msgstr ""
+
+#. ---------- Language dialog ----------
+#: src/prefs_window.vala:20 src/views/search_page.vala:229
+#: src/views/details_page.vala:89
+msgid "Language"
+msgstr "Язык"
+
+#: src/prefs_window.vala:21
+msgid "Language switch"
+msgstr "Язык"
+
+#: src/prefs_window.vala:25 src/views/search_page.vala:230
+#: src/views/details_page.vala:90
+msgid "System"
+msgstr "Системный"
+
+#. Language…
+#: src/views/search_page.vala:70 src/views/details_page.vala:37
+msgid "Language…"
+msgstr "Язык…"
+
+#. About
+#: src/views/search_page.vala:78 src/views/details_page.vala:45
+msgid "About"
+msgstr "О приложении"
+
+#. Quit
+#: src/views/search_page.vala:94 src/views/details_page.vala:49
+#: build/data/search_page.ui:49
+msgid "Quit"
+msgstr "Выход"
+
+#: src/views/search_page.vala:229 src/views/details_page.vala:89
+msgid "Choose interface language"
+msgstr "Выберите язык интерфейса"
+
+#: src/views/details_page.vala:154
+msgid "Copy"
+msgstr "Копировать"
+
+#: src/views/details_page.vala:164 build/data/details_page.ui:41
+msgid "Close"
+msgstr "Закрыть"
+
+#: src/views/details_page.vala:204
+msgid "Version"
+msgstr "Версия"
+
+#: src/views/details_page.vala:205
+msgid "Release"
+msgstr "Релиз"
+
+#: src/views/details_page.vala:206
+msgid "Maintainer"
+msgstr "Сопровождающий"
+
+#: src/views/details_page.vala:207
+msgid "Group"
+msgstr "Группа"
+
+#: src/views/details_page.vala:208
+msgid "License"
+msgstr "Лицензия"
+
+#: src/views/details_page.vala:209
+msgid "Homepage"
+msgstr "Домашняя страница"
+
+#: src/views/details_page.vala:210
+msgid "Summary"
+msgstr "Краткое описание"
+
+#: src/views/details_page.vala:211
+msgid "Description"
+msgstr "Описание"
+
+#: src/views/details_page.vala:242
+msgid "Change"
+msgstr "Изменение"
+
+#: src/views/details_page.vala:255
+msgid "No changes found"
+msgstr "Изменений не найдено"
+
+#: src/views/details_page.vala:262
+msgid "Changelog unavailable"
+msgstr "История изменений недоступна"
+
+#: src/views/details_page.vala:272
+msgid "Failed to load package details"
+msgstr "Не удалось загрузить сведения о пакете"
+
+#: build/data/search_page.ui:42 build/data/details_page.ui:34
+msgid "Menu"
+msgstr "Меню"
+
+#: src/window.vala:47
+msgid "GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus and p11 repositories and viewing detailed package information."
+msgstr "Приложение на GTK4/Libadwaita для поиска пакетов в репозиториях ALT Linux Sisyphus и p11 и просмотра подробной информации о пакете."
+
+#: src/prefs_window.vala:17
+msgid "General"
+msgstr "Общие"
+
+#~ msgid "System Language"
+#~ msgstr "Системный язык"
+
+#~ msgid "Restart failed"
+#~ msgstr "Не удалось перезапустить"
+
+#~ msgid "English"
+#~ msgstr "Английский"
+
+#~ msgid "Русский"
+#~ msgstr "Русский"
