@@ -4,95 +4,58 @@ using Adw 1;
 template $DetailsPage : Adw.NavigationPage {
   title: _("Details");
 
-  child: Gtk.Box {
-    orientation: vertical;
-    spacing: 0;
+  child: Adw.ToastOverlay toast_overlay {
+    hexpand: true; vexpand: true;
 
-    Adw.HeaderBar {
-      show-back-button: true;
-      show-start-title-buttons: false;
-      show-end-title-buttons: false;
-
-      title-widget: Gtk.Label title_lbl {
-        css-classes: ["title-3"];
-        hexpand: true;
-        ellipsize: end;
-        halign: center;
-      };
-
-      [end]
-      Gtk.Box {
-        spacing: 6;
-
-     Gtk.MenuButton menu_btn {
-        icon-name: "open-menu-symbolic";
-        tooltip-text: _("Menu");
-        css-classes: ["flat", "circular"];
-      }
-
-      Gtk.Button close_btn {
-        icon-name: "window-close-symbolic";
-        tooltip-text: _("Close");
-        css-classes: ["flat", "circular"];
-      }
-
-
-      }
-    }
-
-    Adw.ToastOverlay toast_overlay {
+    child: Gtk.Overlay {
       hexpand: true; vexpand: true;
 
-      child: Gtk.Overlay {
+      child: Gtk.ScrolledWindow {
         hexpand: true; vexpand: true;
+        hscrollbar-policy: never;
+        vscrollbar-policy: automatic;
+        propagate-natural-height: true;
 
-        child: Gtk.ScrolledWindow {
-          hexpand: true; vexpand: true;
-          hscrollbar-policy: never;
-          vscrollbar-policy: automatic;
-          propagate-natural-height: true;
+        Adw.ClampScrollable {
+          maximum-size: 1500;
+          tightening-threshold: 1200;
+          margin-start: 0;
+          margin-end: 0;
+          margin-top: 0;
+          margin-bottom: 0;
 
-          Adw.ClampScrollable {
-            maximum-size: 1500;
-            tightening-threshold: 1200;
-            margin-start: 12;
-            margin-end: 12;
-            margin-top: 6;
-            margin-bottom: 12;
-
-            child: Adw.PreferencesPage {
-              Adw.PreferencesGroup info_group      { title: _("Info"); }
-              Adw.PreferencesGroup bins_group      { title: _("Binaries"); }
-              Adw.PreferencesGroup changelog_group { title: _("Changelog"); }
-            };
-          }
-        };
-
-        [overlay]
-        Gtk.Revealer loading_revealer {
-          transition-type: crossfade;
-          reveal-child: false;
-          can-target: false;
-
-          child: Gtk.CenterBox {
-            valign: center;
-            halign: center;
-
-            center-widget: Gtk.Box {
-              orientation: vertical;
-              spacing: 12;
-              halign: center;
-              valign: center;
-
-              Adw.Spinner {
-                width-request: 40;
-                height-request: 40;
-              }
-              Gtk.Label { label: _("Loading data…"); }
-            };
+          child: Adw.PreferencesPage {
+            Adw.PreferencesGroup info_group      { title: _("Info"); }
+            Adw.PreferencesGroup bins_group      { title: _("Binaries"); }
+            Adw.PreferencesGroup changelog_group { title: _("Changelog"); }
           };
         }
       };
-    }
+
+      [overlay]
+      Gtk.Revealer loading_revealer {
+        transition-type: crossfade;
+        reveal-child: false;
+        can-target: false;
+
+        child: Gtk.CenterBox {
+          valign: center;
+          halign: center;
+
+          center-widget: Gtk.Box {
+            orientation: vertical;
+            spacing: 12;
+            halign: center;
+            valign: center;
+
+            Adw.Spinner {
+              width-request: 40;
+              height-request: 40;
+            }
+            Gtk.Label { label: _("Loading data…"); }
+          };
+        };
+      }
+    };
   };
 }

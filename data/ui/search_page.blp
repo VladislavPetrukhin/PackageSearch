@@ -4,123 +4,82 @@ using Adw 1;
 template $SearchPage : Adw.NavigationPage {
   title: _("Search");
 
-  child: Gtk.Box {
-    orientation: vertical;
+  child: Adw.ToastOverlay toast_overlay {
+    child: Adw.ViewStack content_stack {
+      vexpand: true;
 
-    Adw.HeaderBar {
-      show-start-title-buttons: false;
-      show-end-title-buttons: false;
-      decoration-layout: ":";
-      show-back-button: false;
-
-      [start]
-      Gtk.DropDown branch_dropdown { }
-
-      title-widget: Gtk.Box {
-        hexpand: true;
-        halign: center;
-
-        Gtk.SearchEntry search_entry {
-          placeholder-text: _("Type a package name…");
-          activates-default: true;
-          width-request: 420;
-        }
-      };
-
-      [end]
-      Gtk.Box {
-        spacing: 6;
-
-      Gtk.MenuButton menu_btn {
-        icon-name: "open-menu-symbolic";
-        tooltip-text: _("Menu");
-        css-classes: ["flat", "circular"];
+      Adw.ViewStackPage {
+        name: "idle";
+        title: _("Search");
+        child: Adw.StatusPage {
+          icon-name: "system-search-symbolic";
+          title: _("Search packages");
+          description: _("Start typing a source package name, then pick it from the results.");
+        };
       }
 
-      Gtk.Button quit_btn {
-        icon-name: "window-close-symbolic";
-        tooltip-text: _("Quit");
-        css-classes: ["flat", "circular"];
-      }
-
-
-      }
-    }
-
-    Adw.ToastOverlay toast_overlay {
-      child: Gtk.Stack content_stack {
-        transition-type: crossfade;
-        vexpand: true;
-
-        Gtk.StackPage {
-          name: "idle";
-          child: Adw.StatusPage {
-            icon-name: "system-search-symbolic";
-            title: _("Search packages");
-            description: _("Start typing a source package name, then pick it from the results.");
-          };
-        }
-
-        Gtk.StackPage {
-          name: "loading";
-          child: Gtk.CenterBox {
-            valign: center;
+      Adw.ViewStackPage {
+        name: "loading";
+        title: _("Loading");
+        child: Gtk.CenterBox {
+          valign: center;
+          halign: center;
+          center-widget: Gtk.Box {
+            orientation: vertical;
+            spacing: 12;
             halign: center;
-            center-widget: Gtk.Box {
-              orientation: vertical;
-              spacing: 12;
-              halign: center;
-              valign: center;
+            valign: center;
 
-              Adw.Spinner { width-request: 42; height-request: 42; }
-              Gtk.Label { label: _("Loading results…"); }
-            };
+            Adw.Spinner { width-request: 42; height-request: 42; }
+            Gtk.Label { label: _("Loading results…"); }
           };
-        }
+        };
+      }
 
-        Gtk.StackPage {
-          name: "results";
-          child: Gtk.ScrolledWindow results_scroller {
-            css-classes: ["results-scroll"];
-            has-frame: false;
-            vexpand: true;
-            hscrollbar-policy: never;
+      Adw.ViewStackPage {
+        name: "results";
+        title: _("Results");
+        child: Gtk.ScrolledWindow results_scroller {
+          css-classes: ["results-scroll"];
+          has-frame: false;
+          vexpand: true;
+          hscrollbar-policy: never;
 
-            Adw.ClampScrollable {
-              maximum-size: 1500;
-              tightening-threshold: 1200;
-              margin-start: 12;
-              margin-end: 12;
-              margin-top: 12;
-              margin-bottom: 12;
+          Adw.ClampScrollable {
+            maximum-size: 1500;
+            tightening-threshold: 1200;
+            margin-start: 12;
+            margin-end: 12;
+            margin-top: 12;
+            margin-bottom: 12;
 
-              Gtk.ListView list_view {
-                /* ВНУТРЕННИЕ ОТСТУПЫ КОЛОНКИ */
-                margin-start: 96;
-                margin-end: 96;
-              }
+            Gtk.ListView list_view {
+              margin-start: 96;
+              margin-end: 96;
             }
-          };
-        }
+          }
+        };
+      }
 
-        Gtk.StackPage {
-          name: "empty";
-          child: Adw.StatusPage {
-            icon-name: "edit-find-replace-symbolic";
-            title: _("No results");
-            description: _("Try refining your query or choose another branch.");
-          };
-        }
+      Adw.ViewStackPage {
+        name: "empty";
+        title: _("No results");
+        child: Adw.StatusPage {
+          icon-name: "edit-find-replace-symbolic";
+          title: _("No results");
+          description: _("Try refining your query or choose another branch.");
+        };
+      }
 
-        Gtk.StackPage {
-          name: "error";
-          child: Adw.StatusPage {
-            icon-name: "dialog-error-symbolic";
-            title: _("Error");
-            description: _("Failed to fetch data. Check your connection and package name.");
-          };
-        }
-      };
-    }
+      Adw.ViewStackPage {
+        name: "error";
+        title: _("Error");
+        child: Adw.StatusPage {
+          icon-name: "dialog-error-symbolic";
+          title: _("Error");
+          description: _("Failed to fetch data. Check your connection and package name.");
+        };
+      }
+    };
   };
 }

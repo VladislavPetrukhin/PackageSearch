@@ -1,20 +1,4 @@
 /* window.vala
- *
- * Copyright 2025 Unknown
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 using Gtk;
@@ -27,16 +11,112 @@ public class MainWindow : Adw.ApplicationWindow {
     [GtkChild] private unowned Adw.ToolbarView    toolbar_view;
     [GtkChild] private unowned Adw.NavigationView nav_view;
 
+    [GtkChild] private unowned Gtk.Button         back_btn;
+    [GtkChild] private unowned Gtk.DropDown       branch_dropdown;
+    [GtkChild] private unowned Gtk.SearchEntry    search_entry;
+    [GtkChild] private unowned Gtk.Stack          header_stack;
+    [GtkChild] private unowned Gtk.Label          title_lbl;
+    [GtkChild] private unowned Gtk.MenuButton     menu_btn;
+    [GtkChild] private unowned Gtk.Button         quit_btn;
+
+    private SearchPage search_page;
+
     public MainWindow (Adw.Application app) {
         Object (application: app);
 
-        // первая страница
-        var search = new SearchPage ();
-        var search_page = new Adw.NavigationPage (search, _("Search"));
-        nav_view.push (search_page);
+        search_page = new SearchPage ();
+        var page = new Adw.NavigationPage (search_page, _("Search"));
+        nav_view.push (page);
+
+        setup_header ();
+        setup_header_controls ();
+        update_header_for_visible_page ();
+
+        nav_view.notify["visible-page"].connect (update_header_for_visible_page);
     }
 
-    private void show_about () {
+    private void setup_header () {
+        var pop = new Gtk.Popover ();
+        menu_btn.set_popover (pop);
+
+        var pv = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
+        pv.margin_top = 6; pv.margin_bottom = 6; pv.margin_start = 6; pv.margin_end = 6;
+
+        var btn_lang = new Gtk.Button.with_label (_("Language…"));
+        btn_lang.add_css_class ("flat"); btn_lang.halign = Gtk.Align.FILL;
+        btn_lang.clicked.connect (() => { pop.popdown (); open_language_dialog (); });
+
+        var btn_about = new Gtk.Button.with_label (_("About"));
+        btn_about.add_css_class ("flat"); btn_about.halign = Gtk.Align.FILL;
+        btn_about.clicked.connect (() => { pop.popdown (); open_about_dialog (); });
+
+        var btn_quit_menu = new Gtk.Button.with_label (_("Quit"));
+        btn_quit_menu.add_css_class ("flat"); btn_quit_menu.halign = Gtk.Align.FILL;
+        btn_quit_menu.clicked.connect (() => { pop.popdown (); quit_app (); });
+
+        pv.append (btn_lang);
+        pv.append (btn_about);
+        pv.append (btn_quit_menu);
+        pop.set_child (pv);
+
+        quit_btn.clicked.connect (quit_app);
+
+        back_btn.clicked.connect (() => {
+            var page = nav_view.get_visible_page ();
+            if (page != null && page.get_child () is DetailsPage)
+                nav_view.pop ();
+        });
+    }
+
+    private void setup_header_controls () {
+        var branches_model = new Gtk.StringList (null);
+        string[] branch_names = { "sisyphus", "p11" };
+        foreach (string b in branch_names) branches_model.append (b);
+        branch_dropdown.model = branches_model;
+        branch_dropdown.selected = 0;
+
+        search_page.set_branch (get_current_branch ());
+        search_page.set_query ((search_entry.text ?? "").strip ());
+
+        search_entry.search_changed.connect (() => {
+            search_page.set_query ((search_entry.text ?? "").strip ());
+            search_page.trigger_search_debounced ();
+        });
+        search_entry.activate.connect (() => {
+            search_page.set_query ((search_entry.text ?? "").strip ());
+            search_page.trigger_search_now ();
+        });
+        branch_dropdown.notify["selected"].connect (() => {
+            search_page.set_branch (get_current_branch ());
+            search_page.trigger_search_now ();
+        });
+    }
+
+    private string get_current_branch () {
+        int idx = (int) branch_dropdown.selected;
+        var m = branch_dropdown.model as Gtk.StringList;
+        if (m == null || idx < 0) return "sisyphus";
+        return m.get_string ((uint) idx);
+    }
+
+    private void update_header_for_visible_page () {
+        var page = nav_view.get_visible_page ();
+        bool on_details = (page != null) && (page.get_child () is DetailsPage);
+
+        back_btn.visible = on_details;
+        branch_dropdown.visible = !on_details;
+
+        if (on_details) {
+            header_stack.set_visible_child_name ("title");
+            var dp = page.get_child () as DetailsPage;
+            title_lbl.label = dp != null ? (dp.title ?? _("Details")) : _("Details");
+        } else {
+            header_stack.set_visible_child_name ("search");
+            title_lbl.label = "PackageSearch";
+        }
+    }
+
+    public void open_about_dialog () {
         var about = new Adw.AboutDialog ();
         about.set_application_name ("PackageSearch");
         about.set_application_icon ("org.example.PackageSearch");
@@ -53,22 +133,48 @@ public class MainWindow : Adw.ApplicationWindow {
         var details = new DetailsPage (group, branch, this);
         var details_page = new Adw.NavigationPage (details, _("Details"));
         nav_view.push (details_page);
+        update_header_for_visible_page ();
     }
 
     public void open_prefs_dialog () {
-        var dlg = new Adw.AlertDialog ("Preferences", _("Not implemented yet"));
+        var dlg = new Adw.AlertDialog (_("Preferences"), _("Not implemented yet"));
         dlg.add_response ("ok", "OK");
         dlg.set_default_response ("ok");
         dlg.present (this);
     }
 
-    public void open_about_dialog () {
-        show_about ();
-    }
-
     public void quit_app () {
         var a = this.application as Adw.Application;
         if (a != null) a.quit ();
+    }
+
+    private void open_language_dialog () {
+        var dlg = new Adw.AlertDialog (_("Language"), _("Choose interface language"));
+        dlg.add_response ("sys", _("System"));
+        dlg.add_response ("en",  "English");
+        dlg.add_response ("ru",  "Русский");
+
+        var lang = Environment.get_variable ("LANGUAGE");
+        string def = "sys";
+        if (lang != null && lang != "") {
+            if (lang.has_prefix ("en")) def = "en";
+            else if (lang.has_prefix ("ru")) def = "ru";
+        }
+        dlg.set_default_response (def);
+        dlg.set_close_response ("close");
+
+        dlg.response.connect ((resp) => {
+            string? code = null;
+            switch (resp) {
+                case "sys": code = null; break;
+                case "en":  code = "en"; break;
+                case "ru":  code = "ru"; break;
+                default: return;
+            }
+            apply_language (code);
+        });
+
+        dlg.present (this);
     }
 
     public void apply_language (string? lang_code) {
@@ -95,3 +201,4 @@ public class MainWindow : Adw.ApplicationWindow {
         });
     }
 }
+

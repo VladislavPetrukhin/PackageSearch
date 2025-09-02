@@ -6,7 +6,82 @@ template $MainWindow : Adw.ApplicationWindow {
   default-width: 900;
   default-height: 600;
 
-  Adw.ToolbarView toolbar_view {
-    Adw.NavigationView nav_view { }
-  }
+  content: Adw.ToolbarView toolbar_view {
+    [top]
+    Adw.HeaderBar header_bar {
+      show-start-title-buttons: false;
+      show-end-title-buttons: false;
+
+      [start]
+      Gtk.Box {
+        spacing: 6;
+
+        Gtk.Button back_btn {
+          icon-name: "go-previous-symbolic";
+          tooltip-text: _("Back");
+          css-classes: ["flat", "circular"];
+          has-frame: false;
+          visible: false;
+          valign: center;
+        }
+
+        Gtk.DropDown branch_dropdown { valign: center; }
+      }
+
+      /* Центр: переключаем между поиском и заголовком */
+      title-widget: Gtk.Stack header_stack {
+        transition-type: crossfade;
+        hexpand: true;
+
+        Gtk.StackPage {
+          name: "search";
+          child: Gtk.Box {
+            hexpand: true;
+            halign: center;
+
+            Gtk.SearchEntry search_entry {
+              placeholder-text: _("Type a package name…");
+              activates-default: true;
+              width-request: 420;
+              valign: center;
+            }
+          };
+        }
+
+        Gtk.StackPage {
+          name: "title";
+          child: Gtk.Label title_lbl {
+            css-classes: ["title-3"];
+            ellipsize: end;
+            hexpand: true;
+            halign: center;
+            valign: center;
+          };
+        }
+      };
+
+      [end]
+      Gtk.Box {
+        spacing: 6;
+
+        Gtk.MenuButton menu_btn {
+          icon-name: "open-menu-symbolic";
+          tooltip-text: _("Menu");
+          css-classes: ["flat", "circular"];
+          has-frame: false;
+          valign: center;
+        }
+
+        Gtk.Button quit_btn {
+          icon-name: "window-close-symbolic";
+          tooltip-text: _("Quit");
+          css-classes: ["flat", "circular"];
+          has-frame: false;
+          valign: center;
+        }
+      }
+    }
+
+    content: Adw.NavigationView nav_view { };
+  };
 }

@@ -95,8 +95,6 @@ public class AltRepoClient : GLib.Object {
             cancellable         // cancellable
         );
 
-
-
         // Соберём кандидатов (только источники)
         var candidates = new Gee.ArrayList<Candidate> ();
         foreach (var pkg in resp.packages) {

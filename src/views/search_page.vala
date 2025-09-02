@@ -7,18 +7,17 @@ using Intl;
 
 [GtkTemplate (ui = "/org/example/PackageSearch/ui/search_page.ui")]
 public class SearchPage : Adw.NavigationPage {
-    [GtkChild] private unowned Gtk.SearchEntry     search_entry;
-    [GtkChild] private unowned Gtk.DropDown        branch_dropdown;
-    [GtkChild] private unowned Gtk.MenuButton      menu_btn;
-    [GtkChild] private unowned Gtk.Button          quit_btn;
     [GtkChild] private unowned Adw.ToastOverlay    toast_overlay;
-    [GtkChild] private unowned Gtk.Stack           content_stack;
+    [GtkChild] private unowned Adw.ViewStack       content_stack;
     [GtkChild] private unowned Gtk.ListView        list_view;
     [GtkChild] private unowned Gtk.ScrolledWindow  results_scroller;
 
     private GLib.ListStore   store;
     private Gtk.NoSelection  no_sel;
     private uint             debounce_id = 0;
+
+    private string current_query = "";
+    private string current_branch = "sisyphus";
 
     private static bool is_nonempty (string? s) {
         return s != null && s.strip ().length > 0;
@@ -27,11 +26,38 @@ public class SearchPage : Adw.NavigationPage {
         if (s == null) return false;
         string term = s.strip ();
         if (term.length < 2) return false;
-        try { var re = new Regex ("^[A-Za-z0-9._+-]+$"); return re.match (term); }
-        catch (Error e) { return term.length >= 2; }
+        try {
+            var re = new Regex ("^[A-Za-z0-9._+-]+$");
+            return re.match (term);
+        } catch (Error e) {
+            return term.length >= 2;
+        }
+    }
+
+    /* Публичные методы для управления извне (из MainWindow) */
+    public void set_query (string q) {
+        current_query = q.strip ();
+        if (current_query.length == 0) {
+            store.remove_all ();
+            show_idle ();
+        }
+    }
+    public void set_branch (string b) {
+        if (b == null || b.strip ().length == 0) return;
+        current_branch = b.strip ();
+    }
+    public void trigger_search_debounced () {
+        if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
+        if (current_query.length == 0) { store.remove_all (); show_idle (); return; }
+        debounce_id = Timeout.add (250, () => { trigger_search_now (); debounce_id = 0; return Source.REMOVE; });
+    }
+    public void trigger_search_now () {
+        if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
+        do_search.begin ();
     }
 
     construct {
+        /* CSS для карточек */
         var css = """
         .results-scroll,
         .results-scroll > .frame,
@@ -60,68 +86,11 @@ public class SearchPage : Adw.NavigationPage {
         if (disp != null)
             Gtk.StyleContext.add_provider_for_display (disp, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
 
-        var pop = new Gtk.Popover ();
-        menu_btn.set_popover (pop);
-
-        var pv = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
-        pv.margin_top = 6; pv.margin_bottom = 6; pv.margin_start = 6; pv.margin_end = 6;
-
-        // Language…
-        var btn_lang = new Gtk.Button.with_label (_("Language…"));
-        btn_lang.add_css_class ("flat"); btn_lang.halign = Gtk.Align.FILL;
-        btn_lang.clicked.connect (() => {
-            pop.popdown ();
-            open_language_dialog ();
-        });
-
-        // About
-        var btn_about = new Gtk.Button.with_label (_("About"));
-        btn_about.add_css_class ("flat"); btn_about.halign = Gtk.Align.FILL;
-        btn_about.clicked.connect (() => {
-            pop.popdown ();
-            var win = this.get_root () as Gtk.Window;
-
-            var about = new Adw.AboutDialog ();
-            about.set_application_name ("PackageSearch");
-            about.set_application_icon ("org.example.PackageSearch");
-            about.set_developer_name ("Vladislav Petrukhin");
-            about.set_version ("0.1");
-            about.set_issue_url ("https://altlinux.space/vladislavpetrukhin/PackageScan");
-            about.set_license_type (Gtk.License.GPL_3_0);
-            about.set_comments (_("GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus and p11 repositories and viewing detailed package information."));
-            about.set_website ("https://altlinux.space/vladislavpetrukhin/PackageScan");
-
-            about.present (win);
-        });
-
-
-
-        // Quit
-        var btn_quit_menu = new Gtk.Button.with_label (_("Quit"));
-        btn_quit_menu.add_css_class ("flat"); btn_quit_menu.halign = Gtk.Align.FILL;
-        btn_quit_menu.clicked.connect (() => {
-            pop.popdown ();
-            var win = this.get_root () as Gtk.Window;
-            var app = (win != null) ? (win.application as Adw.Application) : null;
-            if (app != null) app.quit ();
-        });
-
-        pv.append (btn_lang);
-        pv.append (btn_about);
-        pv.append (btn_quit_menu);
-        pop.set_child (pv);
-
-        quit_btn.clicked.connect (() => {
-            var win = this.get_root () as Gtk.Window;
-            var app = (win != null) ? (win.application as Adw.Application) : null;
-            if (app != null) app.quit ();
-        });
-
         store  = new GLib.ListStore (typeof (Data.SourceGroup));
         no_sel = new Gtk.NoSelection (store);
         list_view.model = no_sel;
 
-        // ===== Фабрика карточек =====
+        // Фабрика карточек
         var factory = new Gtk.SignalListItemFactory ();
         factory.setup.connect ((obj) => {
             var li = obj as Gtk.ListItem; if (li == null) return;
@@ -181,9 +150,8 @@ public class SearchPage : Adw.NavigationPage {
                 var obj_item = store.get_item (pos);
                 var sg = obj_item as Data.SourceGroup; if (sg == null) return;
 
-                var branch = current_branch ();
                 var win = this.get_root () as MainWindow;
-                if (win != null) win.show_details (sg, branch);
+                if (win != null) win.show_details (sg, current_branch);
             });
             frame.add_controller (click);
 
@@ -208,54 +176,7 @@ public class SearchPage : Adw.NavigationPage {
 
         list_view.factory = factory;
 
-        // Ветки
-        try {
-            var branches_model = new Gtk.StringList (null);
-            string[] branch_names = { "sisyphus", "p11" };
-            foreach (string b in branch_names) branches_model.append (b);
-            branch_dropdown.model = branches_model;
-            branch_dropdown.selected = 0;
-        } catch (Error e) {
-            warning ("[SearchPage] failed to init branches: %s", e.message);
-        }
-
         show_idle ();
-
-        // События
-        search_entry.search_changed.connect (() => debounce_search ());
-        search_entry.activate.connect (() => trigger_search_now ());
-        branch_dropdown.notify["selected"].connect (() => trigger_search_now ());
-    }
-
-    // ---------- Language dialog ----------
-    private void open_language_dialog () {
-        var dlg = new Adw.AlertDialog (_("Language"), _("Choose interface language"));
-        dlg.add_response ("sys", _("System"));
-        dlg.add_response ("en",  "English");
-        dlg.add_response ("ru",  "Русский");
-
-        var lang = Environment.get_variable ("LANGUAGE");
-        string def = "sys";
-        if (lang != null && lang != "") {
-            if (lang.has_prefix ("en")) def = "en";
-            else if (lang.has_prefix ("ru")) def = "ru";
-        }
-        dlg.set_default_response (def);
-        dlg.set_close_response ("close");
-
-        dlg.response.connect ((resp) => {
-            string? code = null;
-            switch (resp) {
-                case "sys": code = null; break;
-                case "en":  code = "en"; break;
-                case "ru":  code = "ru"; break;
-                default: return;
-            }
-            var win = this.get_root () as MainWindow;
-            if (win != null) win.apply_language (code);
-        });
-
-        dlg.present (this.get_root () as Gtk.Window);
     }
 
     private void show_idle ()    { content_stack.set_visible_child_name ("idle"); }
@@ -264,28 +185,20 @@ public class SearchPage : Adw.NavigationPage {
     private void show_empty ()   { content_stack.set_visible_child_name ("empty"); }
     private void show_error ()   { content_stack.set_visible_child_name ("error"); }
 
-    private string current_branch () {
-        int idx = (int) branch_dropdown.selected;
-        var m = branch_dropdown.model as Gtk.StringList;
-        if (m == null || idx < 0) return "sisyphus";
-        return m.get_string ((uint) idx);
-    }
-
-    private void debounce_search () {
-        if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
-        var term = (search_entry.text ?? "").strip ();
-        if (term.length == 0) { store.remove_all (); show_idle (); return; }
-        debounce_id = Timeout.add (250, () => { trigger_search_now (); debounce_id = 0; return Source.REMOVE; });
-    }
-    private void trigger_search_now () {
-        if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
-        do_search.begin ();
-    }
-
     private async void do_search () {
-        var term = (search_entry.text ?? "").strip ();
-        var branch = current_branch ();
-        if (!is_reasonable_term (term)) { store.remove_all (); show_idle (); return; }
+        var term = current_query;
+        var branch = current_branch;
+        if (term.length == 0) {
+        store.remove_all ();
+        show_idle ();
+        return;
+        }
+
+        if (!is_reasonable_term (term)) {
+            store.remove_all ();
+            show_idle ();
+            return;
+        }
 
         show_loading ();
 
