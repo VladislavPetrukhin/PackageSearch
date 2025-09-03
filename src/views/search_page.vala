@@ -19,6 +19,10 @@ public class SearchPage : Adw.NavigationPage {
     private string current_query = "";
     private string current_branch = "sisyphus";
 
+    // --- защита от гонок ---
+    private GLib.Cancellable? in_flight = null;
+    private uint64            query_seq = 0;
+
     public signal void open_details (Data.SourceGroup group, string branch);
 
     private static bool is_nonempty (string? s) {
@@ -38,24 +42,55 @@ public class SearchPage : Adw.NavigationPage {
 
     /* Публичные методы для управления извне (из MainWindow) */
     public void set_query (string q) {
-        current_query = q.strip ();
+        current_query = (q != null) ? q.strip () : "";
         if (current_query.length == 0) {
+            // очистка при пустом вводе + отмена текущего запроса
+            if (in_flight != null) { in_flight.cancel (); in_flight = null; }
+            if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
             store.remove_all ();
             show_idle ();
         }
     }
+
     public void set_branch (string b) {
         if (b == null || b.strip ().length == 0) return;
         current_branch = b.strip ();
     }
+
     public void trigger_search_debounced () {
         if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
-        if (current_query.length == 0) { store.remove_all (); show_idle (); return; }
-        debounce_id = Timeout.add (250, () => { trigger_search_now (); debounce_id = 0; return Source.REMOVE; });
+
+        if (current_query.length == 0) {
+            // Пусто — отменяем
+            if (in_flight != null) { in_flight.cancel (); in_flight = null; }
+            store.remove_all ();
+            show_idle ();
+            return;
+        }
+
+        debounce_id = Timeout.add (250, () => {
+            trigger_search_now ();
+            debounce_id = 0;
+            return Source.REMOVE;
+        });
     }
+
     public void trigger_search_now () {
         if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
-        do_search.begin ();
+
+        if (current_query.length == 0) {
+            if (in_flight != null) { in_flight.cancel (); in_flight = null; }
+            store.remove_all ();
+            show_idle ();
+            return;
+        }
+
+        // Отменяем предыдущий незавершённый запрос
+        if (in_flight != null) { in_flight.cancel (); in_flight = null; }
+        in_flight = new GLib.Cancellable ();
+        query_seq++;
+
+        do_search.begin (in_flight, query_seq);
     }
 
     construct {
@@ -187,16 +222,12 @@ public class SearchPage : Adw.NavigationPage {
     private void show_empty ()   { content_stack.set_visible_child_name ("empty"); }
     private void show_error ()   { content_stack.set_visible_child_name ("error"); }
 
-    private async void do_search () {
+    private async void do_search (GLib.Cancellable? cancellable, uint64 my_seq) {
         var term = current_query;
         var branch = current_branch;
-        if (term.length == 0) {
-            store.remove_all ();
-            show_idle ();
-            return;
-        }
 
-        if (!is_reasonable_term (term)) {
+        // За время дебаунса могли стереть запрос
+        if (term.length == 0 || !is_reasonable_term (term)) {
             store.remove_all ();
             show_idle ();
             return;
@@ -206,16 +237,28 @@ public class SearchPage : Adw.NavigationPage {
 
         var api = new Data.AltRepoClient ();
         try {
-            var results = yield api.search_source (branch, term);
+            var results = yield api.search_source (branch, term, cancellable);
+
+            // Если это не самый свежий запрос — игнорируем ответ
+            if (my_seq != query_seq) return;
+
             Idle.add (() => {
                 store.remove_all ();
-                if (results != null) foreach (var g in results) if (g != null) store.append (g);
+                if (results != null) {
+                    foreach (var g in results) if (g != null) store.append (g);
+                }
                 if (store.get_n_items () == 0) show_empty (); else show_results ();
                 return Source.REMOVE;
             });
         } catch (Error e) {
+            // Отменённый или устаревший запрос — выходим
+            if ((cancellable != null && cancellable.is_cancelled ()) || my_seq != query_seq)
+                return;
+
             warning ("[SearchPage] do_search(): %s", e.message);
             store.remove_all (); show_error ();
+        } finally {
+            if (cancellable == in_flight) in_flight = null;
         }
     }
 }

@@ -182,7 +182,7 @@ msgstr "Не удалось загрузить сведения о пакете"
 msgid "Menu"
 msgstr "Меню"
 
-#: src/window.vala:47
+#: src/window.vala:142
 msgid "GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus and p11 repositories and viewing detailed package information."
 msgstr "Приложение на GTK4/Libadwaita для поиска пакетов в репозиториях ALT Linux Sisyphus и p11 и просмотра подробной информации о пакете."
 

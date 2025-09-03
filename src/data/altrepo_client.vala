@@ -10,6 +10,7 @@ public class AltRepoClient : GLib.Object {
         cli = new AltRepo.Client ();
     }
 
+    // контейнер для сортировки
     private class Candidate : GLib.Object {
         public double score;
         public SourceGroup sg;
@@ -19,24 +20,24 @@ public class AltRepoClient : GLib.Object {
         }
     }
 
-    // --- helpers ---
-   private static string norm (string s) {
-    var out = new StringBuilder ();
-    string d = s.down ();
+    // ---------- helpers: нормализация имени ----------
+    // Оставляем только [a-z0-9], всё в нижний регистр
+    private static string norm (string s) {
+        var out = new StringBuilder ();
+        string d = s.down ();
 
-    int n = d.char_count ();
-    for (int i = 0; i < n; i++) {
-        int byte_idx = d.index_of_nth_char (i);
-        unichar c = d.get_char (byte_idx);
+        int n = d.char_count ();
+        for (int i = 0; i < n; i++) {
+            int byte_idx = d.index_of_nth_char (i);
+            unichar c = d.get_char (byte_idx);
 
-        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
-            out.append_unichar (c);
+            if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+                out.append_unichar (c);
+        }
+        return out.str;
     }
-    return out.str;
-    }
 
-
-
+    // ---------- helpers: расстояние Левенштейна ----------
     private static int lev (string a, string b) {
         int n = a.length;
         int m = b.length;
@@ -63,25 +64,66 @@ public class AltRepoClient : GLib.Object {
         return d[n*(m+1) + m];
     }
 
+    // Поиск префикса на границе слова: (^|[^a-z0-9])term
+    private static int first_word_prefix_pos (string name, string term) {
+        int n = name.length;
+        int tlen = term.length;
+        for (int i = 0; i <= n - tlen; i++) {
+            bool boundary = (i == 0);
+            if (!boundary) {
+                unichar p = name.get_char (name.index_of_nth_char (i - 1));
+                boundary = !((p >= 'a' && p <= 'z') || (p >= '0' && p <= '9'));
+            }
+            if (!boundary) continue;
+
+            bool match = true;
+            for (int k = 0; k < tlen; k++) {
+                unichar a = name.get_char (name.index_of_nth_char (i + k));
+                unichar b = term.get_char (term.index_of_nth_char (k));
+                if (a != b) { match = false; break; }
+            }
+            if (match) return i;
+        }
+        return -1;
+    }
+
+    // ---------- скоринг имени ----------
     private static double score_name (string name, string term) {
-        if (name == term) return 100.0;
-        if (name.has_prefix (term)) return 90.0;
-        if (name.index_of (term) >= 0) return 80.0;
+        // Сначала жёсткие правила c большими весами
+        if (name == term) return 1000.0;
+
+        if (name.has_prefix (term)) {
+            // чем меньше разница длин — тем лучше
+            return 900.0 - (name.length - term.length);
+        }
+
+        int wb = first_word_prefix_pos (name, term);
+        if (wb == 0) return 880.0;           // начало имени на границе слова
+        if (wb > 0)  return 860.0 - wb;      // дальше — ниже
+
+        int idx = name.index_of (term);
+        if (idx >= 0) {
+            // Подстрока: ранняя позиция и малая разница длин — лучше
+            double pos_penalty = idx;
+            double len_penalty = (name.length - term.length);
+            return 800.0 - pos_penalty - 0.5*len_penalty;
+        }
 
         int dist = lev (name, term);
         int L = (name.length > term.length) ? name.length : term.length;
         double sim = 1.0 - ((double) dist / (double) L); // 0..1
         if (sim < 0.0) sim = 0.0;
-        return 70.0 * sim; // 0..70
+
+        double length_bias = 1.0 / (1.0 + (name.length - term.length));
+        if (length_bias < 0.2) length_bias = 0.2;
+
+        return 700.0 * sim * length_bias;
     }
 
-    // Поиск source-пакетов по имени в ветке
+    // ---------- Поиск source-пакетов ----------
     public async Gee.ArrayList<SourceGroup> search_source (
         string branch, string term, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
-        // Расширяем лимит, иначе «firefox» может не попасть в сырой ответ
-        const int LIMIT = 500;
-
         var term_raw = term.strip ();
         var term_n = norm (term_raw);
         if (term_n.length < 2) return new Gee.ArrayList<SourceGroup> ();
@@ -95,11 +137,11 @@ public class AltRepoClient : GLib.Object {
             cancellable         // cancellable
         );
 
-        // Соберём кандидатов (только источники)
         var candidates = new Gee.ArrayList<Candidate> ();
         foreach (var pkg in resp.packages) {
             if (pkg.by_binary) continue;
 
+            // Берём лучшую актуальную версию в этой ветке
             AltRepo.SitePackageVersionsElement? best = null;
             foreach (var v in pkg.versions) {
                 if (v.branch == branch && !v.deleted) { best = v; break; }
@@ -117,19 +159,26 @@ public class AltRepoClient : GLib.Object {
             candidates.add (new Candidate (s, g));
         }
 
-       candidates.sort ((a, b) => {
+        // сортировка
+        candidates.sort ((a, b) => {
             if (a.score > b.score) return -1;
             if (a.score < b.score) return 1;
+
+            int la = a.sg.name.length;
+            int lb = b.sg.name.length;
+            if (la != lb) return (la < lb) ? -1 : 1;
+
             return strcmp (a.sg.name, b.sg.name);
         });
 
+        // Берём верхние 100 результата
         int cap = (candidates.size < 100) ? candidates.size : 100;
         for (int i = 0; i < cap; i++) groups.add (candidates[i].sg);
 
         return groups;
     }
 
-    // Детали source-пакета + список бинарей
+    // ---------- Детали source-пакета + список бинарей ----------
     public async PackageDetails get_source_details (
         string branch, string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
@@ -166,12 +215,15 @@ public class AltRepoClient : GLib.Object {
         return details;
     }
 
+    // ---------- Changelog ----------
     public async AltRepo.SiteChangelog get_changelog (
         string branch, string src_name, int64 last = 50, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
         var h = cli.get_site_pkghash_by_name (branch, src_name, cancellable);
         var pkghash = int64.parse (h.pkghash);
-        return yield cli.get_site_package_changelog_pkghash_async (pkghash, last, Priority.DEFAULT, cancellable);
+        return yield cli.get_site_package_changelog_pkghash_async (
+            pkghash, last, Priority.DEFAULT, cancellable
+        );
     }
 }
 
