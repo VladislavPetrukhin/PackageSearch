@@ -1,0 +1,5 @@
+<schemalist gettext-domain="packagesearch">
+  <schema id="space.altlinux.PackageSearch" path="/space/altlinux/PackageSearch/">
+  </schema>
+</schemalist>
+

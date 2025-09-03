@@ -1,0 +1,56 @@
+{
+  "id": "space.altlinux.PackageSearch",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "47",
+  "sdk": "org.gnome.Sdk",
+  "sdk-extensions": [
+    "org.freedesktop.Sdk.Extension.vala"
+  ],
+  "command": "packagesearch",
+
+  "finish-args": [
+    "--share=network",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--device=dri"
+  ],
+
+  "build-options": {
+    "append-path": "/usr/lib/sdk/vala/bin",
+    "prepend-ld-library-path": "/usr/lib/sdk/vala/lib",
+    "env": {
+      "V": "1"
+    }
+  },
+
+  "cleanup": [
+    "/include",
+    "/lib/pkgconfig",
+    "/man",
+    "/share/doc",
+    "/share/gtk-doc",
+    "/share/man",
+    "/share/pkgconfig",
+    "/share/vala",
+    "*.la",
+    "*.a"
+  ],
+
+  "modules": [
+    {
+      "name": "packagesearch",
+      "buildsystem": "meson",
+      "builddir": true,
+      "config-opts": [
+        "-Dprefix=/app"
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://altlinux.space/vladislavpetrukhin/PackageScan",
+          "branch": "main"
+        }
+      ]
+    }
+  ]
+}

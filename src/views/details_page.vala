@@ -3,7 +3,7 @@ using Adw;
 using GLib;
 using Gdk;
 
-[GtkTemplate (ui = "/org/example/PackageSearch/ui/details_page.ui")]
+[GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/details_page.ui")]
 public class DetailsPage : Adw.NavigationPage {
     private Data.SourceGroup group;
     private string branch;

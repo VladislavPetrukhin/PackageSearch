@@ -1,4 +1,8 @@
 bp = find_program('blueprint-compiler', required: true)
+i18n = import('i18n')
+
+desktop_conf = configuration_data()
+desktop_conf.set('APP_ID', app_id)
 
 ui_main = custom_target(
   'main_window.ui',
@@ -27,7 +31,7 @@ ui_details = custom_target(
 gresource_xml = configure_file(
   input: files('resources.gresource.xml.in'),
   output: 'resources.gresource.xml',
-  configuration: { 'PREFIX': '/org/example/PackageSearch' }
+  configuration: { 'PREFIX': '/space/altlinux/PackageSearch' }
 )
 
 resources = gnome.compile_resources(
@@ -37,3 +41,4 @@ resources = gnome.compile_resources(
   dependencies: [ui_main, ui_search, ui_details],
   c_name: 'packagesearch'
 )
+

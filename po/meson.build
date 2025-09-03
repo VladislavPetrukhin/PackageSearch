@@ -1,6 +1,5 @@
 i18n = import('i18n')
-
-domain = 'org.example.PackageSearch'
+domain = 'space.altlinux.PackageSearch'
 
 i18n.gettext(domain,
   preset: 'glib',

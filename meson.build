@@ -2,8 +2,9 @@ project('PackageSearch', 'vala', version: '0.1.0', meson_version: '>= 0.61')
 
 fs = import('fs')
 gnome = import('gnome')
+i18n = import('i18n')
 
-app_id = 'org.example.PackageSearch'
+app_id = 'space.altlinux.PackageSearch'
 
 gtk4_dep = dependency('gtk4', version: '>=4.12')
 adw_dep  = dependency('libadwaita-1', version: '>=1.4')
@@ -40,4 +41,8 @@ executable(
   dependencies: [gtk4_dep, adw_dep, json_dep, gee_dep, alt_repo_dep],
   vala_args: vala_extra_args,
   install: true
+)
+gnome.post_install(
+  glib_compile_schemas: true,
+  update_desktop_database: true,
 )

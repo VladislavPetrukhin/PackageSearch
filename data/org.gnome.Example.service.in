@@ -1,3 +1,0 @@
-[D-BUS Service]
-Name=org.gnome.Example
-Exec=@bindir@/packagescan --gapplication-service

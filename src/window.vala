@@ -6,7 +6,7 @@ using Adw;
 using GLib;
 using Intl;
 
-[GtkTemplate (ui = "/org/example/PackageSearch/ui/main_window.ui")]
+[GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/main_window.ui")]
 public class MainWindow : Adw.ApplicationWindow {
     [GtkChild] private unowned Adw.ToolbarView    toolbar_view;
     [GtkChild] private unowned Adw.NavigationView nav_view;
@@ -22,7 +22,7 @@ public class MainWindow : Adw.ApplicationWindow {
 
     /* Actions для меню */
     private const GLib.ActionEntry[] WIN_ACTIONS = {
-        { "language", on_action_language },
+        //{ "language", on_action_language },
         { "about",    on_action_about    },
         { "quit",     on_action_quit     }
     };

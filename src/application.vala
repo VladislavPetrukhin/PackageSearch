@@ -5,7 +5,7 @@ using GLib;
 
 public class PackageSearchApp : Adw.Application {
     public PackageSearchApp () {
-        Object (application_id: "org.example.PackageSearch",
+        Object (application_id: "space.altlinux.PackageSearch",
                 flags: ApplicationFlags.DEFAULT_FLAGS);
     }
 

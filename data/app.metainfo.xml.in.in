@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APP_ID@</id>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>PackageSearch</name>
+  <summary>Search ALT Linux packages (Sisyphus & p11)</summary>
+  <description>
+    <p>Graphical search for source packages in ALT Linux Sisyphus and p11 repositories with detailed metadata and changelog.</p>
+  </description>
+
+  <developer id="altlinux.space">
+    <name>Vladislav Petrukhin</name>
+  </developer>
+
+  <launchable type="desktop-id">@APP_ID@.desktop</launchable>
+
+  <url type="homepage">https://altlinux.space/vladislavpetrukhin/PackageScan</url>
+  <url type="vcs-browser">https://altlinux.space/vladislavpetrukhin/PackageScan</url>
+  <url type="bugtracker">https://altlinux.space/vladislavpetrukhin/PackageScan/issues</url>
+  <provides>
+    <binary>packagesearch</binary>
+  </provides>
+
+  <releases>
+    <release version="0.1.0" date="2025-09-03">
+      <description>
+        <p>Initial release.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+</component>
+

@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: org.example.PackageSearch 0.1\n"
+"Project-Id-Version: space.altlinux.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-09-03 21:24+0300\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
@@ -11,7 +11,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. DetailsPage
 #: src/application.vala:47 src/window.vala:122 src/window.vala:131
 #: build/data/details_page.ui:10
