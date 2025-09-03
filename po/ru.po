@@ -11,6 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. DetailsPage
 #: src/application.vala:47 src/window.vala:122 src/window.vala:131
 #: build/data/details_page.ui:10

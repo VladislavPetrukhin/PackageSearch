@@ -1,6 +1,8 @@
 bp = find_program('blueprint-compiler', required: true)
 i18n = import('i18n')
 
+app_id = 'space.altlinux.PackageSearch'
+
 desktop_conf = configuration_data()
 desktop_conf.set('APP_ID', app_id)
 
@@ -40,5 +42,43 @@ resources = gnome.compile_resources(
   source_dir: meson.current_build_dir(),
   dependencies: [ui_main, ui_search, ui_details],
   c_name: 'packagesearch'
+)
+
+subdir('icons')
+
+desktop_conf = configuration_data()
+desktop_conf.set('APP_ID', app_id)
+
+configured_desktop = configure_file(
+  input: files('app.desktop.in'),
+  output: '@0@.desktop.in'.format(app_id),
+  configuration: desktop_conf,
+)
+
+i18n.merge_file(
+  input: configured_desktop,
+  output: '@0@.desktop'.format(app_id),
+  po_dir: join_paths(meson.source_root(), 'po'),
+  install: true,
+  install_dir: get_option('datadir') / 'applications',
+  type: 'desktop',
+)
+
+metainfo_conf = configuration_data()
+metainfo_conf.set('APP_ID', app_id)
+
+configured_metainfo = configure_file(
+  input: files('app.metainfo.xml.in.in'),
+  output: '@0@.metainfo.xml.in'.format(app_id),
+  configuration: metainfo_conf,
+)
+
+i18n.merge_file(
+  input: configured_metainfo,
+  output: '@0@.metainfo.xml'.format(app_id),
+  po_dir: join_paths(meson.source_root(), 'po'),
+  install: true,
+  install_dir: get_option('datadir') / 'metainfo',
+  type: 'xml',
 )
 

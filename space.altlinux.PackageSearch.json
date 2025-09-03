@@ -45,9 +45,8 @@
         "-Dprefix=/app"
       ],
       "sources": [
-        {
           "type": "git",
-          "url": "https://altlinux.space/vladislavpetrukhin/PackageScan",
+          "url": "https://altlinux.space/vladislavpetrukhin/PackageSearch",
           "branch": "main"
         }
       ]

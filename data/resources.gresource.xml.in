@@ -4,6 +4,8 @@
     <file>main_window.ui</file>
     <file>search_page.ui</file>
     <file>details_page.ui</file>
+    <file>icons/hicolor/scalable/apps/space.altlinux.PackageSearch.svg</file>
+    <file>icons/hicolor/symbolic/apps/space.altlinux.PackageSearch-symbolic.svg</file>
   </gresource>
 </gresources>
 

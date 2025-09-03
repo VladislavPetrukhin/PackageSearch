@@ -133,14 +133,14 @@ public class MainWindow : Adw.ApplicationWindow {
 
     public void open_about_dialog () {
         var about = new Adw.AboutDialog ();
+        about.set_application_icon("space.altlinux.PackageSearch");
         about.set_application_name ("PackageSearch");
-        about.set_application_icon ("org.example.PackageSearch");
         about.set_developer_name ("Vladislav Petrukhin");
         about.set_version ("0.1");
-        about.set_issue_url ("https://altlinux.space/vladislavpetrukhin/PackageScan");
+        about.set_issue_url ("https://altlinux.space/vladislavpetrukhin/PackageSearch");
         about.set_license_type (Gtk.License.GPL_3_0);
         about.set_comments (_("GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus and p11 repositories and viewing detailed package information."));
-        about.set_website ("https://altlinux.space/vladislavpetrukhin/PackageScan");
+        about.set_website ("https://altlinux.space/vladislavpetrukhin/PackageSearch");
         about.present (this);
     }
 

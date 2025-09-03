@@ -27,9 +27,11 @@ public class PackageSearchApp : Adw.Application {
     public static void init_gettext () {
         Intl.setlocale (LocaleCategory.ALL, "");
         var locdir = detect_locale_dir ();
-        Intl.bindtextdomain ("org.example.PackageSearch", locdir);
-        Intl.bind_textdomain_codeset ("org.example.PackageSearch", "UTF-8");
-        Intl.textdomain ("org.example.PackageSearch");
+        const string DOMAIN = "space.altlinux.PackageSearch";
+        Intl.bindtextdomain (DOMAIN, locdir);
+        Intl.bind_textdomain_codeset (DOMAIN, "UTF-8");
+        Intl.textdomain (DOMAIN);
+
     }
 
     protected override void activate () {

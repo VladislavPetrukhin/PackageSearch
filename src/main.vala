@@ -23,6 +23,6 @@ int main (string[] args) {
     Intl.bind_textdomain_codeset (Config.GETTEXT_PACKAGE, "UTF-8");
     Intl.textdomain (Config.GETTEXT_PACKAGE);
 
-    var app = new Packagescan.Application ();
+    var app = new Packagesearch.Application ();
     return app.run (args);
 }
