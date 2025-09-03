@@ -65,7 +65,7 @@ public class DetailsPage : Adw.NavigationPage {
         header.append (title_lbl);
 
         var copy_btn = new Gtk.Button.with_label (_("Copy"));
-        copy_btn.add_css_class ("flat");
+        //copy_btn.add_css_class ("flat");
         copy_btn.clicked.connect (() => {
             var disp = Gdk.Display.get_default ();
             if (disp != null) {
@@ -76,7 +76,8 @@ public class DetailsPage : Adw.NavigationPage {
         header.append (copy_btn);
 
         var close_btn = new Gtk.Button.with_label (_("Close"));
-        close_btn.add_css_class ("flat");
+        //close_btn.add_css_class ("flat");
+        close_btn.add_css_class ("suggested-action");
         close_btn.clicked.connect (() => dlg.close ());
         header.append (close_btn);
 

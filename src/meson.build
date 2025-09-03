@@ -5,5 +5,4 @@ src = files(
   'views/details_page.vala',
   'data/models.vala',
   'data/altrepo_client.vala',
-  'prefs_window.vala',
 )

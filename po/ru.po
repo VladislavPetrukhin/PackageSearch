@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.example.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-02 20:44+0300\n"
+"POT-Creation-Date: 2025-09-03 21:24+0300\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -11,186 +11,208 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. DetailsPage
-#: src/application.vala:47 src/window.vala:52 build/data/details_page.ui:10
+#: src/application.vala:47 src/window.vala:122 src/window.vala:131
+#: build/data/details_page.ui:10
 msgid "Details"
 msgstr "Подробности"
 
-#: src/application.vala:47
+#: src/application.vala:47 build/data/main_window.ui:25
 msgid "Back"
 msgstr "Назад"
 
-#: src/application.vala:47 build/data/details_page.ui:78
+#: src/application.vala:47 build/data/details_page.ui:38
 msgid "Info"
 msgstr "Информация"
 
-#: src/application.vala:47 build/data/details_page.ui:83
+#: src/application.vala:47 build/data/details_page.ui:43
 msgid "Binaries"
 msgstr "Бинарные пакеты"
 
-#: src/application.vala:47 src/views/details_page.vala:222
-#: build/data/details_page.ui:88
+#: src/application.vala:47 src/views/details_page.vala:141
+#: build/data/details_page.ui:48
 msgid "Changelog"
 msgstr "История изменений"
 
-#: src/application.vala:47 build/data/details_page.ui:121
+#: src/application.vala:47 build/data/details_page.ui:80
 msgid "Loading data…"
 msgstr "Загрузка данных…"
 
+#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. SearchPage
-#. первая страница
-#: src/application.vala:49 src/window.vala:35 build/data/search_page.ui:10
+#: src/application.vala:49 src/window.vala:43 build/data/search_page.ui:10
+#: build/data/search_page.ui:19
 msgid "Search"
 msgstr "Поиск"
 
-#: src/application.vala:49 build/data/search_page.ui:29
+#: src/application.vala:49 build/data/main_window.ui:53
 msgid "Type a package name…"
 msgstr "Введите имя пакета…"
 
-#: src/application.vala:49 build/data/search_page.ui:71
+#: src/application.vala:49 build/data/search_page.ui:23
 msgid "Search packages"
 msgstr "Поиск пакетов"
 
-#: src/application.vala:50 build/data/search_page.ui:72
+#: src/application.vala:50 build/data/search_page.ui:24
 msgid "Start typing a source package name, then pick it from the results."
 msgstr "Начните вводить имя исходного пакета и выберите его из результатов."
 
-#: src/application.vala:51 build/data/search_page.ui:99
+#: src/application.vala:51 build/data/search_page.ui:51
 msgid "Loading results…"
 msgstr "Загрузка результатов…"
 
-#: src/application.vala:51 build/data/search_page.ui:143
+#: src/application.vala:51 build/data/search_page.ui:93
+#: build/data/search_page.ui:97
 msgid "No results"
 msgstr "Нет результатов"
 
-#: src/application.vala:51 build/data/search_page.ui:144
+#: src/application.vala:51 build/data/search_page.ui:98
 msgid "Try refining your query or choose another branch."
 msgstr "Попробуйте уточнить запрос или выберите другую ветку."
 
-#: src/application.vala:52 build/data/search_page.ui:155
+#: src/application.vala:52 build/data/search_page.ui:106
+#: build/data/search_page.ui:110
 msgid "Error"
 msgstr "Ошибка"
 
-#: src/application.vala:52 build/data/search_page.ui:156
+#: src/application.vala:52 build/data/search_page.ui:111
 msgid "Failed to fetch data. Check your connection and package name."
 msgstr "Не удалось получить данные. Проверьте соединение и имя пакета."
 
-#: src/window.vala:57
-msgid "Not implemented yet"
-msgstr "Пока не реализовано"
-
-#: src/prefs_window.vala:14
-msgid "Preferences"
-msgstr "Настройки"
-
-#: src/prefs_window.vala:17
-msgid "General"
+#: src/window.vala:144
+msgid ""
+"GTK4/Libadwaita application for searching for packages in the ALT Linux "
+"Sisyphus and p11 repositories and viewing detailed package information."
 msgstr ""
+"Приложение на GTK4/Libadwaita для поиска пакетов в репозиториях ALT Linux "
+"Sisyphus и p11 и просмотра подробной информации о пакете."
 
-#. ---------- Language dialog ----------
-#: src/prefs_window.vala:20 src/views/search_page.vala:229
-#: src/views/details_page.vala:89
+#: src/window.vala:155
 msgid "Language"
 msgstr "Язык"
 
-#: src/prefs_window.vala:21
-msgid "Language switch"
-msgstr "Язык"
-
-#: src/prefs_window.vala:25 src/views/search_page.vala:230
-#: src/views/details_page.vala:90
-msgid "System"
-msgstr "Системный"
-
-#. Language…
-#: src/views/search_page.vala:70 src/views/details_page.vala:37
-msgid "Language…"
-msgstr "Язык…"
-
-#. About
-#: src/views/search_page.vala:78 src/views/details_page.vala:45
-msgid "About"
-msgstr "О приложении"
-
-#. Quit
-#: src/views/search_page.vala:94 src/views/details_page.vala:49
-#: build/data/search_page.ui:49
-msgid "Quit"
-msgstr "Выход"
-
-#: src/views/search_page.vala:229 src/views/details_page.vala:89
+#: src/window.vala:155
 msgid "Choose interface language"
 msgstr "Выберите язык интерфейса"
 
-#: src/views/details_page.vala:154
+#: src/window.vala:156
+msgid "System"
+msgstr "Системный"
+
+#: src/window.vala:208
+msgid "Restart required"
+msgstr "Требуется перезапуск"
+
+#: src/window.vala:209
+msgid "To apply the language change, the app needs to restart."
+msgstr "Чтобы сменить язык, необходимо перезапустить приложение."
+
+#: src/window.vala:211
+msgid "Cancel"
+msgstr "Отмена"
+
+#: src/window.vala:212
+msgid "Restart now"
+msgstr "Перезапустить"
+
+#: src/window.vala:261
+msgid "Restart failed"
+msgstr "Не удалось перезапустить"
+
+#: src/views/details_page.vala:67
 msgid "Copy"
 msgstr "Копировать"
 
-#: src/views/details_page.vala:164 build/data/details_page.ui:41
+#: src/views/details_page.vala:78
 msgid "Close"
 msgstr "Закрыть"
 
-#: src/views/details_page.vala:204
+#: src/views/details_page.vala:118
 msgid "Version"
 msgstr "Версия"
 
-#: src/views/details_page.vala:205
+#: src/views/details_page.vala:119
 msgid "Release"
 msgstr "Релиз"
 
-#: src/views/details_page.vala:206
+#: src/views/details_page.vala:120
 msgid "Maintainer"
 msgstr "Сопровождающий"
 
-#: src/views/details_page.vala:207
+#: src/views/details_page.vala:121
 msgid "Group"
 msgstr "Группа"
 
-#: src/views/details_page.vala:208
+#: src/views/details_page.vala:122
 msgid "License"
 msgstr "Лицензия"
 
-#: src/views/details_page.vala:209
+#: src/views/details_page.vala:125
 msgid "Homepage"
 msgstr "Домашняя страница"
 
-#: src/views/details_page.vala:210
+#: src/views/details_page.vala:129
 msgid "Summary"
 msgstr "Краткое описание"
 
-#: src/views/details_page.vala:211
+#: src/views/details_page.vala:130
 msgid "Description"
 msgstr "Описание"
 
-#: src/views/details_page.vala:242
+#: src/views/details_page.vala:161
 msgid "Change"
 msgstr "Изменение"
 
-#: src/views/details_page.vala:255
+#: src/views/details_page.vala:174
 msgid "No changes found"
 msgstr "Изменений не найдено"
 
-#: src/views/details_page.vala:262
+#: src/views/details_page.vala:181
 msgid "Changelog unavailable"
 msgstr "История изменений недоступна"
 
-#: src/views/details_page.vala:272
+#: src/views/details_page.vala:187
 msgid "Failed to load package details"
 msgstr "Не удалось загрузить сведения о пакете"
 
-#: build/data/search_page.ui:42 build/data/details_page.ui:34
+#: build/data/main_window.ui:85
 msgid "Menu"
 msgstr "Меню"
 
-#: src/window.vala:142
-msgid "GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus and p11 repositories and viewing detailed package information."
-msgstr "Приложение на GTK4/Libadwaita для поиска пакетов в репозиториях ALT Linux Sisyphus и p11 и просмотра подробной информации о пакете."
+#: build/data/main_window.ui:106
+msgid "Language…"
+msgstr "Язык…"
+
+#: build/data/main_window.ui:110
+msgid "About"
+msgstr "О приложении"
+
+#: build/data/main_window.ui:116
+msgid "Quit"
+msgstr "Выход"
+
+#: build/data/search_page.ui:32
+#, fuzzy
+msgid "Loading"
+msgstr "Загрузка данных…"
+
+#: build/data/search_page.ui:63
+#, fuzzy
+msgid "Results"
+msgstr "Нет результатов"
+
+#~ msgid "Not implemented yet"
+#~ msgstr "Пока не реализовано"
+
+#~ msgid "Preferences"
+#~ msgstr "Настройки"
+
+#~ msgid "Language switch"
+#~ msgstr "Язык"
 
 #~ msgid "System Language"
 #~ msgstr "Системный язык"
-
-#~ msgid "Restart failed"
-#~ msgstr "Не удалось перезапустить"
 
 #~ msgid "English"
 #~ msgstr "Английский"

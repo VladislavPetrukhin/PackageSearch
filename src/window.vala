@@ -172,7 +172,7 @@ public class MainWindow : Adw.ApplicationWindow {
                 case "ru":  code = "ru";  break;
                 default: return;
             }
-            apply_language (code);
+            show_restart_prompt (code);
         });
 
         dlg.present (this);
@@ -201,5 +201,24 @@ public class MainWindow : Adw.ApplicationWindow {
             return Source.REMOVE;
         });
     }
+    private void show_restart_prompt (string? lang_code) {
+        var dlg = new Adw.AlertDialog (
+            _("Restart required"),
+            _("To apply the language change, the app needs to restart.")
+        );
+        dlg.add_response ("cancel",  _("Cancel"));
+        dlg.add_response ("restart", _("Restart now"));
+        dlg.set_response_appearance ("restart", Adw.ResponseAppearance.SUGGESTED);
+        dlg.set_close_response ("cancel");
+
+        dlg.response.connect ((id) => {
+            if (id == "restart") {
+                apply_language (lang_code);
+            }
+        });
+
+        dlg.present (this);
+    }
+
 }
 

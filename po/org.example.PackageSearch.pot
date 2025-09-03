@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-02 22:15+0300\n"
+"POT-Creation-Date: 2025-09-03 21:24+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,180 +19,187 @@ msgstr ""
 
 #. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. DetailsPage
-#: src/application.vala:47 src/window.vala:54 build/data/details_page.ui:10
+#: src/application.vala:47 src/window.vala:122 src/window.vala:131
+#: build/data/details_page.ui:10
 msgid "Details"
 msgstr ""
 
-#: src/application.vala:47
+#: src/application.vala:47 build/data/main_window.ui:25
 msgid "Back"
 msgstr ""
 
-#: src/application.vala:47 build/data/details_page.ui:78
+#: src/application.vala:47 build/data/details_page.ui:38
 msgid "Info"
 msgstr ""
 
-#: src/application.vala:47 build/data/details_page.ui:83
+#: src/application.vala:47 build/data/details_page.ui:43
 msgid "Binaries"
 msgstr ""
 
-#: src/application.vala:47 src/views/details_page.vala:222
-#: build/data/details_page.ui:88
+#: src/application.vala:47 src/views/details_page.vala:141
+#: build/data/details_page.ui:48
 msgid "Changelog"
 msgstr ""
 
-#: src/application.vala:47 build/data/details_page.ui:121
+#: src/application.vala:47 build/data/details_page.ui:80
 msgid "Loading data…"
 msgstr ""
 
 #. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. SearchPage
-#. первая страница
-#: src/application.vala:49 src/window.vala:35 build/data/search_page.ui:10
+#: src/application.vala:49 src/window.vala:43 build/data/search_page.ui:10
+#: build/data/search_page.ui:19
 msgid "Search"
 msgstr ""
 
-#: src/application.vala:49 build/data/search_page.ui:29
+#: src/application.vala:49 build/data/main_window.ui:53
 msgid "Type a package name…"
 msgstr ""
 
-#: src/application.vala:49 build/data/search_page.ui:71
+#: src/application.vala:49 build/data/search_page.ui:23
 msgid "Search packages"
 msgstr ""
 
-#: src/application.vala:50 build/data/search_page.ui:72
+#: src/application.vala:50 build/data/search_page.ui:24
 msgid "Start typing a source package name, then pick it from the results."
 msgstr ""
 
-#: src/application.vala:51 build/data/search_page.ui:99
+#: src/application.vala:51 build/data/search_page.ui:51
 msgid "Loading results…"
 msgstr ""
 
-#: src/application.vala:51 build/data/search_page.ui:143
+#: src/application.vala:51 build/data/search_page.ui:93
+#: build/data/search_page.ui:97
 msgid "No results"
 msgstr ""
 
-#: src/application.vala:51 build/data/search_page.ui:144
+#: src/application.vala:51 build/data/search_page.ui:98
 msgid "Try refining your query or choose another branch."
 msgstr ""
 
-#: src/application.vala:52 build/data/search_page.ui:155
+#: src/application.vala:52 build/data/search_page.ui:106
+#: build/data/search_page.ui:110
 msgid "Error"
 msgstr ""
 
-#: src/application.vala:52 build/data/search_page.ui:156
+#: src/application.vala:52 build/data/search_page.ui:111
 msgid "Failed to fetch data. Check your connection and package name."
 msgstr ""
 
-#: src/window.vala:47 src/views/search_page.vala:91
+#: src/window.vala:144
 msgid ""
 "GTK4/Libadwaita application for searching for packages in the ALT Linux "
 "Sisyphus and p11 repositories and viewing detailed package information."
 msgstr ""
 
-#: src/window.vala:59
-msgid "Not implemented yet"
-msgstr ""
-
-#: src/prefs_window.vala:14
-msgid "Preferences"
-msgstr ""
-
-#: src/prefs_window.vala:17
-msgid "General"
-msgstr ""
-
-#. ---------- Language dialog ----------
-#: src/prefs_window.vala:20 src/views/search_page.vala:234
-#: src/views/details_page.vala:89
+#: src/window.vala:155
 msgid "Language"
 msgstr ""
 
-#: src/prefs_window.vala:21
-msgid "Language switch"
-msgstr ""
-
-#: src/prefs_window.vala:25 src/views/search_page.vala:235
-#: src/views/details_page.vala:90
-msgid "System"
-msgstr ""
-
-#. Language…
-#: src/views/search_page.vala:70 src/views/details_page.vala:37
-msgid "Language…"
-msgstr ""
-
-#. About
-#: src/views/search_page.vala:78 src/views/details_page.vala:45
-msgid "About"
-msgstr ""
-
-#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
-#. Quit
-#: src/views/search_page.vala:99 src/views/details_page.vala:49
-#: build/data/search_page.ui:49
-msgid "Quit"
-msgstr ""
-
-#: src/views/search_page.vala:234 src/views/details_page.vala:89
+#: src/window.vala:155
 msgid "Choose interface language"
 msgstr ""
 
-#: src/views/details_page.vala:154
+#: src/window.vala:156
+msgid "System"
+msgstr ""
+
+#: src/window.vala:208
+msgid "Restart required"
+msgstr ""
+
+#: src/window.vala:209
+msgid "To apply the language change, the app needs to restart."
+msgstr ""
+
+#: src/window.vala:211
+msgid "Cancel"
+msgstr ""
+
+#: src/window.vala:212
+msgid "Restart now"
+msgstr ""
+
+#: src/window.vala:261
+msgid "Restart failed"
+msgstr ""
+
+#: src/views/details_page.vala:67
 msgid "Copy"
 msgstr ""
 
-#: src/views/details_page.vala:164 build/data/details_page.ui:41
+#: src/views/details_page.vala:78
 msgid "Close"
 msgstr ""
 
-#: src/views/details_page.vala:204
+#: src/views/details_page.vala:118
 msgid "Version"
 msgstr ""
 
-#: src/views/details_page.vala:205
+#: src/views/details_page.vala:119
 msgid "Release"
 msgstr ""
 
-#: src/views/details_page.vala:206
+#: src/views/details_page.vala:120
 msgid "Maintainer"
 msgstr ""
 
-#: src/views/details_page.vala:207
+#: src/views/details_page.vala:121
 msgid "Group"
 msgstr ""
 
-#: src/views/details_page.vala:208
+#: src/views/details_page.vala:122
 msgid "License"
 msgstr ""
 
-#: src/views/details_page.vala:209
+#: src/views/details_page.vala:125
 msgid "Homepage"
 msgstr ""
 
-#: src/views/details_page.vala:210
+#: src/views/details_page.vala:129
 msgid "Summary"
 msgstr ""
 
-#: src/views/details_page.vala:211
+#: src/views/details_page.vala:130
 msgid "Description"
 msgstr ""
 
-#: src/views/details_page.vala:242
+#: src/views/details_page.vala:161
 msgid "Change"
 msgstr ""
 
-#: src/views/details_page.vala:255
+#: src/views/details_page.vala:174
 msgid "No changes found"
 msgstr ""
 
-#: src/views/details_page.vala:262
+#: src/views/details_page.vala:181
 msgid "Changelog unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:272
+#: src/views/details_page.vala:187
 msgid "Failed to load package details"
 msgstr ""
 
-#: build/data/details_page.ui:34 build/data/search_page.ui:42
+#: build/data/main_window.ui:85
 msgid "Menu"
+msgstr ""
+
+#: build/data/main_window.ui:106
+msgid "Language…"
+msgstr ""
+
+#: build/data/main_window.ui:110
+msgid "About"
+msgstr ""
+
+#: build/data/main_window.ui:116
+msgid "Quit"
+msgstr ""
+
+#: build/data/search_page.ui:32
+msgid "Loading"
+msgstr ""
+
+#: build/data/search_page.ui:63
+msgid "Results"
 msgstr ""
