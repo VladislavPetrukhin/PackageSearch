@@ -108,7 +108,6 @@ public class DetailsPage : Adw.NavigationPage {
             var api = new Data.AltRepoClient ();
             var d = yield api.get_source_details (branch, group.name);
 
-            // Обновить заголовок страницы версией
             var vr = (d.version ?? "");
             if (is_nonempty (d.release))
                 vr = (vr == "") ? d.release : vr + "-" + d.release;
@@ -123,21 +122,6 @@ public class DetailsPage : Adw.NavigationPage {
 
             if (is_nonempty (d.homepage)) {
                 var row_home = new Adw.ActionRow () { title = _("Homepage"), subtitle = d.homepage };
-                var open_btn = new Gtk.Button.from_icon_name ("internet-web-browser-symbolic");
-                open_btn.add_css_class ("flat");
-                open_btn.add_css_class ("circular");
-                open_btn.has_frame = false;
-                open_btn.tooltip_text = _("Open in browser");
-                var url = d.homepage;
-                open_btn.clicked.connect (() => {
-                    try {
-                        AppInfo.launch_default_for_uri (url, null);
-                    } catch (Error e2) {
-                        warning ("[DetailsPage] open url failed: %s", e2.message);
-                    }
-                });
-                row_home.add_suffix (open_btn);
-                row_home.activatable = false;
                 info_group.add (row_home);
             }
 

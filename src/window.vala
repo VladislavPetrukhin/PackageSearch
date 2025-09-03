@@ -17,56 +17,58 @@ public class MainWindow : Adw.ApplicationWindow {
     [GtkChild] private unowned Gtk.Stack          header_stack;
     [GtkChild] private unowned Gtk.Label          title_lbl;
     [GtkChild] private unowned Gtk.MenuButton     menu_btn;
-    [GtkChild] private unowned Gtk.Button         quit_btn;
 
     private SearchPage search_page;
+
+    /* Actions для меню */
+    private const GLib.ActionEntry[] WIN_ACTIONS = {
+        { "language", on_action_language },
+        { "about",    on_action_about    },
+        { "quit",     on_action_quit     }
+    };
 
     public MainWindow (Adw.Application app) {
         Object (application: app);
 
+        /* Регистрируем actions для menu-model */
+        this.add_action_entries (WIN_ACTIONS, this);
+
         search_page = new SearchPage ();
+        search_page.open_details.connect ((g, b) => {
+            show_details (g, b);
+        });
+
         var page = new Adw.NavigationPage (search_page, _("Search"));
         nav_view.push (page);
 
-        setup_header ();
         setup_header_controls ();
         update_header_for_visible_page ();
 
         nav_view.notify["visible-page"].connect (update_header_for_visible_page);
+
+        try {
+            var css = """
+            headerbar {
+              min-height: 40px;
+              padding-top: 0;
+              padding-bottom: 0;
+            }
+            """;
+            var provider = new Gtk.CssProvider ();
+            provider.load_from_string (css);
+            var disp = Gdk.Display.get_default ();
+            if (disp != null)
+                Gtk.StyleContext.add_provider_for_display (disp, provider,
+                    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+        } catch (Error e) {
+            warning ("CSS for headerbar failed: %s", e.message);
+        }
     }
 
-    private void setup_header () {
-        var pop = new Gtk.Popover ();
-        menu_btn.set_popover (pop);
-
-        var pv = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
-        pv.margin_top = 6; pv.margin_bottom = 6; pv.margin_start = 6; pv.margin_end = 6;
-
-        var btn_lang = new Gtk.Button.with_label (_("Language…"));
-        btn_lang.add_css_class ("flat"); btn_lang.halign = Gtk.Align.FILL;
-        btn_lang.clicked.connect (() => { pop.popdown (); open_language_dialog (); });
-
-        var btn_about = new Gtk.Button.with_label (_("About"));
-        btn_about.add_css_class ("flat"); btn_about.halign = Gtk.Align.FILL;
-        btn_about.clicked.connect (() => { pop.popdown (); open_about_dialog (); });
-
-        var btn_quit_menu = new Gtk.Button.with_label (_("Quit"));
-        btn_quit_menu.add_css_class ("flat"); btn_quit_menu.halign = Gtk.Align.FILL;
-        btn_quit_menu.clicked.connect (() => { pop.popdown (); quit_app (); });
-
-        pv.append (btn_lang);
-        pv.append (btn_about);
-        pv.append (btn_quit_menu);
-        pop.set_child (pv);
-
-        quit_btn.clicked.connect (quit_app);
-
-        back_btn.clicked.connect (() => {
-            var page = nav_view.get_visible_page ();
-            if (page != null && page.get_child () is DetailsPage)
-                nav_view.pop ();
-        });
-    }
+    /* === Handlers для menu actions === */
+    private void on_action_language () { open_language_dialog (); }
+    private void on_action_about ()    { open_about_dialog (); }
+    private void on_action_quit ()     { quit_app (); }
 
     private void setup_header_controls () {
         var branches_model = new Gtk.StringList (null);
@@ -90,6 +92,12 @@ public class MainWindow : Adw.ApplicationWindow {
             search_page.set_branch (get_current_branch ());
             search_page.trigger_search_now ();
         });
+
+        back_btn.clicked.connect (() => {
+            var vpage = nav_view.get_visible_page ();
+            if (vpage != null && vpage.get_child () is DetailsPage)
+                nav_view.pop ();
+        });
     }
 
     private string get_current_branch () {
@@ -100,20 +108,27 @@ public class MainWindow : Adw.ApplicationWindow {
     }
 
     private void update_header_for_visible_page () {
-        var page = nav_view.get_visible_page ();
-        bool on_details = (page != null) && (page.get_child () is DetailsPage);
+        var vpage = nav_view.get_visible_page ();
+        bool on_details = (vpage != null) && (vpage.get_child () is DetailsPage);
 
         back_btn.visible = on_details;
         branch_dropdown.visible = !on_details;
 
         if (on_details) {
             header_stack.set_visible_child_name ("title");
-            var dp = page.get_child () as DetailsPage;
+            var dp = vpage.get_child () as DetailsPage;
             title_lbl.label = dp != null ? (dp.title ?? _("Details")) : _("Details");
         } else {
             header_stack.set_visible_child_name ("search");
             title_lbl.label = "PackageSearch";
         }
+    }
+
+    public void show_details (Data.SourceGroup group, string branch) {
+        var details = new DetailsPage (group, branch, this);
+        var details_page = new Adw.NavigationPage (details, _("Details"));
+        nav_view.push (details_page);
+        update_header_for_visible_page ();
     }
 
     public void open_about_dialog () {
@@ -127,20 +142,6 @@ public class MainWindow : Adw.ApplicationWindow {
         about.set_comments (_("GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus and p11 repositories and viewing detailed package information."));
         about.set_website ("https://altlinux.space/vladislavpetrukhin/PackageScan");
         about.present (this);
-    }
-
-    public void show_details (Data.SourceGroup group, string branch) {
-        var details = new DetailsPage (group, branch, this);
-        var details_page = new Adw.NavigationPage (details, _("Details"));
-        nav_view.push (details_page);
-        update_header_for_visible_page ();
-    }
-
-    public void open_prefs_dialog () {
-        var dlg = new Adw.AlertDialog (_("Preferences"), _("Not implemented yet"));
-        dlg.add_response ("ok", "OK");
-        dlg.set_default_response ("ok");
-        dlg.present (this);
     }
 
     public void quit_app () {
@@ -167,8 +168,8 @@ public class MainWindow : Adw.ApplicationWindow {
             string? code = null;
             switch (resp) {
                 case "sys": code = null; break;
-                case "en":  code = "en"; break;
-                case "ru":  code = "ru"; break;
+                case "en":  code = "en";  break;
+                case "ru":  code = "ru";  break;
                 default: return;
             }
             apply_language (code);

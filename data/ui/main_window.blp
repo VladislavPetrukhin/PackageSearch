@@ -10,7 +10,7 @@ template $MainWindow : Adw.ApplicationWindow {
     [top]
     Adw.HeaderBar header_bar {
       show-start-title-buttons: false;
-      show-end-title-buttons: false;
+      show-end-title-buttons: true;
 
       [start]
       Gtk.Box {
@@ -70,18 +70,21 @@ template $MainWindow : Adw.ApplicationWindow {
           css-classes: ["flat", "circular"];
           has-frame: false;
           valign: center;
+          menu-model: menu_main;    // привязка
         }
 
-        Gtk.Button quit_btn {
-          icon-name: "window-close-symbolic";
-          tooltip-text: _("Quit");
-          css-classes: ["flat", "circular"];
-          has-frame: false;
-          valign: center;
-        }
       }
     }
 
     content: Adw.NavigationView nav_view { };
   };
+}
+menu menu_main {
+  section {
+    item { label: _("Language…"); action: "win.language"; }
+    item { label: _("About");      action: "win.about";    }
+  }
+  section {
+    item { label: _("Quit");       action: "win.quit";     }
+  }
 }

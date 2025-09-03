@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: org.example.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-02 22:15+0300\n"
+"POT-Creation-Date: 2025-09-02 20:44+0300\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -11,9 +11,8 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. DetailsPage
-#: src/application.vala:47 src/window.vala:54 build/data/details_page.ui:10
+#: src/application.vala:47 src/window.vala:52 build/data/details_page.ui:10
 msgid "Details"
 msgstr "Подробности"
 
@@ -38,7 +37,6 @@ msgstr "История изменений"
 msgid "Loading data…"
 msgstr "Загрузка данных…"
 
-#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. SearchPage
 #. первая страница
 #: src/application.vala:49 src/window.vala:35 build/data/search_page.ui:10
@@ -77,15 +75,7 @@ msgstr "Ошибка"
 msgid "Failed to fetch data. Check your connection and package name."
 msgstr "Не удалось получить данные. Проверьте соединение и имя пакета."
 
-#: src/window.vala:47 src/views/search_page.vala:91
-msgid ""
-"GTK4/Libadwaita application for searching for packages in the ALT Linux "
-"Sisyphus and p11 repositories and viewing detailed package information."
-msgstr ""
-"Приложение на GTK4/Libadwaita для поиска пакетов в репозиториях ALT Linux "
-"Sisyphus и p11 и просмотра подробной информации о пакете."
-
-#: src/window.vala:59
+#: src/window.vala:57
 msgid "Not implemented yet"
 msgstr "Пока не реализовано"
 
@@ -95,10 +85,10 @@ msgstr "Настройки"
 
 #: src/prefs_window.vala:17
 msgid "General"
-msgstr "Общие"
+msgstr ""
 
 #. ---------- Language dialog ----------
-#: src/prefs_window.vala:20 src/views/search_page.vala:234
+#: src/prefs_window.vala:20 src/views/search_page.vala:229
 #: src/views/details_page.vala:89
 msgid "Language"
 msgstr "Язык"
@@ -107,7 +97,7 @@ msgstr "Язык"
 msgid "Language switch"
 msgstr "Язык"
 
-#: src/prefs_window.vala:25 src/views/search_page.vala:235
+#: src/prefs_window.vala:25 src/views/search_page.vala:230
 #: src/views/details_page.vala:90
 msgid "System"
 msgstr "Системный"
@@ -122,14 +112,13 @@ msgstr "Язык…"
 msgid "About"
 msgstr "О приложении"
 
-#. #-#-#-#-#  tmp.vala.pot (PACKAGE VERSION)  #-#-#-#-#
 #. Quit
-#: src/views/search_page.vala:99 src/views/details_page.vala:49
+#: src/views/search_page.vala:94 src/views/details_page.vala:49
 #: build/data/search_page.ui:49
 msgid "Quit"
 msgstr "Выход"
 
-#: src/views/search_page.vala:234 src/views/details_page.vala:89
+#: src/views/search_page.vala:229 src/views/details_page.vala:89
 msgid "Choose interface language"
 msgstr "Выберите язык интерфейса"
 
@@ -189,9 +178,13 @@ msgstr "История изменений недоступна"
 msgid "Failed to load package details"
 msgstr "Не удалось загрузить сведения о пакете"
 
-#: build/data/details_page.ui:34 build/data/search_page.ui:42
+#: build/data/search_page.ui:42 build/data/details_page.ui:34
 msgid "Menu"
 msgstr "Меню"
+
+#: src/window.vala:47
+msgid "GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus and p11 repositories and viewing detailed package information."
+msgstr "Приложение на GTK4/Libadwaita для поиска пакетов в репозиториях ALT Linux Sisyphus и p11 и просмотра подробной информации о пакете."
 
 #~ msgid "System Language"
 #~ msgstr "Системный язык"

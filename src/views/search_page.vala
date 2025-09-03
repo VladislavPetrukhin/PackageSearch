@@ -19,6 +19,8 @@ public class SearchPage : Adw.NavigationPage {
     private string current_query = "";
     private string current_branch = "sisyphus";
 
+    public signal void open_details (Data.SourceGroup group, string branch);
+
     private static bool is_nonempty (string? s) {
         return s != null && s.strip ().length > 0;
     }
@@ -74,7 +76,7 @@ public class SearchPage : Adw.NavigationPage {
           border: 1px solid @borders;
         }
         .big-card > box {
-          padding: 10px 12px;
+          padding: 12px 12px;
           min-height: 48px;
         }
         .big-card .subtitle { opacity: 0.8; }
@@ -111,14 +113,15 @@ public class SearchPage : Adw.NavigationPage {
             var root = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
             root.set_hexpand (true);
 
-            var text_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 2);
+            var text_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
             text_box.set_hexpand (true);
+            text_box.set_valign (Gtk.Align.CENTER);
 
-            var title = new Gtk.Label ("") { xalign = 0.0f, hexpand = true };
+            var title = new Gtk.Label ("") { xalign = 0.0f, hexpand = true, valign = Align.CENTER };
             title.add_css_class ("title-4");
             title.set_ellipsize (EllipsizeMode.END);
 
-            var subtitle = new Gtk.Label ("") { xalign = 0.0f, hexpand = true };
+            var subtitle = new Gtk.Label ("") { xalign = 0.0f, hexpand = true, valign = Align.CENTER };
             subtitle.add_css_class ("subtitle");
             subtitle.set_ellipsize (EllipsizeMode.END);
 
@@ -150,8 +153,7 @@ public class SearchPage : Adw.NavigationPage {
                 var obj_item = store.get_item (pos);
                 var sg = obj_item as Data.SourceGroup; if (sg == null) return;
 
-                var win = this.get_root () as MainWindow;
-                if (win != null) win.show_details (sg, current_branch);
+                open_details (sg, current_branch);
             });
             frame.add_controller (click);
 
@@ -189,9 +191,9 @@ public class SearchPage : Adw.NavigationPage {
         var term = current_query;
         var branch = current_branch;
         if (term.length == 0) {
-        store.remove_all ();
-        show_idle ();
-        return;
+            store.remove_all ();
+            show_idle ();
+            return;
         }
 
         if (!is_reasonable_term (term)) {
