@@ -46,7 +46,7 @@ gnome.post_install(
   glib_compile_schemas: true,
   update_desktop_database: true,
 )
-icon_cache_dir = join_paths(get_option('datadir'), 'icons', 'hicolor')
+icon_cache_dir = join_paths(get_option('prefix'), get_option('datadir'), 'icons', 'hicolor')
 
 meson.add_install_script(
   'sh', '-c',
