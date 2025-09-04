@@ -11,6 +11,16 @@ public class PackageSearchApp : Adw.Application {
                 flags: ApplicationFlags.DEFAULT_FLAGS);
     }
 
+    protected override void startup () {
+        base.startup ();
+
+        var display = Gdk.Display.get_default();
+        if (display != null) {
+            var theme = Gtk.IconTheme.get_for_display(display);
+            theme.add_resource_path ("/space/altlinux/PackageSearch/icons");
+        }
+    }
+
     private static string detect_locale_dir () {
         var locdir = Environment.get_variable ("LOCALEDIR");
         if (locdir != null && locdir != "") return locdir;
