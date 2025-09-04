@@ -46,3 +46,20 @@ gnome.post_install(
   glib_compile_schemas: true,
   update_desktop_database: true,
 )
+icon_cache_dir = join_paths(get_option('datadir'), 'icons', 'hicolor')
+
+meson.add_install_script(
+  'sh', '-c',
+  '''
+  set -eu
+  if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    if [ -n "${DESTDIR-}" ]; then
+      gtk-update-icon-cache -f "$DESTDIR@ICON_DIR@" || true
+    else
+      gtk-update-icon-cache -f "@ICON_DIR@" || true
+    fi
+  fi
+  '''
+  .replace('@ICON_DIR@', icon_cache_dir)
+)
+
