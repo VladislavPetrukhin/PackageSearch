@@ -11,12 +11,13 @@ template $DetailsPage : Adw.NavigationPage {
       hexpand: true; vexpand: true;
 
       child: Gtk.ScrolledWindow {
+        has-frame: false;
         hexpand: true; vexpand: true;
         hscrollbar-policy: never;
         vscrollbar-policy: automatic;
         propagate-natural-height: true;
 
-        Adw.ClampScrollable {
+        Adw.Clamp {
           maximum-size: 1500;
           tightening-threshold: 1200;
           margin-start: 0;

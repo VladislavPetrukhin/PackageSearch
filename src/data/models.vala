@@ -2,7 +2,7 @@ using Gee;
 
 namespace Data {
 
-// Группа результатов поиска (source-пакет + краткая версия/релиз)
+// Result group for search list (source package + short version/release)
 public class SourceGroup : GLib.Object {
     public string  name    { get; construct set; }
     public string? version { get; set; }
@@ -13,7 +13,7 @@ public class SourceGroup : GLib.Object {
     }
 }
 
-// Один бинарный пакет, предоставляемый source’ом
+// One binary package produced by the source package
 public class BinaryPackage : GLib.Object {
     public string  name     { get; set; }
     public string? version  { get; set; }
@@ -23,7 +23,7 @@ public class BinaryPackage : GLib.Object {
     public string? pkghash  { get; set; }
 }
 
-// Детальная карточка source-пакета
+// Full details for a source package
 public class PackageDetails : GLib.Object {
     public string? version     { get; set; }
     public string? release     { get; set; }
@@ -34,6 +34,7 @@ public class PackageDetails : GLib.Object {
     public string? summary     { get; set; }
     public string? description { get; set; }
 
+    // Flat list of binary packages (arch-specific builds)
     public Gee.ArrayList<BinaryPackage> binaries { get; construct set; }
 
     public PackageDetails () {

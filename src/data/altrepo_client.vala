@@ -10,7 +10,7 @@ public class AltRepoClient : GLib.Object {
         cli = new AltRepo.Client ();
     }
 
-    // контейнер для сортировки
+    // Lightweight holder used for sorting search matches
     private class Candidate : GLib.Object {
         public double score;
         public SourceGroup sg;
@@ -20,8 +20,9 @@ public class AltRepoClient : GLib.Object {
         }
     }
 
-    // ---------- helpers: нормализация имени ----------
-    // Оставляем только [a-z0-9], всё в нижний регистр
+    /* ===== Helpers: name normalization ===== */
+
+    // Keep only [a-z0-9], lowercase. Simplifies matching/scoring.
     private static string norm (string s) {
         var out = new StringBuilder ();
         string d = s.down ();
@@ -37,7 +38,8 @@ public class AltRepoClient : GLib.Object {
         return out.str;
     }
 
-    // ---------- helpers: расстояние Левенштейна ----------
+    /* ===== Helpers: Levenshtein distance (byte-safe with UTF-8 indexing) ===== */
+
     private static int lev (string a, string b) {
         int n = a.length;
         int m = b.length;
@@ -45,26 +47,28 @@ public class AltRepoClient : GLib.Object {
         if (m == 0) return n;
 
         var d = new int[(n + 1) * (m + 1)];
-        for (int i = 0; i <= n; i++) d[i*(m+1) + 0] = i;
-        for (int j = 0; j <= m; j++) d[0*(m+1) + j] = j;
+        for (int i = 0; i <= n; i++) d[i * (m + 1) + 0] = i;
+        for (int j = 0; j <= m; j++) d[0 * (m + 1) + j] = j;
 
         for (int i = 1; i <= n; i++) {
             unichar ca = a.get_char (a.index_of_nth_char (i - 1));
             for (int j = 1; j <= m; j++) {
                 unichar cb = b.get_char (b.index_of_nth_char (j - 1));
                 int cost = (ca == cb) ? 0 : 1;
-                int del = d[(i-1)*(m+1) + j] + 1;
-                int ins = d[i*(m+1) + (j-1)] + 1;
-                int sub = d[(i-1)*(m+1) + (j-1)] + cost;
-                int val = del < ins ? del : ins;
+                int del  = d[(i - 1) * (m + 1) + j] + 1;
+                int ins  = d[i * (m + 1) + (j - 1)] + 1;
+                int sub  = d[(i - 1) * (m + 1) + (j - 1)] + cost;
+                int val  = (del < ins) ? del : ins;
                 if (sub < val) val = sub;
-                d[i*(m+1) + j] = val;
+                d[i * (m + 1) + j] = val;
             }
         }
-        return d[n*(m+1) + m];
+        return d[n * (m + 1) + m];
     }
 
-    // Поиск префикса на границе слова: (^|[^a-z0-9])term
+    /* ===== Helpers: word-boundary prefix search ===== */
+
+    // Find term at a word boundary in name: (^|[^a-z0-9])term ; returns byte index or -1
     private static int first_word_prefix_pos (string name, string term) {
         int n = name.length;
         int tlen = term.length;
@@ -87,31 +91,28 @@ public class AltRepoClient : GLib.Object {
         return -1;
     }
 
-    // ---------- скоринг имени ----------
+    /* ===== Scoring ===== */
     private static double score_name (string name, string term) {
-        // Сначала жёсткие правила c большими весами
         if (name == term) return 1000.0;
 
         if (name.has_prefix (term)) {
-            // чем меньше разница длин — тем лучше
             return 900.0 - (name.length - term.length);
         }
 
         int wb = first_word_prefix_pos (name, term);
-        if (wb == 0) return 880.0;           // начало имени на границе слова
-        if (wb > 0)  return 860.0 - wb;      // дальше — ниже
+        if (wb == 0) return 880.0;
+        if (wb > 0)  return 860.0 - wb;
 
         int idx = name.index_of (term);
         if (idx >= 0) {
-            // Подстрока: ранняя позиция и малая разница длин — лучше
             double pos_penalty = idx;
             double len_penalty = (name.length - term.length);
-            return 800.0 - pos_penalty - 0.5*len_penalty;
+            return 800.0 - pos_penalty - 0.5 * len_penalty;
         }
 
         int dist = lev (name, term);
         int L = (name.length > term.length) ? name.length : term.length;
-        double sim = 1.0 - ((double) dist / (double) L); // 0..1
+        double sim = 1.0 - ((double) dist / (double) L);
         if (sim < 0.0) sim = 0.0;
 
         double length_bias = 1.0 / (1.0 + (name.length - term.length));
@@ -120,7 +121,7 @@ public class AltRepoClient : GLib.Object {
         return 700.0 * sim * length_bias;
     }
 
-    // ---------- Поиск source-пакетов ----------
+    /* ===== Search sources ===== */
     public async Gee.ArrayList<SourceGroup> search_source (
         string branch, string term, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
@@ -129,19 +130,19 @@ public class AltRepoClient : GLib.Object {
         if (term_n.length < 2) return new Gee.ArrayList<SourceGroup> ();
 
         var groups = new Gee.ArrayList<SourceGroup> ();
-        var resp = yield cli.get_site_find_packages_async(
-            { term_raw },       // terms
+        var resp = yield cli.get_site_find_packages_async (
+            { term_raw },       // terms (original, not normalized)
             branch,             // branch
             null,               // arch
             Priority.DEFAULT,   // priority
-            cancellable         // cancellable
+            null                // was: cancellable
         );
 
         var candidates = new Gee.ArrayList<Candidate> ();
         foreach (var pkg in resp.packages) {
-            if (pkg.by_binary) continue;
+            if (pkg.by_binary) continue; // only source packages
 
-            // Берём лучшую актуальную версию в этой ветке
+            // Take best non-deleted version in this branch
             AltRepo.SitePackageVersionsElement? best = null;
             foreach (var v in pkg.versions) {
                 if (v.branch == branch && !v.deleted) { best = v; break; }
@@ -154,12 +155,12 @@ public class AltRepoClient : GLib.Object {
 
             var name_n = norm (pkg.name);
             double s = score_name (name_n, term_n);
-            if (pkg.name.down () == term_raw.down ()) s += 5.0;
+            if (pkg.name.down () == term_raw.down ()) s += 5.0; // tiny boost
 
             candidates.add (new Candidate (s, g));
         }
 
-        // сортировка
+        // Sort by score desc, then shorter name, then lexicographically
         candidates.sort ((a, b) => {
             if (a.score > b.score) return -1;
             if (a.score < b.score) return 1;
@@ -171,24 +172,26 @@ public class AltRepoClient : GLib.Object {
             return strcmp (a.sg.name, b.sg.name);
         });
 
-        // Берём верхние 100 результата
+        // Cap to top 100 items
         int cap = (candidates.size < 100) ? candidates.size : 100;
         for (int i = 0; i < cap; i++) groups.add (candidates[i].sg);
 
         return groups;
     }
 
-    // ---------- Детали source-пакета + список бинарей ----------
+    /* ===== Source details + binaries ===== */
     public async PackageDetails get_source_details (
         string branch, string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
         var details = new PackageDetails ();
 
-        var h = cli.get_site_pkghash_by_name (branch, src_name, cancellable);
+        // Resolve src_name to pkghash first
+        var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
 
+        // Fetch package info by hash; we request "source" view here
         var info = yield cli.get_site_package_info_pkghash_async (
-            branch, pkghash, 50, "source", Priority.DEFAULT, cancellable
+            branch, pkghash, 50, "source", Priority.DEFAULT, null
         );
 
         details.version     = info.version;
@@ -200,6 +203,7 @@ public class AltRepoClient : GLib.Object {
         details.description = info.description;
         details.group       = info.category;
 
+        // Expand binary packages
         foreach (var pa in info.package_archs) {
             if (pa.name == src_name) continue;
             foreach (var arch in pa.archs) {
@@ -215,14 +219,14 @@ public class AltRepoClient : GLib.Object {
         return details;
     }
 
-    // ---------- Changelog ----------
+    /* ===== Changelog ===== */
     public async AltRepo.SiteChangelog get_changelog (
         string branch, string src_name, int64 last = 50, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
-        var h = cli.get_site_pkghash_by_name (branch, src_name, cancellable);
+        var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
         return yield cli.get_site_package_changelog_pkghash_async (
-            pkghash, last, Priority.DEFAULT, cancellable
+            pkghash, last, Priority.DEFAULT, null
         );
     }
 }

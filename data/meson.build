@@ -58,7 +58,7 @@ configured_desktop = configure_file(
 i18n.merge_file(
   input: configured_desktop,
   output: '@0@.desktop'.format(app_id),
-  po_dir: join_paths(meson.source_root(), 'po'),
+  po_dir: join_paths(meson.project_source_root(), 'po'),
   install: true,
   install_dir: get_option('datadir') / 'applications',
   type: 'desktop',
@@ -76,7 +76,7 @@ configured_metainfo = configure_file(
 i18n.merge_file(
   input: configured_metainfo,
   output: '@0@.metainfo.xml'.format(app_id),
-  po_dir: join_paths(meson.source_root(), 'po'),
+  po_dir: join_paths(meson.project_source_root(), 'po'),
   install: true,
   install_dir: get_option('datadir') / 'metainfo',
   type: 'xml',

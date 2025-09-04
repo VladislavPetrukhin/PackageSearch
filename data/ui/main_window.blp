@@ -28,7 +28,6 @@ template $MainWindow : Adw.ApplicationWindow {
         Gtk.DropDown branch_dropdown { valign: center; }
       }
 
-      /* Центр: переключаем между поиском и заголовком */
       title-widget: Gtk.Stack header_stack {
         transition-type: crossfade;
         hexpand: true;
@@ -44,6 +43,7 @@ template $MainWindow : Adw.ApplicationWindow {
               activates-default: true;
               width-request: 420;
               valign: center;
+              hexpand: true;
             }
           };
         }
@@ -70,7 +70,7 @@ template $MainWindow : Adw.ApplicationWindow {
           css-classes: ["flat", "circular"];
           has-frame: false;
           valign: center;
-          menu-model: menu_main;    // привязка
+          menu-model: menu_main;
         }
 
       }
@@ -81,7 +81,6 @@ template $MainWindow : Adw.ApplicationWindow {
 }
 menu menu_main {
   section {
-   // item { label: _("Language…"); action: "win.language"; }
     item { label: _("About");      action: "win.about";    }
   }
   section {
