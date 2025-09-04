@@ -121,11 +121,24 @@ public class DetailsPage : Adw.NavigationPage {
             if (is_nonempty (d.group))       info_group.add (new Adw.ActionRow () { title = _("Group"),       subtitle = d.group });
             if (is_nonempty (d.license))     info_group.add (new Adw.ActionRow () { title = _("License"),     subtitle = d.license });
 
-            if (is_nonempty (d.homepage)) {
-                var row_home = new Adw.ActionRow () { title = _("Homepage"), subtitle = d.homepage };
-                info_group.add (row_home);
-            }
+              if (is_nonempty (d.homepage)) {
+                string url = (d.homepage ?? "").strip ();
+                if (url.length > 0) {
+                    if (!(url.has_prefix ("http://") || url.has_prefix ("https://")))
+                        url = "https://" + url;
 
+                    var row_home = new Adw.ActionRow () {
+                        title = _("Homepage"),
+                        subtitle = url
+                    };
+                    row_home.activatable = true;
+                    row_home.activated.connect (() => {
+                        try { AppInfo.launch_default_for_uri (url, null); }
+                        catch (Error e) { warning ("open url failed: %s", e.message); }
+                    });
+                    info_group.add (row_home);
+                }
+            }
             if (is_nonempty (d.summary))     info_group.add (new Adw.ActionRow () { title = _("Summary"),     subtitle = d.summary });
             if (is_nonempty (d.description)) info_group.add (new Adw.ActionRow () { title = _("Description"), subtitle = d.description });
 
