@@ -203,10 +203,19 @@ public class AltRepoClient : GLib.Object {
         details.description = info.description;
         details.group       = info.category;
 
-        // Expand binary packages
+
+        // Expand binary packages, skip pure source entries ("src" arch only)
         foreach (var pa in info.package_archs) {
-            if (pa.name == src_name) continue;
+            var non_src_arches = new Gee.ArrayList<string> ();
             foreach (var arch in pa.archs) {
+                if (arch != null && arch.down () != "src")
+                    non_src_arches.add (arch);
+            }
+
+            // if this is a source-only record then skip
+            if (non_src_arches.size == 0)
+                continue;
+            foreach (var arch in non_src_arches) {
                 details.binaries.add (new BinaryPackage () {
                     name     = pa.name,
                     version  = info.version,
@@ -216,6 +225,7 @@ public class AltRepoClient : GLib.Object {
                 });
             }
         }
+
         return details;
     }
 

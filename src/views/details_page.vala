@@ -38,7 +38,8 @@ public class DetailsPage : Adw.NavigationPage {
     // Adds info row if value is present
     private void add_info_row_if_nonempty (string title, string? value) {
         if (is_nonempty (value))
-            info_group.add (new Adw.ActionRow () { title = title, subtitle = value });
+            info_group.add (new Adw.ActionRow () { title = title,
+                            subtitle = GLib.Markup.escape_text (value, -1) });
     }
 
     public DetailsPage (Data.SourceGroup group, string branch, MainWindow win) {
@@ -157,7 +158,9 @@ public class DetailsPage : Adw.NavigationPage {
             if (is_nonempty (d.homepage)) {
                 string url = normalize_url (d.homepage ?? "");
                 if (url.length > 0) {
-                    var row_home = new Adw.ActionRow () { title = _("Homepage"), subtitle = url };
+                    var row_home = new Adw.ActionRow () { title = _("Homepage"),
+                                                     subtitle = GLib.Markup.escape_text (url, -1)
+                     };
                     row_home.activatable = true;
                     row_home.activated.connect (() => {
                         try { AppInfo.launch_default_for_uri (url, null); }
@@ -170,12 +173,45 @@ public class DetailsPage : Adw.NavigationPage {
             add_info_row_if_nonempty (_("Summary"),     d.summary);
             add_info_row_if_nonempty (_("Description"), d.description);
 
-            // Binaries group
+            // Binaries group (group by package name, list arches in subtitle)
             clear_group (bins_group);
+
+            // Collect arches per binary name
+            var by_name = new Gee.HashMap<string, Gee.ArrayList<string>> ();
             foreach (var bp in d.binaries) {
-                // Show "name" + arch (if present) as a compact row
-                var subtitle = (bp.arch ?? "");
-                bins_group.add (new Adw.ActionRow () { title = bp.name, subtitle = subtitle });
+                if (bp == null || bp.name == null) continue;
+                var name = bp.name;
+                var arch = bp.arch ?? "";
+
+                if (arch.strip ().length == 0) continue;
+
+                var list = by_name.get (name);
+                if (list == null) {
+                    list = new Gee.ArrayList<string> ();
+                    by_name.set (name, list);
+                }
+                // Deduplicate arches
+                bool have = false;
+                foreach (var a in list) { if (a == arch) { have = true; break; } }
+                if (!have) list.add (arch);
+            }
+
+            // Sort names for stable output
+            var names = new Gee.ArrayList<string> ();
+            foreach (var k in by_name.keys) names.add (k);
+            names.sort ((a, b) => strcmp (a, b));
+
+            foreach (var name in names) {
+                var arches = by_name.get (name);
+
+                // Join with ", " and escape for markup label
+                var joined = string.joinv (", ", (string[]) arches.to_array ());
+                var subtitle = GLib.Markup.escape_text (joined, -1);
+
+                bins_group.add (new Adw.ActionRow () {
+                    title = name,
+                    subtitle = subtitle
+                });
             }
 
             // Changelog group
@@ -224,7 +260,7 @@ public class DetailsPage : Adw.NavigationPage {
                 warning ("[DetailsPage] changelog failed: %s", ce.message);
                 changelog_group.add (new Adw.ActionRow () {
                     title = _("Changelog unavailable"),
-                    subtitle = ce.message
+                    subtitle = GLib.Markup.escape_text (ce.message, -1)
                 });
             }
         } catch (Error e) {
