@@ -62,9 +62,12 @@ public class PackageSearchApp : Adw.Application {
             // DetailsPage
             _("Details"); _("Back"); _("Info"); _("Binaries"); _("Changelog"); _("Loading data…");
             _("Install"); _("Installing…"); _("Installed");
+            _("Update");  _("Updating…");
             _("Install via apt-get (requires authentication)");
+            _("Update via apt-get (requires authentication)");
             _("Package is already installed");
             _("Installing %s…"); _("Installed %s"); _("Failed to install %s");
+            _("Updating %s…");   _("Updated %s");   _("Failed to update %s");
             _("Installation cancelled"); _("Failed to launch installer: %s");
             // SearchPage
             _("Search"); _("Type a package name…"); _("Search packages");

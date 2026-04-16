@@ -10,9 +10,9 @@ public class DetailsPage : Adw.NavigationPage {
     private string branch;
     private MainWindow win;
 
-    // Cached set of installed binary package names ("rpm -qa"), shared
-    // across DetailsPage instances within one process lifetime.
-    private static Gee.HashSet<string>? installed_cache = null;
+    // Cached map of installed binary package name -> EVR (epoch:version-release),
+    // shared across DetailsPage instances within one process lifetime.
+    private static Gee.HashMap<string, string>? installed_cache = null;
     private static bool css_loaded = false;
 
     [GtkChild] private unowned Adw.ToastOverlay     toast_overlay;
@@ -70,28 +70,134 @@ public class DetailsPage : Adw.NavigationPage {
         css_loaded = true;
     }
 
-    // Lazily query rpm for the installed package set; cache for the process.
-    private async Gee.HashSet<string> get_installed_pkgs () {
+    // Lazily query rpm for installed packages; cache for the process.
+    // Map: package name -> "epoch:version-release"
+    private async Gee.HashMap<string, string> get_installed_pkgs () {
         if (installed_cache != null) return installed_cache;
-        var set = new Gee.HashSet<string> ();
+        var map = new Gee.HashMap<string, string> ();
         try {
             var sp = new GLib.Subprocess.newv (
-                { "rpm", "-qa", "--queryformat", "%{NAME}\n" },
+                { "rpm", "-qa", "--queryformat",
+                  "%{NAME} %|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}\n" },
                 GLib.SubprocessFlags.STDOUT_PIPE | GLib.SubprocessFlags.STDERR_PIPE
             );
             string? stdout_buf = null;
             yield sp.communicate_utf8_async (null, null, out stdout_buf, null);
             if (stdout_buf != null) {
                 foreach (var line in stdout_buf.split ("\n")) {
-                    var n = line.strip ();
-                    if (n.length > 0) set.add (n);
+                    var t = line.strip ();
+                    if (t.length == 0) continue;
+                    int sp_idx = t.index_of_char (' ');
+                    if (sp_idx <= 0) continue;
+                    var nm  = t.substring (0, sp_idx);
+                    var evr = t.substring (sp_idx + 1).strip ();
+                    map.set (nm, evr);
                 }
             }
         } catch (Error e) {
             warning ("[DetailsPage] rpm -qa failed: %s", e.message);
         }
-        installed_cache = set;
-        return set;
+        installed_cache = map;
+        return map;
+    }
+
+    /* ===== RPM version comparison =====
+     * Faithful Vala port of rpm's rpmvercmp: segment-wise compare with
+     * tilde (~) sorting before everything and caret (^) sorting like
+     * tilde but greater than empty.
+     */
+    private static bool is_digit (char c) { return c >= '0' && c <= '9'; }
+    private static bool is_alpha (char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    }
+    private static bool is_alnum (char c) { return is_digit (c) || is_alpha (c); }
+
+    private static int rpmvercmp (string a, string b) {
+        if (a == b) return 0;
+        int i = 0, j = 0;
+        int la = a.length, lb = b.length;
+
+        while (i < la || j < lb) {
+            while (i < la && !is_alnum (a[i]) && a[i] != '~' && a[i] != '^') i++;
+            while (j < lb && !is_alnum (b[j]) && b[j] != '~' && b[j] != '^') j++;
+
+            if ((i < la && a[i] == '~') || (j < lb && b[j] == '~')) {
+                if (i >= la || a[i] != '~') return 1;
+                if (j >= lb || b[j] != '~') return -1;
+                i++; j++; continue;
+            }
+            if ((i < la && a[i] == '^') || (j < lb && b[j] == '^')) {
+                if (i >= la) return -1;
+                if (j >= lb) return 1;
+                if (a[i] != '^') return 1;
+                if (b[j] != '^') return -1;
+                i++; j++; continue;
+            }
+            if (i >= la || j >= lb) break;
+
+            int sa = i, sb = j;
+            bool isnum = is_digit (a[i]);
+            if (isnum) {
+                while (i < la && is_digit (a[i])) i++;
+                while (j < lb && is_digit (b[j])) j++;
+            } else {
+                while (i < la && is_alpha (a[i])) i++;
+                while (j < lb && is_alpha (b[j])) j++;
+            }
+
+            if (sa == i) return -1;
+            if (sb == j) return isnum ? 1 : -1; // numeric beats alphabetic
+
+            string seg_a = a.substring (sa, i - sa);
+            string seg_b = b.substring (sb, j - sb);
+
+            if (isnum) {
+                int za = 0, zb = 0;
+                while (za < seg_a.length && seg_a[za] == '0') za++;
+                while (zb < seg_b.length && seg_b[zb] == '0') zb++;
+                seg_a = seg_a.substring (za);
+                seg_b = seg_b.substring (zb);
+                if (seg_a.length != seg_b.length)
+                    return seg_a.length > seg_b.length ? 1 : -1;
+            }
+            int rc = strcmp (seg_a, seg_b);
+            if (rc != 0) return rc < 0 ? -1 : 1;
+        }
+
+        if (i >= la && j >= lb) return 0;
+        if (i >= la) return -1;
+        return 1;
+    }
+
+    // Parse "[epoch:]version[-release]" into its parts (defaults: epoch=0, rel="").
+    private static void parse_evr (string s, out int epoch, out string ver, out string rel) {
+        epoch = 0;
+        string rest = s;
+        int colon = s.index_of_char (':');
+        if (colon >= 0) {
+            epoch = int.parse (s.substring (0, colon));
+            rest = s.substring (colon + 1);
+        }
+        int dash = rest.index_of_char ('-');
+        if (dash >= 0) {
+            ver = rest.substring (0, dash);
+            rel = rest.substring (dash + 1);
+        } else {
+            ver = rest;
+            rel = "";
+        }
+    }
+
+    // Compare two full EVR strings. <0 if a is older than b.
+    private static int compare_evr (string a, string b) {
+        int ea, eb;
+        string va, vb, ra, rb;
+        parse_evr (a, out ea, out va, out ra);
+        parse_evr (b, out eb, out vb, out rb);
+        if (ea != eb) return ea < eb ? -1 : 1;
+        int c = rpmvercmp (va, vb);
+        if (c != 0) return c;
+        return rpmvercmp (ra, rb);
     }
 
     // Apply the disabled "Installed" look to a button.
@@ -198,14 +304,19 @@ public class DetailsPage : Adw.NavigationPage {
 
     // Run `pkexec apt-get install -y <pkg>`, animating the button during the
     // run and switching it to a disabled "Installed" state on success.
-    private async void install_binary (string pkg_name, Gtk.Button btn) {
+    // `repo_evr` is the EVR offered by the current repo branch; cached on
+    // success so the row reflects the new state. `is_update` toggles the
+    // wording of toasts and the "restore" label between Install/Update.
+    private async void install_binary (string pkg_name, Gtk.Button btn,
+                                       string? repo_evr, bool is_update) {
         // Enter "installing" visual state: drop accent, show pulsing green border.
         btn.remove_css_class ("suggested-action");
         btn.add_css_class ("ps-installing");
-        btn.label = _("Installing…");
+        btn.label = is_update ? _("Updating…") : _("Installing…");
         btn.sensitive = false;
 
-        toast_overlay.add_toast (new Adw.Toast (_("Installing %s…").printf (pkg_name)));
+        toast_overlay.add_toast (new Adw.Toast (
+            (is_update ? _("Updating %s…") : _("Installing %s…")).printf (pkg_name)));
 
         bool ok = false;
         bool cancelled = false;
@@ -228,14 +339,16 @@ public class DetailsPage : Adw.NavigationPage {
         }
 
         if (ok) {
-            if (installed_cache != null) installed_cache.add (pkg_name);
+            if (installed_cache != null && repo_evr != null && repo_evr.length > 0)
+                installed_cache.set (pkg_name, repo_evr);
             mark_installed (btn);
-            toast_overlay.add_toast (new Adw.Toast (_("Installed %s").printf (pkg_name)));
+            toast_overlay.add_toast (new Adw.Toast (
+                (is_update ? _("Updated %s") : _("Installed %s")).printf (pkg_name)));
         } else {
             // Restore the idle look so the user can retry
             btn.remove_css_class ("ps-installing");
             btn.add_css_class ("suggested-action");
-            btn.label = _("Install");
+            btn.label = is_update ? _("Update") : _("Install");
             btn.sensitive = true;
 
             if (cancelled) {
@@ -244,7 +357,8 @@ public class DetailsPage : Adw.NavigationPage {
                 warning ("[DetailsPage] apt-get failed for %s: %s",
                          pkg_name, stderr_buf);
                 toast_overlay.add_toast (new Adw.Toast (
-                    _("Failed to install %s").printf (pkg_name)));
+                    (is_update ? _("Failed to update %s") : _("Failed to install %s"))
+                        .printf (pkg_name)));
             }
         }
     }
@@ -320,6 +434,15 @@ public class DetailsPage : Adw.NavigationPage {
             // Find which binaries are already installed in the system
             var installed = yield get_installed_pkgs ();
 
+            // Build the EVR offered by the current repo branch (epoch 0 — rdb
+            // does not expose epoch separately for source packages here).
+            string repo_evr = "";
+            if (is_nonempty (d.version)) {
+                repo_evr = "0:" + d.version;
+                if (is_nonempty (d.release))
+                    repo_evr += "-" + d.release;
+            }
+
             foreach (var name in names) {
                 var arches = by_name.get (name);
 
@@ -338,11 +461,26 @@ public class DetailsPage : Adw.NavigationPage {
                 install_btn.add_css_class ("suggested-action");
                 install_btn.tooltip_text = _("Install via apt-get (requires authentication)");
 
-                if (installed.contains (name)) {
+                bool is_installed = installed.has_key (name);
+                bool needs_update = false;
+                if (is_installed && repo_evr.length > 0) {
+                    string installed_evr = installed.get (name);
+                    needs_update = compare_evr (installed_evr, repo_evr) < 0;
+                }
+
+                if (is_installed && !needs_update) {
                     mark_installed (install_btn);
                 } else {
+                    bool is_update = needs_update;
+                    string captured_evr = repo_evr;
+                    if (is_update) {
+                        install_btn.label = _("Update");
+                        install_btn.tooltip_text =
+                            _("Update via apt-get (requires authentication)");
+                    }
                     install_btn.clicked.connect (() => {
-                        install_binary.begin (name, install_btn);
+                        install_binary.begin (name, install_btn,
+                                              captured_evr, is_update);
                     });
                 }
 
