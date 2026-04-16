@@ -72,7 +72,7 @@ public class MainWindow : Adw.ApplicationWindow {
     // Initialize branch dropdown, search entry callbacks, and back button
     private void setup_header_controls () {
         var branches_model = new Gtk.StringList (null);
-        string[] branch_names = { "sisyphus", "p11" };
+        string[] branch_names = { "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2" };
         foreach (string b in branch_names) branches_model.append (b);
         branch_dropdown.model = branches_model;
         branch_dropdown.selected = 0;
@@ -153,7 +153,7 @@ public class MainWindow : Adw.ApplicationWindow {
         about.set_version ("0.1");
         about.set_issue_url ("https://altlinux.space/vladislavpetrukhin/PackageSearch");
         about.set_license_type (Gtk.License.GPL_3_0);
-        about.set_comments (_("GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus and p11 repositories and viewing detailed package information."));
+        about.set_comments (_("GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus, p11, p10, p9, c10f2 and c9f2 repositories and viewing detailed package information."));
         about.set_website ("https://altlinux.space/vladislavpetrukhin/PackageSearch");
         about.present (this);
     }

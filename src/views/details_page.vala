@@ -10,6 +10,11 @@ public class DetailsPage : Adw.NavigationPage {
     private string branch;
     private MainWindow win;
 
+    // Cached set of installed binary package names ("rpm -qa"), shared
+    // across DetailsPage instances within one process lifetime.
+    private static Gee.HashSet<string>? installed_cache = null;
+    private static bool css_loaded = false;
+
     [GtkChild] private unowned Adw.ToastOverlay     toast_overlay;
     [GtkChild] private unowned Gtk.Revealer         loading_revealer;
     [GtkChild] private unowned Adw.PreferencesGroup info_group;
@@ -42,10 +47,68 @@ public class DetailsPage : Adw.NavigationPage {
                             subtitle = GLib.Markup.escape_text (value, -1) });
     }
 
+    // Inject CSS once: pulsing green border while a package is installing.
+    private static void ensure_css () {
+        if (css_loaded) return;
+        var css = """
+        @keyframes ps-install-pulse {
+            0%   { border-color: alpha(@success_color, 0.35); }
+            50%  { border-color: @success_color; }
+            100% { border-color: alpha(@success_color, 0.35); }
+        }
+        button.ps-installing {
+            border: 2px solid @success_color;
+            animation: ps-install-pulse 1.2s ease-in-out infinite;
+        }
+        """;
+        var p = new Gtk.CssProvider ();
+        p.load_from_string (css);
+        var disp = Gdk.Display.get_default ();
+        if (disp != null)
+            Gtk.StyleContext.add_provider_for_display (
+                disp, p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+        css_loaded = true;
+    }
+
+    // Lazily query rpm for the installed package set; cache for the process.
+    private async Gee.HashSet<string> get_installed_pkgs () {
+        if (installed_cache != null) return installed_cache;
+        var set = new Gee.HashSet<string> ();
+        try {
+            var sp = new GLib.Subprocess.newv (
+                { "rpm", "-qa", "--queryformat", "%{NAME}\n" },
+                GLib.SubprocessFlags.STDOUT_PIPE | GLib.SubprocessFlags.STDERR_PIPE
+            );
+            string? stdout_buf = null;
+            yield sp.communicate_utf8_async (null, null, out stdout_buf, null);
+            if (stdout_buf != null) {
+                foreach (var line in stdout_buf.split ("\n")) {
+                    var n = line.strip ();
+                    if (n.length > 0) set.add (n);
+                }
+            }
+        } catch (Error e) {
+            warning ("[DetailsPage] rpm -qa failed: %s", e.message);
+        }
+        installed_cache = set;
+        return set;
+    }
+
+    // Apply the disabled "Installed" look to a button.
+    private static void mark_installed (Gtk.Button btn) {
+        btn.remove_css_class ("ps-installing");
+        btn.remove_css_class ("suggested-action");
+        btn.label = _("Installed");
+        btn.tooltip_text = _("Package is already installed");
+        btn.sensitive = false;
+    }
+
     public DetailsPage (Data.SourceGroup group, string branch, MainWindow win) {
         this.group  = group;
         this.branch = branch;
         this.win    = win;
+
+        ensure_css ();
 
         // Show basic title early; will be refined after details fetch
         this.title = group.name;
@@ -133,6 +196,59 @@ public class DetailsPage : Adw.NavigationPage {
         dlg.present (this.get_root () as Gtk.Window);
     }
 
+    // Run `pkexec apt-get install -y <pkg>`, animating the button during the
+    // run and switching it to a disabled "Installed" state on success.
+    private async void install_binary (string pkg_name, Gtk.Button btn) {
+        // Enter "installing" visual state: drop accent, show pulsing green border.
+        btn.remove_css_class ("suggested-action");
+        btn.add_css_class ("ps-installing");
+        btn.label = _("Installing…");
+        btn.sensitive = false;
+
+        toast_overlay.add_toast (new Adw.Toast (_("Installing %s…").printf (pkg_name)));
+
+        bool ok = false;
+        bool cancelled = false;
+        string? stderr_buf = null;
+
+        try {
+            var sp = new GLib.Subprocess.newv (
+                { "pkexec", "apt-get", "install", "-y", pkg_name },
+                GLib.SubprocessFlags.STDOUT_PIPE | GLib.SubprocessFlags.STDERR_PIPE
+            );
+            yield sp.communicate_utf8_async (null, null, null, out stderr_buf);
+
+            ok = sp.get_successful ();
+            // pkexec exits 126 when the user cancels the auth prompt
+            cancelled = !ok && sp.get_if_exited () && sp.get_exit_status () == 126;
+        } catch (Error e) {
+            warning ("[DetailsPage] install spawn failed: %s", e.message);
+            toast_overlay.add_toast (new Adw.Toast (
+                _("Failed to launch installer: %s").printf (e.message)));
+        }
+
+        if (ok) {
+            if (installed_cache != null) installed_cache.add (pkg_name);
+            mark_installed (btn);
+            toast_overlay.add_toast (new Adw.Toast (_("Installed %s").printf (pkg_name)));
+        } else {
+            // Restore the idle look so the user can retry
+            btn.remove_css_class ("ps-installing");
+            btn.add_css_class ("suggested-action");
+            btn.label = _("Install");
+            btn.sensitive = true;
+
+            if (cancelled) {
+                toast_overlay.add_toast (new Adw.Toast (_("Installation cancelled")));
+            } else if (stderr_buf != null) {
+                warning ("[DetailsPage] apt-get failed for %s: %s",
+                         pkg_name, stderr_buf);
+                toast_overlay.add_toast (new Adw.Toast (
+                    _("Failed to install %s").printf (pkg_name)));
+            }
+        }
+    }
+
     // Loads details and fills 3 groups: info, binaries, changelog
     private async void load_details () {
         set_loading (true);
@@ -201,6 +317,9 @@ public class DetailsPage : Adw.NavigationPage {
             foreach (var k in by_name.keys) names.add (k);
             names.sort ((a, b) => strcmp (a, b));
 
+            // Find which binaries are already installed in the system
+            var installed = yield get_installed_pkgs ();
+
             foreach (var name in names) {
                 var arches = by_name.get (name);
 
@@ -208,10 +327,27 @@ public class DetailsPage : Adw.NavigationPage {
                 var joined = string.joinv (", ", (string[]) arches.to_array ());
                 var subtitle = GLib.Markup.escape_text (joined, -1);
 
-                bins_group.add (new Adw.ActionRow () {
+                var row = new Adw.ActionRow () {
                     title = name,
                     subtitle = subtitle
-                });
+                };
+
+                var install_btn = new Gtk.Button.with_label (_("Install")) {
+                    valign = Gtk.Align.CENTER
+                };
+                install_btn.add_css_class ("suggested-action");
+                install_btn.tooltip_text = _("Install via apt-get (requires authentication)");
+
+                if (installed.contains (name)) {
+                    mark_installed (install_btn);
+                } else {
+                    install_btn.clicked.connect (() => {
+                        install_binary.begin (name, install_btn);
+                    });
+                }
+
+                row.add_suffix (install_btn);
+                bins_group.add (row);
             }
 
             // Changelog group
