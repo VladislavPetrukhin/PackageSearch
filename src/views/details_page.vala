@@ -10,14 +10,10 @@ public class DetailsPage : Adw.NavigationPage {
     private string branch;
     private MainWindow win;
 
-    // Cached map of installed binary package name -> EVR (epoch:version-release),
-    // shared across DetailsPage instances within one process lifetime.
-    private static Gee.HashMap<string, string>? installed_cache = null;
     private static bool css_loaded = false;
 
-    // Cached system branch name detected via `apt-repo` (e.g. "sisyphus", "p11").
-    // null means not yet queried; "" means detection failed.
-    private static string? system_branch = null;
+    // Business-layer service for system package operations
+    private Business.PackageManager pkg_mgr = new Business.PackageManager ();
 
     [GtkChild] private unowned Adw.ToastOverlay     toast_overlay;
     [GtkChild] private unowned Gtk.Revealer         loading_revealer;
@@ -72,175 +68,6 @@ public class DetailsPage : Adw.NavigationPage {
             Gtk.StyleContext.add_provider_for_display (
                 disp, p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
         css_loaded = true;
-    }
-
-    // Lazily query rpm for installed packages; cache for the process.
-    // Map: package name -> "epoch:version-release"
-    private async Gee.HashMap<string, string> get_installed_pkgs () {
-        if (installed_cache != null) return installed_cache;
-        var map = new Gee.HashMap<string, string> ();
-        try {
-            var sp = new GLib.Subprocess.newv (
-                { "rpm", "-qa", "--queryformat",
-                  "%{NAME} %|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}\n" },
-                GLib.SubprocessFlags.STDOUT_PIPE | GLib.SubprocessFlags.STDERR_PIPE
-            );
-            string? stdout_buf = null;
-            yield sp.communicate_utf8_async (null, null, out stdout_buf, null);
-            if (stdout_buf != null) {
-                foreach (var line in stdout_buf.split ("\n")) {
-                    var t = line.strip ();
-                    if (t.length == 0) continue;
-                    int sp_idx = t.index_of_char (' ');
-                    if (sp_idx <= 0) continue;
-                    var nm  = t.substring (0, sp_idx);
-                    var evr = t.substring (sp_idx + 1).strip ();
-                    map.set (nm, evr);
-                }
-            }
-        } catch (Error e) {
-            warning ("[DetailsPage] rpm -qa failed: %s", e.message);
-        }
-        installed_cache = map;
-        return map;
-    }
-
-    // Detect the system's repository branch by running `apt-repo` and parsing
-    // output lines like: rpm [alt] rsync://…/altlinux Sisyphus/x86_64 classic
-    // Returns lowercase branch name (e.g. "sisyphus", "p11") or "" on failure.
-    private async string detect_system_branch () {
-        if (system_branch != null) return system_branch;
-        string detected = "";
-        try {
-            var sp = new GLib.Subprocess.newv (
-                { "apt-repo" },
-                GLib.SubprocessFlags.STDOUT_PIPE | GLib.SubprocessFlags.STDERR_PIPE
-            );
-            string? stdout_buf = null;
-            yield sp.communicate_utf8_async (null, null, out stdout_buf, null);
-            if (stdout_buf != null) {
-                foreach (var line in stdout_buf.split ("\n")) {
-                    var t = line.strip ();
-                    if (t.length == 0) continue;
-                    // Tokenize: "rpm [alt] URL Branch/arch classic"
-                    var parts = t.split (" ");
-                    // Look for a token like "Sisyphus/x86_64" — skip URLs (contain "://")
-                    foreach (var p in parts) {
-                        if (p.index_of_char ('/') < 0) continue;
-                        if (p.contains ("://")) continue;
-                        var segs = p.split ("/");
-                        if (segs.length >= 2 && segs[0].length > 0) {
-                            detected = segs[0].down ();
-                            break;
-                        }
-                    }
-                    if (detected.length > 0) break;
-                }
-            }
-        } catch (Error e) {
-            warning ("[DetailsPage] apt-repo failed: %s", e.message);
-        }
-        system_branch = detected;
-        return system_branch;
-    }
-
-    /* ===== RPM version comparison =====
-     * Faithful Vala port of rpm's rpmvercmp: segment-wise compare with
-     * tilde (~) sorting before everything and caret (^) sorting like
-     * tilde but greater than empty.
-     */
-    private static bool is_digit (char c) { return c >= '0' && c <= '9'; }
-    private static bool is_alpha (char c) {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-    }
-    private static bool is_alnum (char c) { return is_digit (c) || is_alpha (c); }
-
-    private static int rpmvercmp (string a, string b) {
-        if (a == b) return 0;
-        int i = 0, j = 0;
-        int la = a.length, lb = b.length;
-
-        while (i < la || j < lb) {
-            while (i < la && !is_alnum (a[i]) && a[i] != '~' && a[i] != '^') i++;
-            while (j < lb && !is_alnum (b[j]) && b[j] != '~' && b[j] != '^') j++;
-
-            if ((i < la && a[i] == '~') || (j < lb && b[j] == '~')) {
-                if (i >= la || a[i] != '~') return 1;
-                if (j >= lb || b[j] != '~') return -1;
-                i++; j++; continue;
-            }
-            if ((i < la && a[i] == '^') || (j < lb && b[j] == '^')) {
-                if (i >= la) return -1;
-                if (j >= lb) return 1;
-                if (a[i] != '^') return 1;
-                if (b[j] != '^') return -1;
-                i++; j++; continue;
-            }
-            if (i >= la || j >= lb) break;
-
-            int sa = i, sb = j;
-            bool isnum = is_digit (a[i]);
-            if (isnum) {
-                while (i < la && is_digit (a[i])) i++;
-                while (j < lb && is_digit (b[j])) j++;
-            } else {
-                while (i < la && is_alpha (a[i])) i++;
-                while (j < lb && is_alpha (b[j])) j++;
-            }
-
-            if (sa == i) return -1;
-            if (sb == j) return isnum ? 1 : -1; // numeric beats alphabetic
-
-            string seg_a = a.substring (sa, i - sa);
-            string seg_b = b.substring (sb, j - sb);
-
-            if (isnum) {
-                int za = 0, zb = 0;
-                while (za < seg_a.length && seg_a[za] == '0') za++;
-                while (zb < seg_b.length && seg_b[zb] == '0') zb++;
-                seg_a = seg_a.substring (za);
-                seg_b = seg_b.substring (zb);
-                if (seg_a.length != seg_b.length)
-                    return seg_a.length > seg_b.length ? 1 : -1;
-            }
-            int rc = strcmp (seg_a, seg_b);
-            if (rc != 0) return rc < 0 ? -1 : 1;
-        }
-
-        if (i >= la && j >= lb) return 0;
-        if (i >= la) return -1;
-        return 1;
-    }
-
-    // Parse "[epoch:]version[-release]" into its parts (defaults: epoch=0, rel="").
-    private static void parse_evr (string s, out int epoch, out string ver, out string rel) {
-        epoch = 0;
-        string rest = s;
-        int colon = s.index_of_char (':');
-        if (colon >= 0) {
-            epoch = int.parse (s.substring (0, colon));
-            rest = s.substring (colon + 1);
-        }
-        int dash = rest.index_of_char ('-');
-        if (dash >= 0) {
-            ver = rest.substring (0, dash);
-            rel = rest.substring (dash + 1);
-        } else {
-            ver = rest;
-            rel = "";
-        }
-    }
-
-    // Compare two full EVR strings. <0 if a is older than b.
-    private static int compare_evr (string a, string b) {
-        int ea, eb;
-        string va, vb, ra, rb;
-        parse_evr (a, out ea, out va, out ra);
-        parse_evr (b, out eb, out vb, out rb);
-        if (ea != eb) return ea < eb ? -1 : 1;
-        int c = rpmvercmp (va, vb);
-        if (c != 0) return c;
-        return rpmvercmp (ra, rb);
     }
 
     // Apply the disabled "Installed" look to a button.
@@ -345,14 +172,11 @@ public class DetailsPage : Adw.NavigationPage {
         dlg.present (this.get_root () as Gtk.Window);
     }
 
-    // Run `pkexec apt-get install -y <pkg>`, animating the button during the
-    // run and switching it to a disabled "Installed" state on success.
-    // `repo_evr` is the EVR offered by the current repo branch; cached on
-    // success so the row reflects the new state. `is_update` toggles the
-    // wording of toasts and the "restore" label between Install/Update.
+    // Animate button while the business layer performs the install, then
+    // update UI based on the result.
     private async void install_binary (string pkg_name, Gtk.Button btn,
                                        string? repo_evr, bool is_update) {
-        // Enter "installing" visual state: drop accent, show pulsing green border.
+        // Enter "installing" visual state
         btn.remove_css_class ("suggested-action");
         btn.add_css_class ("ps-installing");
         btn.label = is_update ? _("Updating…") : _("Installing…");
@@ -361,48 +185,39 @@ public class DetailsPage : Adw.NavigationPage {
         toast_overlay.add_toast (new Adw.Toast (
             (is_update ? _("Updating %s…") : _("Installing %s…")).printf (pkg_name)));
 
-        bool ok = false;
-        bool cancelled = false;
-        string? stderr_buf = null;
+        // Delegate to business layer
+        string? error_msg = null;
+        var result = yield pkg_mgr.install_package (pkg_name, repo_evr,
+                                                     out error_msg);
 
-        try {
-            var sp = new GLib.Subprocess.newv (
-                { "pkexec", "apt-get", "install", "-y", pkg_name },
-                GLib.SubprocessFlags.STDOUT_PIPE | GLib.SubprocessFlags.STDERR_PIPE
-            );
-            yield sp.communicate_utf8_async (null, null, null, out stderr_buf);
-
-            ok = sp.get_successful ();
-            // pkexec exits 126 when the user cancels the auth prompt
-            cancelled = !ok && sp.get_if_exited () && sp.get_exit_status () == 126;
-        } catch (Error e) {
-            warning ("[DetailsPage] install spawn failed: %s", e.message);
-            toast_overlay.add_toast (new Adw.Toast (
-                _("Failed to launch installer: %s").printf (e.message)));
-        }
-
-        if (ok) {
-            if (installed_cache != null && repo_evr != null && repo_evr.length > 0)
-                installed_cache.set (pkg_name, repo_evr);
+        switch (result) {
+        case Business.InstallResult.SUCCESS:
             mark_installed (btn);
             toast_overlay.add_toast (new Adw.Toast (
                 (is_update ? _("Updated %s") : _("Installed %s")).printf (pkg_name)));
-        } else {
-            // Restore the idle look so the user can retry
+            break;
+
+        case Business.InstallResult.CANCELLED:
             btn.remove_css_class ("ps-installing");
             btn.add_css_class ("suggested-action");
             btn.label = is_update ? _("Update") : _("Install");
             btn.sensitive = true;
+            toast_overlay.add_toast (new Adw.Toast (_("Installation cancelled")));
+            break;
 
-            if (cancelled) {
-                toast_overlay.add_toast (new Adw.Toast (_("Installation cancelled")));
-            } else if (stderr_buf != null) {
-                warning ("[DetailsPage] apt-get failed for %s: %s",
-                         pkg_name, stderr_buf);
-                toast_overlay.add_toast (new Adw.Toast (
-                    (is_update ? _("Failed to update %s") : _("Failed to install %s"))
-                        .printf (pkg_name)));
+        case Business.InstallResult.FAILED:
+            btn.remove_css_class ("ps-installing");
+            btn.add_css_class ("suggested-action");
+            btn.label = is_update ? _("Update") : _("Install");
+            btn.sensitive = true;
+            if (error_msg != null) {
+                warning ("[DetailsPage] install failed for %s: %s",
+                         pkg_name, error_msg);
             }
+            toast_overlay.add_toast (new Adw.Toast (
+                (is_update ? _("Failed to update %s") : _("Failed to install %s"))
+                    .printf (pkg_name)));
+            break;
         }
     }
 
@@ -474,10 +289,9 @@ public class DetailsPage : Adw.NavigationPage {
             foreach (var k in by_name.keys) names.add (k);
             names.sort ((a, b) => strcmp (a, b));
 
-            // Detect the system branch and decide if install buttons apply
-            var sys_branch = yield detect_system_branch ();
-            bool can_install = sys_branch.length > 0
-                               && sys_branch == branch.down ();
+            // Ask business layer whether install buttons apply
+            var sys_branch = yield pkg_mgr.get_system_branch ();
+            bool can_install = yield pkg_mgr.is_system_branch (branch);
 
             // Show a hint when browsing a non-system branch
             if (sys_branch.length > 0 && !can_install) {
@@ -486,14 +300,12 @@ public class DetailsPage : Adw.NavigationPage {
                         .printf (sys_branch));
             }
 
-            // Find which binaries are already installed in the system
+            // Prepare installed-packages map and repo EVR via business layer
             Gee.HashMap<string, string>? installed = null;
             string repo_evr = "";
             if (can_install) {
-                installed = yield get_installed_pkgs ();
+                installed = yield pkg_mgr.get_installed_packages ();
 
-                // Build the EVR offered by the current repo branch (epoch 0 — rdb
-                // does not expose epoch separately for source packages here).
                 if (is_nonempty (d.version)) {
                     repo_evr = "0:" + d.version;
                     if (is_nonempty (d.release))
@@ -504,7 +316,6 @@ public class DetailsPage : Adw.NavigationPage {
             foreach (var name in names) {
                 var arches = by_name.get (name);
 
-                // Join with ", " and escape for markup label
                 var joined = string.joinv (", ", (string[]) arches.to_array ());
                 var subtitle = GLib.Markup.escape_text (joined, -1);
 
@@ -524,7 +335,8 @@ public class DetailsPage : Adw.NavigationPage {
                     bool needs_update = false;
                     if (is_installed && repo_evr.length > 0) {
                         string installed_evr = installed.get (name);
-                        needs_update = compare_evr (installed_evr, repo_evr) < 0;
+                        needs_update = Business.VersionCompare.compare_evr (
+                            installed_evr, repo_evr) < 0;
                     }
 
                     if (is_installed && !needs_update) {
