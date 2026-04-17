@@ -69,6 +69,7 @@ public class PackageSearchApp : Adw.Application {
             _("Installing %s…"); _("Installed %s"); _("Failed to install %s");
             _("Updating %s…");   _("Updated %s");   _("Failed to update %s");
             _("Installation cancelled"); _("Failed to launch installer: %s");
+            _("Installation is available only for the system repository (%s)");
             // SearchPage
             _("Search"); _("Type a package name…"); _("Search packages");
             _("Start typing a source package name, then pick it from the results.");

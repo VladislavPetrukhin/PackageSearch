@@ -15,6 +15,10 @@ public class DetailsPage : Adw.NavigationPage {
     private static Gee.HashMap<string, string>? installed_cache = null;
     private static bool css_loaded = false;
 
+    // Cached system branch name detected via `apt-repo` (e.g. "sisyphus", "p11").
+    // null means not yet queried; "" means detection failed.
+    private static string? system_branch = null;
+
     [GtkChild] private unowned Adw.ToastOverlay     toast_overlay;
     [GtkChild] private unowned Gtk.Revealer         loading_revealer;
     [GtkChild] private unowned Adw.PreferencesGroup info_group;
@@ -99,6 +103,45 @@ public class DetailsPage : Adw.NavigationPage {
         }
         installed_cache = map;
         return map;
+    }
+
+    // Detect the system's repository branch by running `apt-repo` and parsing
+    // output lines like: rpm [alt] rsync://…/altlinux Sisyphus/x86_64 classic
+    // Returns lowercase branch name (e.g. "sisyphus", "p11") or "" on failure.
+    private async string detect_system_branch () {
+        if (system_branch != null) return system_branch;
+        string detected = "";
+        try {
+            var sp = new GLib.Subprocess.newv (
+                { "apt-repo" },
+                GLib.SubprocessFlags.STDOUT_PIPE | GLib.SubprocessFlags.STDERR_PIPE
+            );
+            string? stdout_buf = null;
+            yield sp.communicate_utf8_async (null, null, out stdout_buf, null);
+            if (stdout_buf != null) {
+                foreach (var line in stdout_buf.split ("\n")) {
+                    var t = line.strip ();
+                    if (t.length == 0) continue;
+                    // Tokenize: "rpm [alt] URL Branch/arch classic"
+                    var parts = t.split (" ");
+                    // Look for a token like "Sisyphus/x86_64" — skip URLs (contain "://")
+                    foreach (var p in parts) {
+                        if (p.index_of_char ('/') < 0) continue;
+                        if (p.contains ("://")) continue;
+                        var segs = p.split ("/");
+                        if (segs.length >= 2 && segs[0].length > 0) {
+                            detected = segs[0].down ();
+                            break;
+                        }
+                    }
+                    if (detected.length > 0) break;
+                }
+            }
+        } catch (Error e) {
+            warning ("[DetailsPage] apt-repo failed: %s", e.message);
+        }
+        system_branch = detected;
+        return system_branch;
     }
 
     /* ===== RPM version comparison =====
@@ -431,16 +474,31 @@ public class DetailsPage : Adw.NavigationPage {
             foreach (var k in by_name.keys) names.add (k);
             names.sort ((a, b) => strcmp (a, b));
 
-            // Find which binaries are already installed in the system
-            var installed = yield get_installed_pkgs ();
+            // Detect the system branch and decide if install buttons apply
+            var sys_branch = yield detect_system_branch ();
+            bool can_install = sys_branch.length > 0
+                               && sys_branch == branch.down ();
 
-            // Build the EVR offered by the current repo branch (epoch 0 — rdb
-            // does not expose epoch separately for source packages here).
+            // Show a hint when browsing a non-system branch
+            if (sys_branch.length > 0 && !can_install) {
+                bins_group.set_description (
+                    _("Installation is available only for the system repository (%s)")
+                        .printf (sys_branch));
+            }
+
+            // Find which binaries are already installed in the system
+            Gee.HashMap<string, string>? installed = null;
             string repo_evr = "";
-            if (is_nonempty (d.version)) {
-                repo_evr = "0:" + d.version;
-                if (is_nonempty (d.release))
-                    repo_evr += "-" + d.release;
+            if (can_install) {
+                installed = yield get_installed_pkgs ();
+
+                // Build the EVR offered by the current repo branch (epoch 0 — rdb
+                // does not expose epoch separately for source packages here).
+                if (is_nonempty (d.version)) {
+                    repo_evr = "0:" + d.version;
+                    if (is_nonempty (d.release))
+                        repo_evr += "-" + d.release;
+                }
             }
 
             foreach (var name in names) {
@@ -455,36 +513,39 @@ public class DetailsPage : Adw.NavigationPage {
                     subtitle = subtitle
                 };
 
-                var install_btn = new Gtk.Button.with_label (_("Install")) {
-                    valign = Gtk.Align.CENTER
-                };
-                install_btn.add_css_class ("suggested-action");
-                install_btn.tooltip_text = _("Install via apt-get (requires authentication)");
+                if (can_install) {
+                    var install_btn = new Gtk.Button.with_label (_("Install")) {
+                        valign = Gtk.Align.CENTER
+                    };
+                    install_btn.add_css_class ("suggested-action");
+                    install_btn.tooltip_text = _("Install via apt-get (requires authentication)");
 
-                bool is_installed = installed.has_key (name);
-                bool needs_update = false;
-                if (is_installed && repo_evr.length > 0) {
-                    string installed_evr = installed.get (name);
-                    needs_update = compare_evr (installed_evr, repo_evr) < 0;
-                }
-
-                if (is_installed && !needs_update) {
-                    mark_installed (install_btn);
-                } else {
-                    bool is_update = needs_update;
-                    string captured_evr = repo_evr;
-                    if (is_update) {
-                        install_btn.label = _("Update");
-                        install_btn.tooltip_text =
-                            _("Update via apt-get (requires authentication)");
+                    bool is_installed = installed.has_key (name);
+                    bool needs_update = false;
+                    if (is_installed && repo_evr.length > 0) {
+                        string installed_evr = installed.get (name);
+                        needs_update = compare_evr (installed_evr, repo_evr) < 0;
                     }
-                    install_btn.clicked.connect (() => {
-                        install_binary.begin (name, install_btn,
-                                              captured_evr, is_update);
-                    });
+
+                    if (is_installed && !needs_update) {
+                        mark_installed (install_btn);
+                    } else {
+                        bool is_update = needs_update;
+                        string captured_evr = repo_evr;
+                        if (is_update) {
+                            install_btn.label = _("Update");
+                            install_btn.tooltip_text =
+                                _("Update via apt-get (requires authentication)");
+                        }
+                        install_btn.clicked.connect (() => {
+                            install_binary.begin (name, install_btn,
+                                                  captured_evr, is_update);
+                        });
+                    }
+
+                    row.add_suffix (install_btn);
                 }
 
-                row.add_suffix (install_btn);
                 bins_group.add (row);
             }
 
