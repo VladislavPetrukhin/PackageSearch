@@ -28,6 +28,7 @@ vala_extra_args = [
   '--pkg=gtk4',
   '--pkg=libadwaita-1',
   '--pkg=json-glib-1.0',
+  '--pkg=libsoup-3.0',
   '--pkg=gee-0.8',
   '--pkg=libalt-repo-1',
   '--Xcc=-DGETTEXT_PACKAGE="@0@"'.format(app_id),
@@ -38,7 +39,7 @@ executable(
   'packagesearch',
   src,
   resources,
-  dependencies: [gtk4_dep, adw_dep, json_dep, gee_dep, alt_repo_dep],
+  dependencies: [gtk4_dep, adw_dep, json_dep, soup_dep, gee_dep, alt_repo_dep],
   vala_args: vala_extra_args,
   install: true
 )
