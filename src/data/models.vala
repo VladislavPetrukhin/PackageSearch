@@ -2,6 +2,15 @@ using Gee;
 
 namespace Data {
 
+// Search mode for the main search entry
+public enum SearchMode {
+    PACKAGE,
+    BINARY,
+    FILE,
+    MAINTAINER,
+    TASK
+}
+
 // Result group for search list (source package + short version/release)
 public class SourceGroup : GLib.Object {
     public string  name    { get; construct set; }
@@ -11,6 +20,16 @@ public class SourceGroup : GLib.Object {
     public SourceGroup (string name) {
         Object (name: name);
     }
+}
+
+// Result for task search
+public class TaskResult : GLib.Object {
+    public int64   task_id  { get; set; }
+    public string  state    { get; set; default = ""; }
+    public string  owner    { get; set; default = ""; }
+    public string  repo     { get; set; default = ""; }
+    public string  changed  { get; set; default = ""; }
+    public string  packages { get; set; default = ""; }
 }
 
 // One binary package produced by the source package

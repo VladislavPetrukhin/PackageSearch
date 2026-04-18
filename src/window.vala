@@ -13,6 +13,7 @@ public class MainWindow : Adw.ApplicationWindow {
 
     [GtkChild] private unowned Gtk.Button         back_btn;
     [GtkChild] private unowned Gtk.DropDown       branch_dropdown;
+    [GtkChild] private unowned Gtk.DropDown       mode_dropdown;
     [GtkChild] private unowned Gtk.SearchEntry    search_entry;
     [GtkChild] private unowned Gtk.Stack          header_stack;
     [GtkChild] private unowned Gtk.Label          title_lbl;
@@ -69,7 +70,20 @@ public class MainWindow : Adw.ApplicationWindow {
 
     /* ===== Header & navigation wiring ===== */
 
-    // Initialize branch dropdown, search entry callbacks, and back button
+    // Search mode labels (indices match Data.SearchMode enum)
+    private const string[] MODE_LABELS = {
+        "Package", "Binary", "File", "Maintainer", "Task"
+    };
+
+    private const string[] MODE_PLACEHOLDERS = {
+        "Type a package name…",
+        "Type a binary package name…",
+        "Type a file path…",
+        "Type a maintainer nickname…",
+        "Type a package name or task ID…"
+    };
+
+    // Initialize branch dropdown, mode dropdown, search entry callbacks, and back button
     private void setup_header_controls () {
         var branches_model = new Gtk.StringList (null);
         string[] branch_names = { "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2" };
@@ -77,8 +91,24 @@ public class MainWindow : Adw.ApplicationWindow {
         branch_dropdown.model = branches_model;
         branch_dropdown.selected = 0;
 
+        // Mode dropdown
+        var modes_model = new Gtk.StringList (null);
+        foreach (string m in MODE_LABELS) modes_model.append (_(m));
+        mode_dropdown.model = modes_model;
+        mode_dropdown.selected = 0;
+
+        mode_dropdown.notify["selected"].connect (() => {
+            var mode = (Data.SearchMode) mode_dropdown.selected;
+            search_page.set_mode (mode);
+            search_entry.set_placeholder_text (_(MODE_PLACEHOLDERS[mode]));
+            // Clear and re-search on mode change
+            search_page.set_query ((search_entry.text ?? "").strip ());
+            search_page.trigger_search_now ();
+        });
+
         // Propagate initial values to the SearchPage
         search_page.set_branch (get_current_branch ());
+        search_page.set_mode ((Data.SearchMode) mode_dropdown.selected);
         search_page.set_query ((search_entry.text ?? "").strip ());
 
         // Live search with debounce on typing
@@ -122,6 +152,7 @@ public class MainWindow : Adw.ApplicationWindow {
 
         back_btn.visible = on_details;
         branch_dropdown.visible = !on_details;
+        mode_dropdown.visible = !on_details;
 
         if (on_details) {
             header_stack.set_visible_child_name ("title");

@@ -37,11 +37,16 @@ template $MainWindow : Adw.ApplicationWindow {
           child: Gtk.Box {
             hexpand: true;
             halign: center;
+            spacing: 6;
+
+            Gtk.DropDown mode_dropdown {
+              valign: center;
+            }
 
             Gtk.SearchEntry search_entry {
               placeholder-text: _("Type a package name…");
               activates-default: true;
-              width-request: 420;
+              width-request: 360;
               valign: center;
               hexpand: true;
             }

@@ -75,6 +75,12 @@ public class PackageSearchApp : Adw.Application {
             _("Start typing a source package name, then pick it from the results.");
             _("Loading results…"); _("No results"); _("Try refining your query or choose another branch.");
             _("Error"); _("Failed to fetch data. Check your connection and package name.");
+            // Search modes
+            _("Package"); _("Binary"); _("File"); _("Maintainer"); _("Task");
+            _("Type a binary package name…");
+            _("Type a file path…"); _("Type a maintainer nickname…"); _("Type a package name or task ID…");
+            _("No source package found for binary \"%s\"");
+            _("Task #%lld  —  %s");
         }
     }
 }

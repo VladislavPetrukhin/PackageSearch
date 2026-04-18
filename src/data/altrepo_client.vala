@@ -229,6 +229,89 @@ public class AltRepoClient : GLib.Object {
         return details;
     }
 
+    /* ===== Search by file ===== */
+    public async Gee.ArrayList<SourceGroup> search_by_file (
+        string branch, string file_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var groups = new Gee.ArrayList<SourceGroup> ();
+        var resp = yield cli.get_file_packages_by_file_async (
+            branch, file_name, Priority.DEFAULT, null
+        );
+        // Deduplicate by package name, keep first occurrence
+        var seen = new Gee.HashSet<string> ();
+        foreach (var pkg in resp.packages) {
+            if (pkg.name == null || seen.contains (pkg.name)) continue;
+            seen.add (pkg.name);
+            var g = new SourceGroup (pkg.name);
+            g.version = pkg.version;
+            g.release = pkg.release;
+            groups.add (g);
+        }
+        return groups;
+    }
+
+    /* ===== Search by maintainer ===== */
+    public async Gee.ArrayList<SourceGroup> search_by_maintainer (
+        string branch, string maintainer, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var groups = new Gee.ArrayList<SourceGroup> ();
+        var resp_list = yield cli.get_site_maintainer_packages_async (
+            branch, maintainer, null, Priority.DEFAULT, null
+        );
+        foreach (var resp in resp_list) {
+            foreach (var pkg in resp.packages) {
+                if (pkg.name == null) continue;
+                var g = new SourceGroup (pkg.name);
+                g.version = pkg.version;
+                g.release = pkg.release;
+                groups.add (g);
+            }
+        }
+        // Sort alphabetically
+        groups.sort ((a, b) => strcmp (a.name, b.name));
+        return groups;
+    }
+
+    /* ===== Search tasks ===== */
+    public async Gee.ArrayList<TaskResult> search_tasks (
+        string term, string? branch = null, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var results = new Gee.ArrayList<TaskResult> ();
+        var resp = yield cli.get_task_progress_find_tasks_async (
+            { term }, null, branch, null, 50, true,
+            Priority.DEFAULT, null
+        );
+        foreach (var t in resp.tasks) {
+            var tr = new TaskResult ();
+            tr.task_id = t.task_id;
+            tr.state   = t.task_state ?? "";
+            tr.owner   = t.task_owner ?? "";
+            tr.repo    = t.task_repo ?? "";
+            tr.changed = t.task_changed ?? "";
+            // Collect package names from subtasks
+            var pkg_names = new Gee.ArrayList<string> ();
+            foreach (var st in t.subtasks) {
+                if (st.subtask_srpm_name != null && st.subtask_srpm_name.length > 0)
+                    pkg_names.add (st.subtask_srpm_name);
+            }
+            tr.packages = string.joinv (", ", (string[]) pkg_names.to_array ());
+            results.add (tr);
+        }
+        return results;
+    }
+
+    /* ===== Find source package by binary name ===== */
+    public async string? find_source_by_binary (
+        string branch, string binary_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var resp = yield cli.get_site_find_source_package_async (
+            branch, binary_name, Priority.DEFAULT, null
+        );
+        if (resp.source_package != null && resp.source_package.length > 0)
+            return resp.source_package;
+        return null;
+    }
+
     /* ===== Changelog ===== */
     public async AltRepo.SiteChangelog get_changelog (
         string branch, string src_name, int64 last = 50, GLib.Cancellable? cancellable = null
