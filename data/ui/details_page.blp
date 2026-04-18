@@ -26,9 +26,14 @@ template $DetailsPage : Adw.NavigationPage {
           margin-bottom: 0;
 
           child: Adw.PreferencesPage {
-            Adw.PreferencesGroup info_group      { title: _("Info"); }
-            Adw.PreferencesGroup bins_group      { title: _("Binaries"); }
-            Adw.PreferencesGroup changelog_group { title: _("Changelog"); }
+            Adw.PreferencesGroup info_group       { title: _("Info"); }
+            Adw.PreferencesGroup bins_group       { title: _("Binaries"); }
+            Adw.PreferencesGroup deps_group       { title: _("Dependencies"); }
+            Adw.PreferencesGroup security_group   { title: _("Security"); }
+            Adw.PreferencesGroup versions_group   { title: _("Versions across branches"); }
+            Adw.PreferencesGroup downloads_group  { title: _("Downloads"); }
+            Adw.PreferencesGroup spec_group       { title: _("Spec file"); }
+            Adw.PreferencesGroup changelog_group  { title: _("Changelog"); }
           };
         }
       };

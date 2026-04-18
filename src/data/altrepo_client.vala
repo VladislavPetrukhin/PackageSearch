@@ -322,6 +322,228 @@ public class AltRepoClient : GLib.Object {
             pkghash, last, Priority.DEFAULT, null
         );
     }
+
+    /* ===== Build-time dependencies (what this source needs to build) ===== */
+    public async Gee.ArrayList<DependencyPackage> get_build_depends (
+        string branch, string src_name, string? arch = "x86_64",
+        GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var out_list = new Gee.ArrayList<DependencyPackage> ();
+        var resp = yield cli.get_package_build_dependency_set_async (
+            branch, { src_name }, arch, Priority.DEFAULT, null
+        );
+        foreach (var grp in resp.packages) {
+            foreach (var d in grp.depends) {
+                var dp = new DependencyPackage ();
+                dp.name    = d.name ?? "";
+                dp.version = d.version;
+                dp.release = d.release;
+                dp.branch  = branch;
+                dp.arch    = (d.archs.size > 0) ? string.joinv (", ", (string[]) d.archs.to_array ()) : null;
+                out_list.add (dp);
+            }
+        }
+        return out_list;
+    }
+
+    /* ===== Reverse dependencies (what depends on this source) ===== */
+    public async Gee.ArrayList<DependencyPackage> get_reverse_depends (
+        string branch, string src_name, string? dp_type = "both",
+        GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var out_list = new Gee.ArrayList<DependencyPackage> ();
+        var resp = yield cli.get_dependencies_what_depends_src_async (
+            src_name, branch, dp_type, Priority.DEFAULT, null
+        );
+        foreach (var el in resp.dependencies) {
+            var dp = new DependencyPackage ();
+            dp.name   = el.name ?? "";
+            dp.branch = el.branch;
+            out_list.add (dp);
+        }
+        return out_list;
+    }
+
+    /* ===== Who depends on this binary package ===== */
+    public async Gee.ArrayList<DependencyPackage> get_dependents_of_binary (
+        string branch, string bin_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var out_list = new Gee.ArrayList<DependencyPackage> ();
+        var resp = yield cli.get_dependencies_packages_by_dependency_async (
+            branch, bin_name, "all", Priority.DEFAULT, null
+        );
+        foreach (var el in resp.packages) {
+            var dp = new DependencyPackage ();
+            dp.name    = el.name ?? "";
+            dp.version = el.version;
+            dp.release = el.release;
+            dp.arch    = el.arch;
+            dp.summary = el.summary;
+            out_list.add (dp);
+        }
+        return out_list;
+    }
+
+    /* ===== CVE info ===== */
+    public async VulnerabilityItem? get_cve_info (
+        string cve_id, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var resp = yield cli.get_vuln_cve_async (cve_id, true, Priority.DEFAULT, null);
+        if (resp == null || resp.vuln_info == null) return null;
+        var v = resp.vuln_info;
+        var item = new VulnerabilityItem ();
+        item.id        = v.id ?? cve_id;
+        item.summary   = v.summary;
+        item.severity  = v.severity;
+        item.score     = v.score;
+        item.url       = v.url;
+        item.published = v.published;
+        item.modified  = v.modified;
+        return item;
+    }
+
+    /* ===== CVE fixes (packages closing a CVE) ===== */
+    public async Gee.ArrayList<VulnFixPackage> get_cve_fixes (
+        string cve_id, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var out_list = new Gee.ArrayList<VulnFixPackage> ();
+        var resp = yield cli.get_vuln_cve_fixes_async (cve_id, true, Priority.DEFAULT, null);
+        foreach (var el in resp.packages) {
+            var p = new VulnFixPackage ();
+            p.name       = el.name ?? "";
+            p.version    = el.version;
+            p.release    = el.release;
+            p.branch     = el.branch;
+            p.errata_id  = el.errata_id;
+            p.task_id    = el.task_id;
+            p.task_state = el.task_state;
+            out_list.add (p);
+        }
+        return out_list;
+    }
+
+    /* ===== Bugzilla issues for a source package ===== */
+    public async Gee.ArrayList<BugItem> get_bugs_by_package (
+        string src_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var out_list = new Gee.ArrayList<BugItem> ();
+        var resp_list = yield cli.get_bug_bugzilla_by_package_async (
+            src_name, "source", Priority.DEFAULT, null
+        );
+        foreach (var resp in resp_list) {
+            foreach (var b in resp.bugs) {
+                var item = new BugItem ();
+                item.id           = b.id ?? "";
+                item.status       = b.status;
+                item.resolution   = b.resolution;
+                item.severity     = b.severity;
+                item.component    = b.component;
+                item.summary      = b.summary;
+                item.assignee     = b.assignee;
+                item.reporter     = b.reporter;
+                item.last_changed = b.last_changed;
+                out_list.add (item);
+            }
+        }
+        return out_list;
+    }
+
+    /* ===== Package versions across all branches ===== */
+    public async Gee.ArrayList<BranchVersion> get_package_versions_all (
+        string src_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var out_list = new Gee.ArrayList<BranchVersion> ();
+        var resp = yield cli.get_site_package_versions_async (
+            src_name, "source", null, Priority.DEFAULT, null
+        );
+        foreach (var v in resp.versions) {
+            var bv = new BranchVersion ();
+            bv.branch  = v.branch ?? "";
+            bv.version = v.version;
+            bv.release = v.release;
+            bv.pkghash = v.pkghash;
+            out_list.add (bv);
+        }
+        return out_list;
+    }
+
+    /* ===== Compare two package sets ===== */
+    public async AltRepo.PackagesetCompare compare_packagesets (
+        string pkgset1, string pkgset2, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        return yield cli.get_packageset_compare_packagesets_async (
+            pkgset1, pkgset2, Priority.DEFAULT, null
+        );
+    }
+
+    /* ===== Download links for source package (.src.rpm) ===== */
+    public async Gee.ArrayList<DownloadLink> get_source_downloads (
+        string branch, string src_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var out_list = new Gee.ArrayList<DownloadLink> ();
+        var h = cli.get_site_pkghash_by_name (branch, src_name, null);
+        var pkghash = int64.parse (h.pkghash);
+        var resp = yield cli.get_site_package_downloads_src_pkghash_async (
+            branch, pkghash, Priority.DEFAULT, null
+        );
+        foreach (var el in resp.downloads) {
+            foreach (var pkg in el.packages) {
+                var d = new DownloadLink ();
+                d.name = pkg.name ?? "";
+                d.arch = el.arch ?? "src";
+                d.url  = pkg.url;
+                d.size = pkg.size;
+                d.md5  = pkg.md5;
+                out_list.add (d);
+            }
+        }
+        return out_list;
+    }
+
+    /* ===== Download links for binaries (.rpm) produced by source ===== */
+    public async Gee.ArrayList<DownloadLink> get_binary_downloads (
+        string branch, string src_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var out_list = new Gee.ArrayList<DownloadLink> ();
+        var h = cli.get_site_pkghash_by_name (branch, src_name, null);
+        var pkghash = int64.parse (h.pkghash);
+        var resp = yield cli.get_site_package_downloads_pkghash_async (
+            branch, pkghash, Priority.DEFAULT, null
+        );
+        foreach (var el in resp.downloads) {
+            foreach (var pkg in el.packages) {
+                var d = new DownloadLink ();
+                d.name = pkg.name ?? "";
+                d.arch = el.arch;
+                d.url  = pkg.url;
+                d.size = pkg.size;
+                d.md5  = pkg.md5;
+                out_list.add (d);
+            }
+        }
+        return out_list;
+    }
+
+    /* ===== Spec file (base64 -> plain text) ===== */
+    public async SpecFileInfo get_specfile (
+        string branch, string src_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var spec = new SpecFileInfo ();
+        var resp = yield cli.get_package_specfile_by_name_async (
+            branch, src_name, Priority.DEFAULT, null
+        );
+        spec.name = resp.specfile_name;
+        spec.date = resp.specfile_date;
+        if (resp.specfile_content != null && resp.specfile_content.length > 0) {
+            var raw = GLib.Base64.decode (resp.specfile_content);
+            // Ensure null-termination before casting to a Vala string
+            var buf = new uint8[raw.length + 1];
+            Memory.copy (buf, raw, raw.length);
+            buf[raw.length] = 0;
+            spec.content = (string) buf;
+        }
+        return spec;
+    }
 }
 
 }

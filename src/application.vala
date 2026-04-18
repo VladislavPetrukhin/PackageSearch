@@ -81,6 +81,22 @@ public class PackageSearchApp : Adw.Application {
             _("Type a file path…"); _("Type a maintainer nickname…"); _("Type a package name or task ID…");
             _("No source package found for binary \"%s\"");
             _("Task #%lld  —  %s");
+            // DetailsPage — extended sections
+            _("Dependencies"); _("Security"); _("Versions across branches");
+            _("Downloads"); _("Spec file");
+            _("Build dependencies"); _("Packages required to build %s");
+            _("Reverse dependencies"); _("Source packages that depend on %s");
+            _("No dependencies found"); _("No reverse dependencies");
+            _("Build dependencies unavailable"); _("Reverse dependencies unavailable");
+            _("Bugzilla"); _("No bugs found"); _("%d bug(s) found");
+            _("Bugzilla unavailable");
+            _("No versions found"); _("Versions unavailable");
+            _("Source (.src.rpm)"); _("Binaries (.rpm)");
+            _("No source downloads"); _("No binary downloads");
+            _("Source downloads unavailable"); _("Binary downloads unavailable");
+            _("Copy download URL"); _("Copied");
+            _("View spec file"); _("Show the RPM spec file used to build this package");
+            _("Open"); _("Spec file not available"); _("Spec file unavailable: %s");
         }
     }
 }

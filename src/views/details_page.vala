@@ -19,6 +19,11 @@ public class DetailsPage : Adw.NavigationPage {
     [GtkChild] private unowned Gtk.Revealer         loading_revealer;
     [GtkChild] private unowned Adw.PreferencesGroup info_group;
     [GtkChild] private unowned Adw.PreferencesGroup bins_group;
+    [GtkChild] private unowned Adw.PreferencesGroup deps_group;
+    [GtkChild] private unowned Adw.PreferencesGroup security_group;
+    [GtkChild] private unowned Adw.PreferencesGroup versions_group;
+    [GtkChild] private unowned Adw.PreferencesGroup downloads_group;
+    [GtkChild] private unowned Adw.PreferencesGroup spec_group;
     [GtkChild] private unowned Adw.PreferencesGroup changelog_group;
 
     // Tunables kept close to usage
@@ -38,6 +43,19 @@ public class DetailsPage : Adw.NavigationPage {
         if (!(url.has_prefix ("http://") || url.has_prefix ("https://")))
             url = "https://" + url;
         return url;
+    }
+
+    // Open URL in default browser (best-effort)
+    private static void open_uri (string url) {
+        try { AppInfo.launch_default_for_uri (url, null); }
+        catch (Error e) { warning ("open url failed: %s", e.message); }
+    }
+
+    // Copy a piece of text to the clipboard
+    private void copy_to_clipboard (string text) {
+        var disp = Gdk.Display.get_default ();
+        if (disp != null) disp.get_clipboard ().set_text (text);
+        toast_overlay.add_toast (new Adw.Toast (_("Copied")));
     }
 
     // Adds info row if value is present
@@ -416,6 +434,248 @@ public class DetailsPage : Adw.NavigationPage {
             toast_overlay.add_toast (new Adw.Toast (_("Failed to load package details")));
         } finally {
             set_loading (false);
+        }
+
+        // Secondary sections — loaded lazily, failures don't block the page
+        load_dependencies.begin ();
+        load_security.begin ();
+        load_versions.begin ();
+        load_downloads.begin ();
+        load_specfile.begin ();
+    }
+
+    /* ===== Dependencies ===== */
+    private async void load_dependencies () {
+        var api = new Data.AltRepoClient ();
+        clear_group (deps_group);
+
+        // Build dependencies — expander row with one item per dep
+        var build_exp = new Adw.ExpanderRow () {
+            title = _("Build dependencies"),
+            subtitle = _("Packages required to build %s").printf (group.name)
+        };
+        try {
+            var builds = yield api.get_build_depends (branch, group.name, "x86_64");
+            if (builds == null || builds.size == 0) {
+                build_exp.add_row (new Adw.ActionRow () { title = _("No dependencies found") });
+            } else {
+                foreach (var d in builds) {
+                    var vr = (d.version ?? "");
+                    if (is_nonempty (d.release)) vr = (vr == "") ? d.release : vr + "-" + d.release;
+                    build_exp.add_row (new Adw.ActionRow () {
+                        title = d.name,
+                        subtitle = GLib.Markup.escape_text (vr, -1)
+                    });
+                }
+            }
+        } catch (Error e) {
+            warning ("[DetailsPage] build deps failed: %s", e.message);
+            build_exp.add_row (new Adw.ActionRow () {
+                title = _("Build dependencies unavailable"),
+                subtitle = GLib.Markup.escape_text (e.message, -1)
+            });
+        }
+        deps_group.add (build_exp);
+
+        // Reverse dependencies — who depends on this source
+        var rev_exp = new Adw.ExpanderRow () {
+            title = _("Reverse dependencies"),
+            subtitle = _("Source packages that depend on %s").printf (group.name)
+        };
+        try {
+            var revs = yield api.get_reverse_depends (branch, group.name, "both");
+            if (revs == null || revs.size == 0) {
+                rev_exp.add_row (new Adw.ActionRow () { title = _("No reverse dependencies") });
+            } else {
+                foreach (var d in revs) {
+                    rev_exp.add_row (new Adw.ActionRow () {
+                        title = d.name,
+                        subtitle = GLib.Markup.escape_text (d.branch ?? "", -1)
+                    });
+                }
+            }
+        } catch (Error e) {
+            warning ("[DetailsPage] reverse deps failed: %s", e.message);
+            rev_exp.add_row (new Adw.ActionRow () {
+                title = _("Reverse dependencies unavailable"),
+                subtitle = GLib.Markup.escape_text (e.message, -1)
+            });
+        }
+        deps_group.add (rev_exp);
+    }
+
+    /* ===== Security (Bugzilla) ===== */
+    private async void load_security () {
+        var api = new Data.AltRepoClient ();
+        clear_group (security_group);
+
+        var bugs_exp = new Adw.ExpanderRow () { title = _("Bugzilla") };
+        try {
+            var bugs = yield api.get_bugs_by_package (group.name);
+            if (bugs == null || bugs.size == 0) {
+                bugs_exp.add_row (new Adw.ActionRow () { title = _("No bugs found") });
+            } else {
+                bugs_exp.set_subtitle (_("%d bug(s) found").printf (bugs.size));
+                foreach (var b in bugs) {
+                    string head = "#" + b.id;
+                    if (is_nonempty (b.severity)) head += "  [" + b.severity + "]";
+                    if (is_nonempty (b.status))   head += "  " + b.status;
+                    var row = new Adw.ActionRow () {
+                        title = head,
+                        subtitle = GLib.Markup.escape_text (b.summary ?? "", -1)
+                    };
+                    row.set_subtitle_lines (2);
+                    row.activatable = true;
+                    string captured_id = b.id;
+                    row.activated.connect (() => {
+                        open_uri ("https://bugzilla.altlinux.org/" + captured_id);
+                    });
+                    bugs_exp.add_row (row);
+                }
+            }
+        } catch (Error e) {
+            warning ("[DetailsPage] bugs failed: %s", e.message);
+            bugs_exp.add_row (new Adw.ActionRow () {
+                title = _("Bugzilla unavailable"),
+                subtitle = GLib.Markup.escape_text (e.message, -1)
+            });
+        }
+        security_group.add (bugs_exp);
+    }
+
+    /* ===== Versions across branches ===== */
+    private async void load_versions () {
+        var api = new Data.AltRepoClient ();
+        clear_group (versions_group);
+        try {
+            var vs = yield api.get_package_versions_all (group.name);
+            if (vs == null || vs.size == 0) {
+                versions_group.add (new Adw.ActionRow () { title = _("No versions found") });
+                return;
+            }
+            foreach (var v in vs) {
+                string vr = (v.version ?? "");
+                if (is_nonempty (v.release)) vr = (vr == "") ? v.release : vr + "-" + v.release;
+                var row = new Adw.ActionRow () {
+                    title = v.branch,
+                    subtitle = GLib.Markup.escape_text (vr, -1)
+                };
+                // Mark current branch with an accent
+                if (v.branch == branch) row.add_css_class ("accent");
+                versions_group.add (row);
+            }
+        } catch (Error e) {
+            warning ("[DetailsPage] versions failed: %s", e.message);
+            versions_group.add (new Adw.ActionRow () {
+                title = _("Versions unavailable"),
+                subtitle = GLib.Markup.escape_text (e.message, -1)
+            });
+        }
+    }
+
+    /* ===== Downloads ===== */
+    private async void load_downloads () {
+        var api = new Data.AltRepoClient ();
+        clear_group (downloads_group);
+
+        // Source .src.rpm links
+        var src_exp = new Adw.ExpanderRow () { title = _("Source (.src.rpm)") };
+        try {
+            var src_links = yield api.get_source_downloads (branch, group.name);
+            if (src_links == null || src_links.size == 0) {
+                src_exp.add_row (new Adw.ActionRow () { title = _("No source downloads") });
+            } else {
+                foreach (var d in src_links) add_download_row (src_exp, d);
+            }
+        } catch (Error e) {
+            warning ("[DetailsPage] src downloads failed: %s", e.message);
+            src_exp.add_row (new Adw.ActionRow () {
+                title = _("Source downloads unavailable"),
+                subtitle = GLib.Markup.escape_text (e.message, -1)
+            });
+        }
+        downloads_group.add (src_exp);
+
+        // Binary .rpm links
+        var bin_exp = new Adw.ExpanderRow () { title = _("Binaries (.rpm)") };
+        try {
+            var bin_links = yield api.get_binary_downloads (branch, group.name);
+            if (bin_links == null || bin_links.size == 0) {
+                bin_exp.add_row (new Adw.ActionRow () { title = _("No binary downloads") });
+            } else {
+                foreach (var d in bin_links) add_download_row (bin_exp, d);
+            }
+        } catch (Error e) {
+            warning ("[DetailsPage] bin downloads failed: %s", e.message);
+            bin_exp.add_row (new Adw.ActionRow () {
+                title = _("Binary downloads unavailable"),
+                subtitle = GLib.Markup.escape_text (e.message, -1)
+            });
+        }
+        downloads_group.add (bin_exp);
+    }
+
+    // Append a row to download expander — row opens the URL on activation,
+    // suffix copy button copies the URL to clipboard.
+    private void add_download_row (Adw.ExpanderRow exp, Data.DownloadLink d) {
+        string sub = "";
+        if (is_nonempty (d.arch)) sub = d.arch;
+        if (is_nonempty (d.size)) sub = (sub == "") ? d.size : sub + " · " + d.size;
+
+        var row = new Adw.ActionRow () {
+            title = d.name,
+            subtitle = GLib.Markup.escape_text (sub, -1)
+        };
+        row.activatable = true;
+        if (is_nonempty (d.url)) {
+            string captured_url = d.url;
+            row.activated.connect (() => { open_uri (captured_url); });
+
+            var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
+                valign = Gtk.Align.CENTER,
+                tooltip_text = _("Copy download URL")
+            };
+            copy_btn.add_css_class ("flat");
+            copy_btn.clicked.connect (() => { copy_to_clipboard (captured_url); });
+            row.add_suffix (copy_btn);
+        }
+        exp.add_row (row);
+    }
+
+    /* ===== Spec file ===== */
+    private async void load_specfile () {
+        var api = new Data.AltRepoClient ();
+        clear_group (spec_group);
+
+        Adw.ActionRow row = new Adw.ActionRow () {
+            title = _("View spec file"),
+            subtitle = _("Show the RPM spec file used to build this package")
+        };
+        var view_btn = new Gtk.Button.with_label (_("Open")) {
+            valign = Gtk.Align.CENTER
+        };
+        view_btn.sensitive = false;
+        view_btn.add_css_class ("suggested-action");
+        row.add_suffix (view_btn);
+        spec_group.add (row);
+
+        try {
+            var spec = yield api.get_specfile (branch, group.name);
+            if (spec == null || !is_nonempty (spec.content)) {
+                row.set_subtitle (_("Spec file not available"));
+                return;
+            }
+            row.set_subtitle (spec.name ?? _("Spec file"));
+            view_btn.sensitive = true;
+
+            string title = spec.name ?? (group.name + ".spec");
+            string body  = spec.content;
+            view_btn.clicked.connect (() => {
+                show_changelog_dialog (title, body);
+            });
+        } catch (Error e) {
+            warning ("[DetailsPage] specfile failed: %s", e.message);
+            row.set_subtitle (_("Spec file unavailable: %s").printf (e.message));
         }
     }
 }
