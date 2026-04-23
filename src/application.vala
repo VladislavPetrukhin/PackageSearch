@@ -110,6 +110,7 @@ public class PackageSearchApp : Adw.Application {
             _("Open in browser"); _("Copy"); _("%d packages");
             _("Search and inspect source packages across the ALT Linux Sisyphus, p11, p10, p9, c10f2 and c9f2 repositories.");
             _("translator-credits");
+            _("Loading spec file…");
         }
     }
 }

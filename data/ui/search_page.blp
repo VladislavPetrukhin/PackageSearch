@@ -11,20 +11,12 @@ template $SearchPage : Adw.NavigationPage {
       show-start-title-buttons: true;
       show-end-title-buttons: false;
 
-      title-widget: Gtk.Box {
+      title-widget: Gtk.Box branch_group {
         orientation: horizontal;
-        spacing: 6;
         halign: center;
-
-        Gtk.DropDown mode_dropdown {
-          valign: center;
-          tooltip-text: _("Search mode");
-        }
-
-        Gtk.DropDown branch_dropdown {
-          valign: center;
-          tooltip-text: _("Repository branch");
-        }
+        valign: center;
+        spacing: 2;
+        styles ["branch-toggles"]
       };
 
       [end]
@@ -40,10 +32,16 @@ template $SearchPage : Adw.NavigationPage {
     [top]
     Gtk.Box search_bar_row {
       orientation: horizontal;
+      spacing: 6;
       margin-start: 12;
       margin-end: 12;
       margin-top: 6;
       margin-bottom: 6;
+
+      Gtk.DropDown mode_dropdown {
+        valign: center;
+        tooltip-text: _("Search mode");
+      }
 
       Gtk.SearchEntry search_entry {
         placeholder-text: _("Type a package name…");

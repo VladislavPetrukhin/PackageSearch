@@ -510,9 +510,18 @@ public class AltRepoClient : GLib.Object {
         string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
         var out_list = new Gee.ArrayList<BugItem> ();
-        var resp_list = yield cli.get_bug_bugzilla_by_package_async (
-            src_name, "source", Priority.DEFAULT, null
-        );
+        Gee.List<AltRepo.BugzillaInfo>? resp_list = null;
+        try {
+            resp_list = yield cli.get_bug_bugzilla_by_package_async (
+                src_name, "source", Priority.DEFAULT, null
+            );
+        } catch (Error e) {
+            // The API returns a 404-like error when the package has no bugs.
+            // Treat that as "no results", not as an error.
+            if (is_no_data_error (e)) return out_list;
+            throw e;
+        }
+        if (resp_list == null) return out_list;
         foreach (var resp in resp_list) {
             foreach (var b in resp.bugs) {
                 var item = new BugItem ();

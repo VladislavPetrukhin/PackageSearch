@@ -257,20 +257,65 @@ template $DetailsPage : Adw.NavigationPage {
               title: _("Spec");
               icon-name: "text-x-generic-symbolic";
 
-              child: Gtk.ScrolledWindow {
-                hscrollbar-policy: never;
-                vexpand: true;
+              child: Gtk.Box spec_box {
+                orientation: vertical;
+                spacing: 0;
 
-                child: Adw.Clamp {
-                  maximum-size: 1100;
-                  margin-start: 12;
-                  margin-end: 12;
-                  margin-bottom: 12;
+                Adw.Banner spec_banner {
+                  revealed: false;
+                }
 
-                  child: Adw.PreferencesGroup spec_group {
-                    title: _("Spec file");
-                  };
-                };
+                Gtk.Stack spec_stack {
+                  vexpand: true;
+                  transition-type: crossfade;
+
+                  Gtk.StackPage {
+                    name: "loading";
+
+                    child: Gtk.CenterBox {
+                      valign: center;
+                      halign: center;
+
+                      center-widget: Gtk.Box {
+                        orientation: vertical;
+                        spacing: 10;
+                        halign: center;
+
+                        Gtk.Spinner {
+                          spinning: true;
+                          width-request: 36;
+                          height-request: 36;
+                        }
+
+                        Gtk.Label {
+                          label: _("Loading spec file…");
+                        }
+                      };
+                    };
+                  }
+
+                  Gtk.StackPage {
+                    name: "content";
+
+                    child: Gtk.ScrolledWindow {
+                      hscrollbar-policy: automatic;
+                      vscrollbar-policy: automatic;
+                      vexpand: true;
+
+                      child: Gtk.TextView spec_view {
+                        editable: false;
+                        cursor-visible: false;
+                        monospace: true;
+                        wrap-mode: none;
+                        top-margin: 10;
+                        bottom-margin: 10;
+                        left-margin: 14;
+                        right-margin: 14;
+                        styles ["spec-view"]
+                      };
+                    };
+                  }
+                }
               };
             }
 

@@ -119,6 +119,51 @@ public class Style : GLib.Object {
         padding-bottom: 0;
     }
 
+    /* ---- Branch toggle group (segmented-control look) ---- */
+    .branch-toggles {
+        padding: 3px;
+        border-radius: 999px;
+        background: alpha(@window_fg_color, 0.06);
+        border: 1px solid alpha(@window_fg_color, 0.08);
+    }
+    .branch-toggles > button {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        outline: none;
+        min-height: 24px;
+        padding: 3px 12px;
+        margin: 0;
+        border-radius: 999px;
+        font-size: 0.86em;
+        font-weight: 500;
+        transition:
+            background-color 160ms ease,
+            color 160ms ease,
+            box-shadow 160ms ease,
+            transform 80ms ease;
+    }
+    .branch-toggles > button label {
+        padding: 0;
+        margin: 0;
+    }
+    .branch-toggles > button:hover {
+        background: alpha(@accent_bg_color, 0.18);
+        color: @accent_color;
+    }
+    .branch-toggles > button:checked {
+        background: @accent_bg_color;
+        color: @accent_fg_color;
+        font-weight: 700;
+        box-shadow: 0 1px 3px alpha(@accent_color, 0.40);
+    }
+    .branch-toggles > button:checked:hover {
+        background: shade(@accent_bg_color, 1.06);
+    }
+    .branch-toggles > button:active {
+        transform: scale(0.97);
+    }
+
     /* ---- Subtle sidebar selection highlight ---- */
     .sidebar listview row:selected .big-card {
         border-color: @accent_color;

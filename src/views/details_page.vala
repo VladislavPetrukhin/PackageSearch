@@ -32,7 +32,9 @@ public class DetailsPage : Adw.NavigationPage {
     [GtkChild] private unowned Adw.PreferencesGroup security_group;
     [GtkChild] private unowned Adw.PreferencesGroup versions_group;
     [GtkChild] private unowned Adw.PreferencesGroup downloads_group;
-    [GtkChild] private unowned Adw.PreferencesGroup spec_group;
+    [GtkChild] private unowned Gtk.TextView    spec_view;
+    [GtkChild] private unowned Adw.Banner      spec_banner;
+    [GtkChild] private unowned Gtk.Stack       spec_stack;
     [GtkChild] private unowned Adw.PreferencesGroup changelog_group;
 
     private const int  MAX_CHANGE_PREVIEW = 200;
@@ -123,8 +125,9 @@ public class DetailsPage : Adw.NavigationPage {
         downloads_group.add (make_skeleton_row ());
         downloads_group.add (make_skeleton_row ());
 
-        clear_group (spec_group);
-        spec_group.add (make_skeleton_row ());
+        // Spec uses its own stack: show the loading page.
+        spec_banner.revealed = false;
+        spec_stack.set_visible_child_name ("loading");
 
         clear_group (changelog_group);
         for (int i = 0; i < 3; i++) changelog_group.add (make_skeleton_row ());
@@ -796,44 +799,27 @@ public class DetailsPage : Adw.NavigationPage {
 
     private async void load_specfile () {
         var api = new Data.AltRepoClient ();
-        clear_group (spec_group);
 
-        var row = new Adw.ActionRow () {
-            title = _("View spec file"),
-            subtitle = _("Show the RPM spec file used to build this package")
-        };
-        var view_btn = new Gtk.Button.with_label (_("Open")) {
-            valign = Gtk.Align.CENTER
-        };
-        view_btn.sensitive = false;
-        view_btn.add_css_class ("suggested-action");
-        view_btn.add_css_class ("pill");
-        row.add_suffix (view_btn);
-        spec_group.add (row);
+        spec_banner.revealed = false;
+        spec_stack.set_visible_child_name ("loading");
 
         try {
             var spec = yield api.get_specfile (branch, group.name);
             if (spec == null || !is_nonempty (spec.content)) {
-                row.set_subtitle (_("Spec file not available"));
+                spec_banner.title = _("Spec file not available");
+                spec_banner.revealed = true;
+                spec_view.buffer.set_text ("");
+                spec_stack.set_visible_child_name ("content");
                 return;
             }
-            row.set_subtitle (spec.name ?? _("Spec file"));
-            view_btn.sensitive = true;
-
-            string title = spec.name ?? (group.name + ".spec");
-            string body  = spec.content;
-            view_btn.clicked.connect (() => {
-                show_text_dialog (title, body, true);
-            });
-
-            // Also make the whole row activatable for bigger touch target
-            row.activatable = true;
-            row.activated.connect (() => {
-                show_text_dialog (title, body, true);
-            });
+            spec_view.buffer.set_text (spec.content);
+            spec_stack.set_visible_child_name ("content");
         } catch (Error e) {
             warning ("[DetailsPage] specfile failed: %s", e.message);
-            row.set_subtitle (_("Spec file unavailable: %s").printf (e.message));
+            spec_banner.title = _("Spec file unavailable: %s").printf (e.message);
+            spec_banner.revealed = true;
+            spec_view.buffer.set_text ("");
+            spec_stack.set_visible_child_name ("content");
         }
     }
 }

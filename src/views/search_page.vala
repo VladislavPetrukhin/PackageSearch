@@ -14,8 +14,10 @@ public class SearchPage : Adw.NavigationPage {
 
     // Header controls now live inside SearchPage's own blueprint
     [GtkChild] private unowned Gtk.DropDown    mode_dropdown;
-    [GtkChild] private unowned Gtk.DropDown    branch_dropdown;
+    [GtkChild] private unowned Gtk.Box         branch_group;
     [GtkChild] private unowned Gtk.SearchEntry search_entry;
+
+    private Gee.ArrayList<Gtk.ToggleButton> branch_buttons;
 
     // Empty-/error-state action buttons
     [GtkChild] private unowned Gtk.Button clear_btn;
@@ -159,13 +161,30 @@ public class SearchPage : Adw.NavigationPage {
     construct {
         Style.ensure ();
 
-        // Populate dropdowns
-        var branches_model = new Gtk.StringList (null);
+        // Branch buttons — linked toggle group, one active at a time
+        branch_buttons = new Gee.ArrayList<Gtk.ToggleButton> ();
         string[] branch_names = { "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2" };
-        foreach (string b in branch_names) branches_model.append (b);
-        branch_dropdown.model = branches_model;
-        branch_dropdown.selected = 0;
+        Gtk.ToggleButton? first = null;
+        foreach (string bname in branch_names) {
+            var btn = new Gtk.ToggleButton.with_label (bname);
+            btn.valign = Gtk.Align.CENTER;
+            if (first == null) {
+                btn.active = true;
+                first = btn;
+            } else {
+                btn.set_group (first);
+            }
+            string captured = bname;
+            btn.toggled.connect (() => {
+                if (!btn.active) return;
+                set_branch (captured);
+                trigger_search_now ();
+            });
+            branch_group.append (btn);
+            branch_buttons.add (btn);
+        }
 
+        // Mode dropdown
         var modes_model = new Gtk.StringList (null);
         foreach (string m in MODE_LABELS) modes_model.append (_(m));
         mode_dropdown.model = modes_model;
@@ -193,16 +212,12 @@ public class SearchPage : Adw.NavigationPage {
             trigger_search_now ();
         });
 
-        // Wire dropdowns
+        // Wire mode dropdown
         mode_dropdown.notify["selected"].connect (() => {
             var mode = (Data.SearchMode) mode_dropdown.selected;
             set_mode (mode);
             search_entry.set_placeholder_text (_(MODE_PLACEHOLDERS[mode]));
             set_query ((search_entry.text ?? "").strip ());
-            trigger_search_now ();
-        });
-        branch_dropdown.notify["selected"].connect (() => {
-            set_branch (read_branch ());
             trigger_search_now ();
         });
 
@@ -216,10 +231,14 @@ public class SearchPage : Adw.NavigationPage {
             wants_clear ();
         });
         try_other_branch_btn.clicked.connect (() => {
-            // Cycle to the next branch in the list
-            int n = (int) branches_model.get_n_items ();
+            // Cycle to the next branch button in the group
+            int n = branch_buttons.size;
             if (n <= 1) return;
-            branch_dropdown.selected = (branch_dropdown.selected + 1) % (uint) n;
+            int current = 0;
+            for (int i = 0; i < n; i++) {
+                if (branch_buttons.get (i).active) { current = i; break; }
+            }
+            branch_buttons.get ((current + 1) % n).active = true;
         });
         retry_btn.clicked.connect (() => {
             trigger_search_now ();
@@ -229,10 +248,10 @@ public class SearchPage : Adw.NavigationPage {
     }
 
     private string read_branch () {
-        int idx = (int) branch_dropdown.selected;
-        var m = branch_dropdown.model as Gtk.StringList;
-        if (m == null || idx < 0) return "sisyphus";
-        return m.get_string ((uint) idx);
+        foreach (var btn in branch_buttons) {
+            if (btn.active) return btn.get_label () ?? "sisyphus";
+        }
+        return "sisyphus";
     }
 
     /* ===== Factories ===== */
