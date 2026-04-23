@@ -287,17 +287,29 @@ public class SearchPage : Adw.NavigationPage {
                 width_request = 36
             };
 
-            var text_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
+            var text_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
             text_box.set_hexpand (true);
             text_box.set_valign (Gtk.Align.CENTER);
 
-            var title = new Gtk.Label ("") { xalign = 0.0f, hexpand = true, valign = Align.CENTER };
+            var title = new Gtk.Label ("") {
+                xalign = 0.0f,
+                halign = Gtk.Align.START,
+                hexpand = true,
+                ellipsize = Pango.EllipsizeMode.END,
+                single_line_mode = true,
+                max_width_chars = 40
+            };
             title.add_css_class ("title-4");
-            title.set_ellipsize (EllipsizeMode.END);
 
-            var subtitle = new Gtk.Label ("") { xalign = 0.0f, hexpand = true, valign = Align.CENTER };
+            var subtitle = new Gtk.Label ("") {
+                xalign = 0.0f,
+                halign = Gtk.Align.START,
+                hexpand = true,
+                ellipsize = Pango.EllipsizeMode.END,
+                single_line_mode = true,
+                max_width_chars = 50
+            };
             subtitle.add_css_class ("subtitle");
-            subtitle.set_ellipsize (EllipsizeMode.END);
 
             text_box.append (title);
             text_box.append (subtitle);
@@ -380,13 +392,18 @@ public class SearchPage : Adw.NavigationPage {
                 css_classes = { "result-icon" }
             };
 
-            var text_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
+            var text_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 6);
             text_box.set_hexpand (true);
             text_box.set_valign (Gtk.Align.CENTER);
 
-            var title = new Gtk.Label ("") { xalign = 0.0f, hexpand = true, valign = Align.CENTER };
+            var title = new Gtk.Label ("") {
+                xalign = 0.0f,
+                halign = Gtk.Align.START,
+                hexpand = true,
+                ellipsize = Pango.EllipsizeMode.END,
+                single_line_mode = true
+            };
             title.add_css_class ("title-4");
-            title.set_ellipsize (EllipsizeMode.END);
 
             var state_tag = Style.make_tag ("", "accent");
             state_tag.visible = false;
@@ -395,13 +412,23 @@ public class SearchPage : Adw.NavigationPage {
             title_row.append (title);
             title_row.append (state_tag);
 
-            var subtitle = new Gtk.Label ("") { xalign = 0.0f, hexpand = true, valign = Align.CENTER };
+            var subtitle = new Gtk.Label ("") {
+                xalign = 0.0f,
+                halign = Gtk.Align.START,
+                hexpand = true,
+                ellipsize = Pango.EllipsizeMode.END,
+                single_line_mode = true
+            };
             subtitle.add_css_class ("subtitle");
-            subtitle.set_ellipsize (EllipsizeMode.END);
 
-            var pkgs_lbl = new Gtk.Label ("") { xalign = 0.0f, hexpand = true, valign = Align.CENTER };
+            var pkgs_lbl = new Gtk.Label ("") {
+                xalign = 0.0f,
+                halign = Gtk.Align.START,
+                hexpand = true,
+                ellipsize = Pango.EllipsizeMode.END,
+                single_line_mode = true
+            };
             pkgs_lbl.add_css_class ("subtitle");
-            pkgs_lbl.set_ellipsize (EllipsizeMode.END);
 
             text_box.append (title_row);
             text_box.append (subtitle);

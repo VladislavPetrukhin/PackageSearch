@@ -10,9 +10,8 @@ using Intl;
 public class MainWindow : Adw.ApplicationWindow {
     [GtkChild] private unowned Adw.NavigationSplitView split_view;
 
-    private SearchPage      search_page;
-    private WelcomePage?    welcome_page;
-    private DetailsPage?    current_details = null;
+    private SearchPage   search_page;
+    private DetailsPage? current_details = null;
 
     private const GLib.ActionEntry[] WIN_ACTIONS = {
         { "about",     on_action_about     },
@@ -40,9 +39,10 @@ public class MainWindow : Adw.ApplicationWindow {
         });
         split_view.sidebar = search_page;
 
-        // Content side starts with a welcome page
-        welcome_page = new WelcomePage ();
-        split_view.content = welcome_page;
+        // Start with no content: only the sidebar is shown.
+        // collapsed=true makes the split act like a navigation stack, so
+        // the sidebar fills the whole window until the user picks a package.
+        split_view.collapsed = true;
 
         // Keyboard shortcuts
         install_accels ();
@@ -94,6 +94,10 @@ public class MainWindow : Adw.ApplicationWindow {
         var details = new DetailsPage (group, branch, this);
         current_details = details;
         split_view.content = details;
+        // On wide screens: reveal the split so sidebar + details are visible
+        // side-by-side. On narrow screens the breakpoint keeps collapsed=true,
+        // and show_content=true slides details over the sidebar.
+        split_view.collapsed = false;
         split_view.show_content = true;
     }
 
@@ -157,28 +161,3 @@ public class MainWindow : Adw.ApplicationWindow {
     }
 }
 
-/* A small welcome page shown in the content area before the user picks a
- * package. It's a NavigationPage so it slots into Adw.NavigationSplitView.
- */
-public class WelcomePage : Adw.NavigationPage {
-    construct {
-        this.title = _("PackageSearch");
-        this.tag   = "welcome";
-
-        var status = new Adw.StatusPage () {
-            icon_name   = "system-search-symbolic",
-            title       = _("Welcome to PackageSearch"),
-            description = _("Pick a search mode and start typing in the panel on the left.\nSelect a package to see its details here.")
-        };
-
-        var toolbar = new Adw.ToolbarView ();
-        var header  = new Adw.HeaderBar () {
-            show_end_title_buttons = true
-        };
-        header.set_title_widget (new Adw.WindowTitle ("PackageSearch", ""));
-        toolbar.add_top_bar (header);
-        toolbar.set_content (status);
-
-        this.set_child (toolbar);
-    }
-}

@@ -37,8 +37,16 @@ public class Style : GLib.Object {
         border: 1px solid alpha(currentColor, 0.10);
         transition: border-color 140ms ease, background-color 140ms ease;
     }
-    .big-card > box { padding: 14px 14px; min-height: 56px; }
-    .big-card .subtitle { opacity: 0.7; font-size: 0.92em; }
+    .big-card > box {
+        padding: 12px 14px;
+    }
+    .big-card .title-4 {
+        margin-bottom: 2px;
+    }
+    .big-card .subtitle {
+        opacity: 0.65;
+        font-size: 0.88em;
+    }
     .big-card.hover {
         border-color: alpha(@accent_color, 0.7);
         background-color: alpha(@accent_bg_color, 0.07);

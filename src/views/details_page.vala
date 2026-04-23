@@ -165,13 +165,28 @@ public class DetailsPage : Adw.NavigationPage {
 
     /* ===== Helpers ===== */
 
-    private void clear_group (Adw.PreferencesGroup grp) {
-        for (var child = grp.get_first_child (); child != null; ) {
-            var next = child.get_next_sibling ();
-            var row = child as Adw.PreferencesRow;
-            if (row != null) grp.remove (row);
-            child = next;
+    // Adw.PreferencesGroup wraps its rows in an internal Gtk.Box → Gtk.ListBox
+    // tree, so get_first_child() doesn't yield rows directly. We recursively
+    // find the internal ListBox, collect its children, then ask the group to
+    // remove each (group.remove walks down into the listbox).
+    private Gtk.ListBox? find_listbox (Gtk.Widget w) {
+        for (var c = w.get_first_child (); c != null; c = c.get_next_sibling ()) {
+            if (c is Gtk.ListBox) return (Gtk.ListBox) c;
+            var r = find_listbox (c);
+            if (r != null) return r;
         }
+        return null;
+    }
+
+    private void clear_group (Adw.PreferencesGroup grp) {
+        var lb = find_listbox (grp);
+        if (lb == null) return;
+
+        var to_remove = new Gee.ArrayList<Gtk.Widget> ();
+        for (var c = lb.get_first_child (); c != null; c = c.get_next_sibling ()) {
+            to_remove.add (c);
+        }
+        foreach (var w in to_remove) grp.remove (w);
     }
 
     private void clear_box (Gtk.Box box) {
