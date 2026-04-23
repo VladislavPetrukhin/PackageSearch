@@ -9,14 +9,23 @@ template $SearchPage : Adw.NavigationPage {
     [top]
     Adw.HeaderBar search_header {
       show-start-title-buttons: true;
-      show-end-title-buttons: false;
+      show-end-title-buttons: true;
 
-      title-widget: Gtk.Box branch_group {
-        orientation: horizontal;
-        halign: center;
+      title-widget: Gtk.ScrolledWindow branch_scroller {
+        hscrollbar-policy: external;
+        vscrollbar-policy: never;
+        propagate-natural-width: true;
+        propagate-natural-height: true;
+        hexpand: false;
         valign: center;
-        spacing: 2;
-        styles ["branch-toggles"]
+
+        child: Gtk.Box branch_group {
+          orientation: horizontal;
+          halign: center;
+          valign: center;
+          spacing: 2;
+          styles ["branch-toggles"]
+        };
       };
 
       [end]
@@ -128,18 +137,43 @@ template $SearchPage : Adw.NavigationPage {
             description: _("Try refining your query or choose another branch.");
 
             child: Gtk.Box {
-              orientation: horizontal;
+              orientation: vertical;
               halign: center;
-              spacing: 8;
+              spacing: 14;
 
-              Gtk.Button clear_btn {
-                label: _("Clear search");
-                styles ["pill"]
+              Gtk.Box {
+                orientation: horizontal;
+                halign: center;
+                spacing: 8;
+
+                Gtk.Button clear_btn {
+                  label: _("Clear search");
+                  styles ["pill"]
+                }
+
+                Gtk.Button try_other_branch_btn {
+                  label: _("Try another branch");
+                  styles ["pill", "suggested-action"]
+                }
               }
 
-              Gtk.Button try_other_branch_btn {
-                label: _("Try another branch");
-                styles ["pill", "suggested-action"]
+              Gtk.Box suggestions_wrap {
+                orientation: vertical;
+                halign: center;
+                spacing: 6;
+                visible: false;
+
+                Gtk.Label suggestions_header {
+                  label: _("Maybe you meant to search as…");
+                  halign: center;
+                  styles ["dim-label", "caption-heading"]
+                }
+
+                Gtk.Box suggestions_box {
+                  orientation: vertical;
+                  halign: center;
+                  spacing: 6;
+                }
               }
             };
           };

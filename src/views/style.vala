@@ -170,6 +170,22 @@ public class Style : GLib.Object {
         background: alpha(@accent_bg_color, 0.15);
     }
 
+    /* ---- Suggestion buttons under "No results" ---- */
+    button.suggestion {
+        padding: 6px 14px;
+        background: alpha(@accent_bg_color, 0.10);
+        color: @window_fg_color;
+        border: 1px solid alpha(@accent_color, 0.30);
+        transition: background-color 140ms ease, border-color 140ms ease;
+    }
+    button.suggestion:hover {
+        background: alpha(@accent_bg_color, 0.22);
+        border-color: @accent_color;
+    }
+    button.suggestion:active {
+        background: alpha(@accent_bg_color, 0.35);
+    }
+
     /* ---- Version row current-branch accent ---- */
     .current-branch-row {
         background: alpha(@accent_bg_color, 0.10);

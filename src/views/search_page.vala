@@ -24,6 +24,10 @@ public class SearchPage : Adw.NavigationPage {
     [GtkChild] private unowned Gtk.Button try_other_branch_btn;
     [GtkChild] private unowned Gtk.Button retry_btn;
 
+    // "Maybe you meant…" suggestions under empty state
+    [GtkChild] private unowned Gtk.Box suggestions_wrap;
+    [GtkChild] private unowned Gtk.Box suggestions_box;
+
     private GLib.ListStore  store;
     private GLib.ListStore  task_store;
     private Gtk.NoSelection no_sel;
@@ -40,6 +44,7 @@ public class SearchPage : Adw.NavigationPage {
     private const uint DEBOUNCE_MS = 250;
 
     private GLib.Cancellable? in_flight = null;
+    private GLib.Cancellable? suggestions_cancel = null;
     private uint64            query_seq = 0;
 
     // Labels for the mode dropdown; index matches Data.SearchMode enum.
@@ -87,6 +92,7 @@ public class SearchPage : Adw.NavigationPage {
         if (current_query.length == 0) {
             if (in_flight != null) { in_flight.cancel (); in_flight = null; }
             if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
+            cancel_suggestions ();
             clear_stores ();
             show_idle ();
         }
@@ -103,6 +109,7 @@ public class SearchPage : Adw.NavigationPage {
 
         if (in_flight != null) { in_flight.cancel (); in_flight = null; }
         if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
+        cancel_suggestions ();
         clear_stores ();
 
         if (mode == Data.SearchMode.TASK) {
@@ -120,6 +127,7 @@ public class SearchPage : Adw.NavigationPage {
 
         if (current_query.length == 0) {
             if (in_flight != null) { in_flight.cancel (); in_flight = null; }
+            cancel_suggestions ();
             clear_stores ();
             show_idle ();
             return;
@@ -137,15 +145,34 @@ public class SearchPage : Adw.NavigationPage {
 
         if (current_query.length == 0) {
             if (in_flight != null) { in_flight.cancel (); in_flight = null; }
+            cancel_suggestions ();
             clear_stores ();
             show_idle ();
             return;
         }
 
         if (in_flight != null) { in_flight.cancel (); in_flight = null; }
+        cancel_suggestions ();
         in_flight = new GLib.Cancellable ();
         query_seq++;
         do_search.begin (in_flight, query_seq);
+    }
+
+    private void cancel_suggestions () {
+        if (suggestions_cancel != null) {
+            suggestions_cancel.cancel ();
+            suggestions_cancel = null;
+        }
+        suggestions_wrap.visible = false;
+        clear_suggestions ();
+    }
+
+    private void clear_suggestions () {
+        for (var c = suggestions_box.get_first_child (); c != null; ) {
+            var next = c.get_next_sibling ();
+            suggestions_box.remove (c);
+            c = next;
+        }
     }
 
     // Focus the search entry (used by keyboard shortcut).
@@ -606,7 +633,12 @@ public class SearchPage : Adw.NavigationPage {
             if (results != null) {
                 foreach (var g in results) if (g != null) store.append (g);
             }
-            if (store.get_n_items () == 0) show_empty (); else show_results ();
+            if (store.get_n_items () == 0) {
+                show_empty ();
+                run_suggestions.begin (current_query, current_mode, current_branch, query_seq);
+            } else {
+                show_results ();
+            }
             return Source.REMOVE;
         });
     }
@@ -617,8 +649,136 @@ public class SearchPage : Adw.NavigationPage {
             if (results != null) {
                 foreach (var t in results) if (t != null) task_store.append (t);
             }
-            if (task_store.get_n_items () == 0) show_empty (); else show_results ();
+            if (task_store.get_n_items () == 0) {
+                show_empty ();
+                run_suggestions.begin (current_query, current_mode, current_branch, query_seq);
+            } else {
+                show_results ();
+            }
             return Source.REMOVE;
         });
+    }
+
+    /* ===== Smart suggestions =====
+     * When a search in the active mode yields no results, probe the other
+     * modes with the same term and surface clickable "Maybe you meant…"
+     * hints. Each probe is cancellable so a fresh search aborts old probes.
+     */
+    private async void run_suggestions (string term, Data.SearchMode original_mode,
+                                        string branch, uint64 my_seq) {
+        // Invalidate any previous suggestion run
+        if (suggestions_cancel != null) suggestions_cancel.cancel ();
+        suggestions_cancel = new GLib.Cancellable ();
+        var cancel = suggestions_cancel;
+
+        clear_suggestions ();
+        suggestions_wrap.visible = false;
+
+        if (term.length == 0) return;
+
+        Data.SearchMode[] modes = {
+            Data.SearchMode.PACKAGE,
+            Data.SearchMode.BINARY,
+            Data.SearchMode.FILE,
+            Data.SearchMode.MAINTAINER,
+            Data.SearchMode.TASK
+        };
+
+        var api = new Data.AltRepoClient ();
+        bool any_added = false;
+
+        foreach (var m in modes) {
+            if (m == original_mode) continue;
+            if (cancel.is_cancelled () || my_seq != query_seq) return;
+            if (!is_reasonable_term (term, m)) continue;
+
+            int count = yield probe_mode (api, m, term, branch, cancel);
+            if (cancel.is_cancelled () || my_seq != query_seq) return;
+
+            if (count > 0) {
+                add_suggestion_button (m, count);
+                any_added = true;
+                suggestions_wrap.visible = true;
+            }
+        }
+
+        if (!any_added) suggestions_wrap.visible = false;
+    }
+
+    // Light-weight probe: counts how many results a given mode would return
+    // for `term`. Any error (incl. "no data") is treated as 0.
+    private async int probe_mode (Data.AltRepoClient api, Data.SearchMode mode,
+                                  string term, string branch,
+                                  GLib.Cancellable? cancel) {
+        try {
+            switch (mode) {
+            case Data.SearchMode.PACKAGE:
+                var r = yield api.search_source (branch, term, cancel);
+                return (r != null) ? r.size : 0;
+
+            case Data.SearchMode.BINARY:
+                var s = yield api.find_source_by_binary (branch, term, cancel);
+                return (s != null && s.length > 0) ? 1 : 0;
+
+            case Data.SearchMode.FILE:
+                var r = yield api.search_by_file (branch, term, cancel);
+                return (r != null) ? r.size : 0;
+
+            case Data.SearchMode.MAINTAINER:
+                var r = yield api.search_by_maintainer (branch, term, cancel);
+                return (r != null) ? r.size : 0;
+
+            case Data.SearchMode.TASK:
+                var r = yield api.search_tasks (term, branch, cancel);
+                return (r != null) ? r.size : 0;
+            }
+        } catch (Error e) {
+            return 0;
+        }
+        return 0;
+    }
+
+    private string mode_icon_name (Data.SearchMode mode) {
+        switch (mode) {
+        case Data.SearchMode.MAINTAINER: return "avatar-default-symbolic";
+        case Data.SearchMode.FILE:       return "folder-symbolic";
+        case Data.SearchMode.BINARY:     return "application-x-executable-symbolic";
+        case Data.SearchMode.TASK:       return "emblem-system-symbolic";
+        default:                         return "package-x-generic-symbolic";
+        }
+    }
+
+    private void add_suggestion_button (Data.SearchMode mode, int count) {
+        string label = _(MODE_LABELS[(int) mode]);
+
+        var content = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8) {
+            halign = Gtk.Align.CENTER,
+            valign = Gtk.Align.CENTER
+        };
+        var icon = new Gtk.Image.from_icon_name (mode_icon_name (mode)) {
+            pixel_size = 18
+        };
+        var name_lbl = new Gtk.Label (_("Search as %s").printf (label));
+        name_lbl.add_css_class ("heading");
+        var count_lbl = Style.make_tag (_("%d").printf (count), "accent");
+
+        content.append (icon);
+        content.append (name_lbl);
+        content.append (count_lbl);
+
+        var btn = new Gtk.Button () {
+            child = content,
+            halign = Gtk.Align.CENTER
+        };
+        btn.add_css_class ("pill");
+        btn.add_css_class ("suggestion");
+
+        var captured = mode;
+        btn.clicked.connect (() => {
+            // Switch mode via the dropdown; its handler re-runs the search
+            mode_dropdown.selected = (uint) captured;
+        });
+
+        suggestions_box.append (btn);
     }
 }

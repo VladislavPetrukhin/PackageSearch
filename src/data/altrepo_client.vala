@@ -58,10 +58,16 @@ public class AltRepoClient : GLib.Object {
     // it receives that error object.
     private static bool is_no_data_error (GLib.Error e) {
         if (e == null) return false;
-        string m = e.message ?? "";
-        return m.contains ("No data not found in database")
-            || m.contains ("No information found")
-            || m.contains ("Node isn't array");
+        string m = (e.message ?? "").down ();
+        return m.contains ("no data not found in database")
+            || m.contains ("no information found")
+            || m.contains ("node isn't array")
+            || m.contains ("nothing found")
+            || m.contains ("not found in database")
+            || m.contains ("no packages found")
+            || m.contains ("not found in the database")
+            || m.contains ("http 404")
+            || m.contains (" 404 ");
     }
 
     /* ===== Helpers: name normalization ===== */
@@ -174,13 +180,22 @@ public class AltRepoClient : GLib.Object {
         if (term_n.length < 2) return new Gee.ArrayList<SourceGroup> ();
 
         var groups = new Gee.ArrayList<SourceGroup> ();
-        var resp = yield cli.get_site_find_packages_async (
-            { term_raw },       // terms (original, not normalized)
-            branch,             // branch
-            null,               // arch
-            Priority.DEFAULT,   // priority
-            null                // was: cancellable
-        );
+        // NB: library mis-types this as `SiteFingPackages` (typo in upstream).
+        AltRepo.SiteFingPackages resp;
+        try {
+            resp = yield cli.get_site_find_packages_async (
+                { term_raw },       // terms (original, not normalized)
+                branch,             // branch
+                null,               // arch
+                Priority.DEFAULT,   // priority
+                null                // was: cancellable
+            );
+        } catch (Error e) {
+            // "No data" / "No information found" → treat as empty result so
+            // the UI can show the empty state (and suggest other modes).
+            if (is_no_data_error (e)) return groups;
+            throw e;
+        }
 
         var candidates = new Gee.ArrayList<Candidate> ();
         foreach (var pkg in resp.packages) {
