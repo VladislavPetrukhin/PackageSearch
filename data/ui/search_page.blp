@@ -3,83 +3,188 @@ using Adw 1;
 
 template $SearchPage : Adw.NavigationPage {
   title: _("Search");
+  tag: "search";
 
-  child: Adw.ToastOverlay toast_overlay {
-    child: Adw.ViewStack content_stack {
-      vexpand: true;
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar search_header {
+      show-start-title-buttons: true;
+      show-end-title-buttons: false;
 
-      Adw.ViewStackPage {
-        name: "idle";
-        title: _("Search");
-        child: Adw.StatusPage {
-          icon-name: "system-search-symbolic";
-          title: _("Search packages");
-          description: _("Start typing a source package name, then pick it from the results.");
-        };
-      }
+      title-widget: Gtk.Box {
+        orientation: horizontal;
+        spacing: 6;
+        halign: center;
 
-      Adw.ViewStackPage {
-        name: "loading";
-        title: _("Loading");
-        child: Gtk.CenterBox {
+        Gtk.DropDown mode_dropdown {
           valign: center;
-          halign: center;
-          center-widget: Gtk.Box {
-            orientation: vertical;
-            spacing: 12;
-            halign: center;
-            valign: center;
+          tooltip-text: _("Search mode");
+        }
 
-            Adw.Spinner { width-request: 42; height-request: 42; }
-            Gtk.Label { label: _("Loading results…"); }
+        Gtk.DropDown branch_dropdown {
+          valign: center;
+          tooltip-text: _("Repository branch");
+        }
+      };
+
+      [end]
+      Gtk.MenuButton menu_btn {
+        icon-name: "open-menu-symbolic";
+        tooltip-text: _("Menu");
+        menu-model: menu_main;
+        valign: center;
+        primary: true;
+      }
+    }
+
+    [top]
+    Gtk.Box search_bar_row {
+      orientation: horizontal;
+      margin-start: 12;
+      margin-end: 12;
+      margin-top: 6;
+      margin-bottom: 6;
+
+      Gtk.SearchEntry search_entry {
+        placeholder-text: _("Type a package name…");
+        activates-default: true;
+        hexpand: true;
+      }
+    }
+
+    content: Adw.ToastOverlay toast_overlay {
+      child: Adw.ViewStack content_stack {
+        vexpand: true;
+
+        Adw.ViewStackPage {
+          name: "idle";
+          title: _("Search");
+
+          child: Adw.StatusPage {
+            icon-name: "system-search-symbolic";
+            title: _("Search packages");
+            description: _("Start typing a source package name, then pick it from the results.");
           };
-        };
-      }
+        }
 
-      Adw.ViewStackPage {
-        name: "results";
-        title: _("Results");
-        child: Gtk.ScrolledWindow results_scroller {
-          css-classes: ["results-scroll"];
-          has-frame: false;
-          vexpand: true;
-          hscrollbar-policy: never;
+        Adw.ViewStackPage {
+          name: "loading";
+          title: _("Loading");
 
-          Adw.ClampScrollable {
-            maximum-size: 1500;
-            tightening-threshold: 1200;
-            margin-start: 12;
-            margin-end: 12;
-            margin-top: 12;
-            margin-bottom: 12;
+          child: Gtk.CenterBox {
+            valign: center;
+            halign: center;
 
-            Gtk.ListView list_view {
-              margin-start: 96;
-              margin-end: 96;
-            }
-          }
-        };
-      }
+            center-widget: Gtk.Box {
+              orientation: vertical;
+              spacing: 12;
+              halign: center;
+              valign: center;
 
-      Adw.ViewStackPage {
-        name: "empty";
-        title: _("No results");
-        child: Adw.StatusPage {
-          icon-name: "edit-find-replace-symbolic";
+              Gtk.Spinner {
+                spinning: true;
+                width-request: 42;
+                height-request: 42;
+              }
+
+              Gtk.Label {
+                label: _("Loading results…");
+              }
+            };
+          };
+        }
+
+        Adw.ViewStackPage {
+          name: "results";
+          title: _("Results");
+
+          child: Gtk.ScrolledWindow results_scroller {
+            styles ["results-scroll"]
+            has-frame: false;
+            vexpand: true;
+            hscrollbar-policy: never;
+
+            child: Adw.ClampScrollable {
+              maximum-size: 1500;
+              tightening-threshold: 1200;
+              margin-start: 8;
+              margin-end: 8;
+              margin-top: 8;
+              margin-bottom: 8;
+
+              child: Gtk.ListView list_view {
+                margin-start: 8;
+                margin-end: 8;
+              };
+            };
+          };
+        }
+
+        Adw.ViewStackPage {
+          name: "empty";
           title: _("No results");
-          description: _("Try refining your query or choose another branch.");
-        };
-      }
 
-      Adw.ViewStackPage {
-        name: "error";
-        title: _("Error");
-        child: Adw.StatusPage {
-          icon-name: "dialog-error-symbolic";
+          child: Adw.StatusPage empty_status {
+            icon-name: "edit-find-replace-symbolic";
+            title: _("No results");
+            description: _("Try refining your query or choose another branch.");
+
+            child: Gtk.Box {
+              orientation: horizontal;
+              halign: center;
+              spacing: 8;
+
+              Gtk.Button clear_btn {
+                label: _("Clear search");
+                styles ["pill"]
+              }
+
+              Gtk.Button try_other_branch_btn {
+                label: _("Try another branch");
+                styles ["pill", "suggested-action"]
+              }
+            };
+          };
+        }
+
+        Adw.ViewStackPage {
+          name: "error";
           title: _("Error");
-          description: _("Failed to fetch data. Check your connection and package name.");
-        };
-      }
+
+          child: Adw.StatusPage {
+            icon-name: "dialog-error-symbolic";
+            title: _("Error");
+            description: _("Failed to fetch data. Check your connection and package name.");
+
+            child: Gtk.Button retry_btn {
+              label: _("Retry");
+              halign: center;
+              styles ["pill", "suggested-action"]
+            };
+          };
+        }
+      };
     };
   };
+}
+
+menu menu_main {
+  section {
+    item {
+      label: _("Keyboard Shortcuts");
+      action: "win.shortcuts";
+    }
+
+    item {
+      label: _("About PackageSearch");
+      action: "win.about";
+    }
+  }
+
+  section {
+    item {
+      label: _("Quit");
+      action: "win.quit";
+    }
+  }
 }

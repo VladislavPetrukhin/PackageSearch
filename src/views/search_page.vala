@@ -12,7 +12,16 @@ public class SearchPage : Adw.NavigationPage {
     [GtkChild] private unowned Gtk.ListView       list_view;
     [GtkChild] private unowned Gtk.ScrolledWindow results_scroller;
 
-    // Separate stores — one for package-like results, one for tasks.
+    // Header controls now live inside SearchPage's own blueprint
+    [GtkChild] private unowned Gtk.DropDown    mode_dropdown;
+    [GtkChild] private unowned Gtk.DropDown    branch_dropdown;
+    [GtkChild] private unowned Gtk.SearchEntry search_entry;
+
+    // Empty-/error-state action buttons
+    [GtkChild] private unowned Gtk.Button clear_btn;
+    [GtkChild] private unowned Gtk.Button try_other_branch_btn;
+    [GtkChild] private unowned Gtk.Button retry_btn;
+
     private GLib.ListStore  store;
     private GLib.ListStore  task_store;
     private Gtk.NoSelection no_sel;
@@ -26,23 +35,31 @@ public class SearchPage : Adw.NavigationPage {
     private string current_branch = "sisyphus";
     private Data.SearchMode current_mode = Data.SearchMode.PACKAGE;
 
-    // Settings
     private const uint DEBOUNCE_MS = 250;
 
-    // --- race protection ---
     private GLib.Cancellable? in_flight = null;
     private uint64            query_seq = 0;
 
-    public signal void open_details (Data.SourceGroup group, string branch);
+    // Labels for the mode dropdown; index matches Data.SearchMode enum.
+    private const string[] MODE_LABELS = {
+        "Package", "Binary", "File", "Maintainer", "Task"
+    };
+    private const string[] MODE_PLACEHOLDERS = {
+        "Type a package name…",
+        "Type a binary package name…",
+        "Type a file path…",
+        "Type a maintainer nickname…",
+        "Type a package name or task ID…"
+    };
 
-    // Returns true if s is non-null and has non-whitespace content
+    public signal void open_details (Data.SourceGroup group, string branch);
+    // Emitted after "Clear search" button is pressed and nothing is left
+    public signal void wants_clear ();
+
     private static bool is_nonempty (string? s) {
         return s != null && s.strip ().length > 0;
     }
 
-    // Validate the term depending on the active search mode.
-    // Package/Maintainer — restricted alnum+separators. File — allow paths.
-    // Task — allow digits (task ID) and package-like tokens.
     private static bool is_reasonable_term (string? s, Data.SearchMode mode) {
         if (s == null) return false;
         string term = s.strip ();
@@ -50,10 +67,8 @@ public class SearchPage : Adw.NavigationPage {
         try {
             switch (mode) {
             case Data.SearchMode.FILE:
-                // Allow file paths: letters, digits, ._+-/
                 return new Regex ("^[A-Za-z0-9._+\\-/]+$").match (term);
             case Data.SearchMode.TASK:
-                // Digits (task id) or package-like token
                 return new Regex ("^[A-Za-z0-9._+\\-]+$").match (term);
             default:
                 return new Regex ("^[A-Za-z0-9._+\\-]+$").match (term);
@@ -63,7 +78,7 @@ public class SearchPage : Adw.NavigationPage {
         }
     }
 
-    /* Public control API (used by MainWindow) */
+    /* ===== Public control API ===== */
 
     public void set_query (string? q) {
         current_query = (q != null) ? q.strip () : "";
@@ -84,7 +99,6 @@ public class SearchPage : Adw.NavigationPage {
         if (current_mode == mode) return;
         current_mode = mode;
 
-        // Cancel pending work and swap the list view's model/factory.
         if (in_flight != null) { in_flight.cancel (); in_flight = null; }
         if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
         clear_stores ();
@@ -99,7 +113,6 @@ public class SearchPage : Adw.NavigationPage {
         show_idle ();
     }
 
-    // Schedule search with debounce. Cancels previous timer if any.
     public void trigger_search_debounced () {
         if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
 
@@ -117,7 +130,6 @@ public class SearchPage : Adw.NavigationPage {
         });
     }
 
-    // Launch search immediately
     public void trigger_search_now () {
         if (debounce_id != 0) { Source.remove (debounce_id); debounce_id = 0; }
 
@@ -131,8 +143,12 @@ public class SearchPage : Adw.NavigationPage {
         if (in_flight != null) { in_flight.cancel (); in_flight = null; }
         in_flight = new GLib.Cancellable ();
         query_seq++;
-
         do_search.begin (in_flight, query_seq);
+    }
+
+    // Focus the search entry (used by keyboard shortcut).
+    public void focus_search_entry () {
+        search_entry.grab_focus ();
     }
 
     private void clear_stores () {
@@ -141,39 +157,23 @@ public class SearchPage : Adw.NavigationPage {
     }
 
     construct {
-        /* Lightweight CSS for result cards */
-        var css = """
-        .results-scroll,
-        .results-scroll > .frame,
-        .results-scroll > viewport,
-        .results-scroll > viewport > listview,
-        .results-scroll > listview,
-        .results-scroll listview.view {
-          background-color: transparent;
-          background: transparent;
-          box-shadow: none;
-        }
-        .big-card {
-          border-radius: 12px;
-          border: 1px solid @borders;
-        }
-        .big-card > box {
-          padding: 12px 12px;
-          min-height: 48px;
-        }
-        .big-card .subtitle { opacity: 0.8; }
-        .big-card.hover { border-color: @accent_color; }
-        """;
-        var provider = new Gtk.CssProvider ();
-        provider.load_from_string (css);
-        var disp = Gdk.Display.get_default ();
-        if (disp != null)
-            Gtk.StyleContext.add_provider_for_display (disp, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+        Style.ensure ();
 
-        // Package-like model (SourceGroup) — default
+        // Populate dropdowns
+        var branches_model = new Gtk.StringList (null);
+        string[] branch_names = { "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2" };
+        foreach (string b in branch_names) branches_model.append (b);
+        branch_dropdown.model = branches_model;
+        branch_dropdown.selected = 0;
+
+        var modes_model = new Gtk.StringList (null);
+        foreach (string m in MODE_LABELS) modes_model.append (_(m));
+        mode_dropdown.model = modes_model;
+        mode_dropdown.selected = 0;
+
+        // Stores / factories
         store        = new GLib.ListStore (typeof (Data.SourceGroup));
         no_sel       = new Gtk.NoSelection (store);
-        // Task model
         task_store   = new GLib.ListStore (typeof (Data.TaskResult));
         no_sel_tasks = new Gtk.NoSelection (task_store);
 
@@ -183,10 +183,92 @@ public class SearchPage : Adw.NavigationPage {
         list_view.factory = pkg_factory;
         list_view.model   = no_sel;
 
+        // Wire entry
+        search_entry.search_changed.connect (() => {
+            set_query ((search_entry.text ?? "").strip ());
+            trigger_search_debounced ();
+        });
+        search_entry.activate.connect (() => {
+            set_query ((search_entry.text ?? "").strip ());
+            trigger_search_now ();
+        });
+
+        // Wire dropdowns
+        mode_dropdown.notify["selected"].connect (() => {
+            var mode = (Data.SearchMode) mode_dropdown.selected;
+            set_mode (mode);
+            search_entry.set_placeholder_text (_(MODE_PLACEHOLDERS[mode]));
+            set_query ((search_entry.text ?? "").strip ());
+            trigger_search_now ();
+        });
+        branch_dropdown.notify["selected"].connect (() => {
+            set_branch (read_branch ());
+            trigger_search_now ();
+        });
+
+        // Initial state
+        set_branch (read_branch ());
+
+        // Empty-/error-state buttons
+        clear_btn.clicked.connect (() => {
+            search_entry.text = "";
+            search_entry.grab_focus ();
+            wants_clear ();
+        });
+        try_other_branch_btn.clicked.connect (() => {
+            // Cycle to the next branch in the list
+            int n = (int) branches_model.get_n_items ();
+            if (n <= 1) return;
+            branch_dropdown.selected = (branch_dropdown.selected + 1) % (uint) n;
+        });
+        retry_btn.clicked.connect (() => {
+            trigger_search_now ();
+        });
+
         show_idle ();
     }
 
-    // Factory for SourceGroup cards (package/file/maintainer modes)
+    private string read_branch () {
+        int idx = (int) branch_dropdown.selected;
+        var m = branch_dropdown.model as Gtk.StringList;
+        if (m == null || idx < 0) return "sisyphus";
+        return m.get_string ((uint) idx);
+    }
+
+    /* ===== Factories ===== */
+
+    // Returns a leading icon widget appropriate for the current search mode.
+    private Gtk.Widget make_leading_for_mode (Data.SearchMode mode, string title_text) {
+        switch (mode) {
+        case Data.SearchMode.MAINTAINER:
+            var av = new Adw.Avatar (36, title_text, true);
+            av.add_css_class ("pkg-avatar");
+            av.valign = Gtk.Align.CENTER;
+            return av;
+
+        case Data.SearchMode.FILE:
+            return new Gtk.Image.from_icon_name ("folder-symbolic") {
+                pixel_size = 28,
+                valign = Gtk.Align.CENTER,
+                css_classes = { "result-icon" }
+            };
+
+        case Data.SearchMode.BINARY:
+            return new Gtk.Image.from_icon_name ("application-x-executable-symbolic") {
+                pixel_size = 28,
+                valign = Gtk.Align.CENTER,
+                css_classes = { "result-icon" }
+            };
+
+        default:
+            return new Gtk.Image.from_icon_name ("package-x-generic-symbolic") {
+                pixel_size = 28,
+                valign = Gtk.Align.CENTER,
+                css_classes = { "result-icon" }
+            };
+        }
+    }
+
     private Gtk.SignalListItemFactory build_package_factory () {
         var factory = new Gtk.SignalListItemFactory ();
 
@@ -199,6 +281,11 @@ public class SearchPage : Adw.NavigationPage {
 
             var root = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
             root.set_hexpand (true);
+
+            var leading_host = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0) {
+                valign = Gtk.Align.CENTER,
+                width_request = 36
+            };
 
             var text_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
             text_box.set_hexpand (true);
@@ -215,11 +302,14 @@ public class SearchPage : Adw.NavigationPage {
             text_box.append (title);
             text_box.append (subtitle);
 
-            var right = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0) { halign = Align.END, valign = Align.CENTER };
+            var right = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0) {
+                halign = Gtk.Align.END, valign = Gtk.Align.CENTER
+            };
             var chevron = new Gtk.Image.from_icon_name ("go-next-symbolic");
-            chevron.set_opacity (0.6);
+            chevron.set_opacity (0.55);
             right.append (chevron);
 
+            root.append (leading_host);
             root.append (text_box);
             root.append (right);
 
@@ -228,7 +318,6 @@ public class SearchPage : Adw.NavigationPage {
 
             attach_hover (frame);
 
-            // Open details on single click
             var click = new Gtk.GestureClick ();
             click.released.connect ((n_press, x, y) => {
                 if (n_press != 1) return;
@@ -243,14 +332,16 @@ public class SearchPage : Adw.NavigationPage {
 
             li.set_data ("title", title);
             li.set_data ("subtitle", subtitle);
+            li.set_data ("leading_host", leading_host);
         });
 
         factory.bind.connect ((obj) => {
             var li = obj as Gtk.ListItem; if (li == null) return;
             var sg = li.get_item () as Data.SourceGroup; if (sg == null) return;
 
-            var title    = li.get_data<Gtk.Label> ("title");
-            var subtitle = li.get_data<Gtk.Label> ("subtitle");
+            var title        = li.get_data<Gtk.Label> ("title");
+            var subtitle     = li.get_data<Gtk.Label> ("subtitle");
+            var leading_host = li.get_data<Gtk.Box> ("leading_host");
 
             if (title != null) title.set_text (sg.name ?? "");
             if (subtitle != null) {
@@ -259,11 +350,17 @@ public class SearchPage : Adw.NavigationPage {
                 if (is_nonempty (sg.release))  vr = (vr == "") ? sg.release : vr + "-" + sg.release;
                 subtitle.set_text (vr);
             }
+
+            // Swap leading icon to match current mode
+            if (leading_host != null) {
+                var child = leading_host.get_first_child ();
+                if (child != null) leading_host.remove (child);
+                leading_host.append (make_leading_for_mode (current_mode, sg.name ?? ""));
+            }
         });
         return factory;
     }
 
-    // Factory for TaskResult cards (task mode)
     private Gtk.SignalListItemFactory build_task_factory () {
         var factory = new Gtk.SignalListItemFactory ();
 
@@ -277,6 +374,12 @@ public class SearchPage : Adw.NavigationPage {
             var root = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12);
             root.set_hexpand (true);
 
+            var lead = new Gtk.Image.from_icon_name ("emblem-system-symbolic") {
+                pixel_size = 28,
+                valign = Gtk.Align.CENTER,
+                css_classes = { "result-icon" }
+            };
+
             var text_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 4);
             text_box.set_hexpand (true);
             text_box.set_valign (Gtk.Align.CENTER);
@@ -284,6 +387,13 @@ public class SearchPage : Adw.NavigationPage {
             var title = new Gtk.Label ("") { xalign = 0.0f, hexpand = true, valign = Align.CENTER };
             title.add_css_class ("title-4");
             title.set_ellipsize (EllipsizeMode.END);
+
+            var state_tag = Style.make_tag ("", "accent");
+            state_tag.visible = false;
+
+            var title_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
+            title_row.append (title);
+            title_row.append (state_tag);
 
             var subtitle = new Gtk.Label ("") { xalign = 0.0f, hexpand = true, valign = Align.CENTER };
             subtitle.add_css_class ("subtitle");
@@ -293,10 +403,11 @@ public class SearchPage : Adw.NavigationPage {
             pkgs_lbl.add_css_class ("subtitle");
             pkgs_lbl.set_ellipsize (EllipsizeMode.END);
 
-            text_box.append (title);
+            text_box.append (title_row);
             text_box.append (subtitle);
             text_box.append (pkgs_lbl);
 
+            root.append (lead);
             root.append (text_box);
 
             frame.set_child (root);
@@ -307,6 +418,7 @@ public class SearchPage : Adw.NavigationPage {
             li.set_data ("title", title);
             li.set_data ("subtitle", subtitle);
             li.set_data ("pkgs", pkgs_lbl);
+            li.set_data ("state_tag", state_tag);
         });
 
         factory.bind.connect ((obj) => {
@@ -316,9 +428,32 @@ public class SearchPage : Adw.NavigationPage {
             var title    = li.get_data<Gtk.Label> ("title");
             var subtitle = li.get_data<Gtk.Label> ("subtitle");
             var pkgs_lbl = li.get_data<Gtk.Label> ("pkgs");
+            var tag      = li.get_data<Gtk.Label> ("state_tag");
 
             if (title != null)
-                title.set_text (_("Task #%lld  —  %s").printf (t.task_id, t.state ?? ""));
+                title.set_text (_("Task #%lld").printf (t.task_id));
+
+            if (tag != null) {
+                string st = (t.state ?? "").strip ();
+                if (st.length > 0) {
+                    tag.label = st;
+                    // Remove previous modifiers, set per-state color
+                    tag.remove_css_class ("success");
+                    tag.remove_css_class ("warning");
+                    tag.remove_css_class ("error");
+                    tag.remove_css_class ("accent");
+                    tag.remove_css_class ("neutral");
+                    string lc = st.down ();
+                    if (lc == "done")         tag.add_css_class ("success");
+                    else if (lc == "failed")  tag.add_css_class ("error");
+                    else if (lc == "new")     tag.add_css_class ("accent");
+                    else if (lc == "awaiting") tag.add_css_class ("warning");
+                    else                       tag.add_css_class ("neutral");
+                    tag.visible = true;
+                } else {
+                    tag.visible = false;
+                }
+            }
 
             if (subtitle != null) {
                 string parts = "";
@@ -339,10 +474,10 @@ public class SearchPage : Adw.NavigationPage {
         frame.add_css_class ("card");
         frame.add_css_class ("big-card");
         frame.set_hexpand (true);
-        frame.margin_start  = 12;
-        frame.margin_end    = 12;
-        frame.margin_top    = 8;
-        frame.margin_bottom = 8;
+        frame.margin_start  = 8;
+        frame.margin_end    = 8;
+        frame.margin_top    = 6;
+        frame.margin_bottom = 6;
         return frame;
     }
 
@@ -353,14 +488,12 @@ public class SearchPage : Adw.NavigationPage {
         frame.add_controller (motion);
     }
 
-    // View state helpers
     private void show_idle ()    { content_stack.set_visible_child_name ("idle"); }
     private void show_loading () { content_stack.set_visible_child_name ("loading"); }
     private void show_results () { content_stack.set_visible_child_name ("results"); }
     private void show_empty ()   { content_stack.set_visible_child_name ("empty"); }
     private void show_error ()   { content_stack.set_visible_child_name ("error"); }
 
-    // Main async search — dispatches to the right API method per mode.
     private async void do_search (GLib.Cancellable? cancellable, uint64 my_seq) {
         var term   = current_query;
         var branch = current_branch;

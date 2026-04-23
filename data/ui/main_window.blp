@@ -3,92 +3,22 @@ using Adw 1;
 
 template $MainWindow : Adw.ApplicationWindow {
   title: "PackageSearch";
-  default-width: 900;
-  default-height: 600;
+  default-width: 1200;
+  default-height: 780;
+  width-request: 360;
+  height-request: 480;
 
-  content: Adw.ToolbarView toolbar_view {
-    [top]
-    Adw.HeaderBar header_bar {
-      show-start-title-buttons: false;
-      show-end-title-buttons: true;
+  Adw.Breakpoint bp_collapse {
+    condition ("max-width: 760sp")
 
-      [start]
-      Gtk.Box {
-        spacing: 6;
-
-        Gtk.Button back_btn {
-          icon-name: "go-previous-symbolic";
-          tooltip-text: _("Back");
-          css-classes: ["flat", "circular"];
-          has-frame: false;
-          visible: false;
-          valign: center;
-        }
-
-        Gtk.DropDown branch_dropdown { valign: center; }
-      }
-
-      title-widget: Gtk.Stack header_stack {
-        transition-type: crossfade;
-        hexpand: true;
-
-        Gtk.StackPage {
-          name: "search";
-          child: Gtk.Box {
-            hexpand: true;
-            halign: center;
-            spacing: 6;
-
-            Gtk.DropDown mode_dropdown {
-              valign: center;
-            }
-
-            Gtk.SearchEntry search_entry {
-              placeholder-text: _("Type a package name…");
-              activates-default: true;
-              width-request: 360;
-              valign: center;
-              hexpand: true;
-            }
-          };
-        }
-
-        Gtk.StackPage {
-          name: "title";
-          child: Gtk.Label title_lbl {
-            css-classes: ["title-3"];
-            ellipsize: end;
-            hexpand: true;
-            halign: center;
-            valign: center;
-          };
-        }
-      };
-
-      [end]
-      Gtk.Box {
-        spacing: 6;
-
-        Gtk.MenuButton menu_btn {
-          icon-name: "open-menu-symbolic";
-          tooltip-text: _("Menu");
-          css-classes: ["flat", "circular"];
-          has-frame: false;
-          valign: center;
-          menu-model: menu_main;
-        }
-
-      }
+    setters {
+      split_view.collapsed: true;
     }
+  }
 
-    content: Adw.NavigationView nav_view { };
+  content: Adw.NavigationSplitView split_view {
+    min-sidebar-width: 340;
+    max-sidebar-width: 540;
+    sidebar-width-fraction: 0.36;
   };
-}
-menu menu_main {
-  section {
-    item { label: _("About");      action: "win.about";    }
-  }
-  section {
-    item { label: _("Quit");       action: "win.quit";     }
-  }
 }

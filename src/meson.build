@@ -1,6 +1,7 @@
 src = files(
   'application.vala',
   'window.vala',
+  'views/style.vala',
   'views/search_page.vala',
   'views/details_page.vala',
   'data/models.vala',

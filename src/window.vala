@@ -8,173 +8,96 @@ using Intl;
 
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/main_window.ui")]
 public class MainWindow : Adw.ApplicationWindow {
-    [GtkChild] private unowned Adw.ToolbarView    toolbar_view;
-    [GtkChild] private unowned Adw.NavigationView nav_view;
+    [GtkChild] private unowned Adw.NavigationSplitView split_view;
 
-    [GtkChild] private unowned Gtk.Button         back_btn;
-    [GtkChild] private unowned Gtk.DropDown       branch_dropdown;
-    [GtkChild] private unowned Gtk.DropDown       mode_dropdown;
-    [GtkChild] private unowned Gtk.SearchEntry    search_entry;
-    [GtkChild] private unowned Gtk.Stack          header_stack;
-    [GtkChild] private unowned Gtk.Label          title_lbl;
-    [GtkChild] private unowned Gtk.MenuButton     menu_btn;
+    private SearchPage      search_page;
+    private WelcomePage?    welcome_page;
+    private DetailsPage?    current_details = null;
 
-    // --- Internal state ---
-    private SearchPage search_page;
-
-    /* Window actions for the app menu */
     private const GLib.ActionEntry[] WIN_ACTIONS = {
-        { "about",    on_action_about    },
-        { "quit",     on_action_quit     }
+        { "about",     on_action_about     },
+        { "quit",      on_action_quit      },
+        { "shortcuts", on_action_shortcuts },
+        { "focus-search", on_action_focus_search },
+        { "refresh",      on_action_refresh      },
+        { "close-details", on_action_close_details }
     };
 
     public MainWindow (Adw.Application app) {
         Object (application: app);
 
-        // Register window-scoped actions
+        // Ensure the global CSS (tags, cards, hero, etc) is loaded.
+        Style.ensure ();
+
+        // Register window actions
         this.add_action_entries (WIN_ACTIONS, this);
 
-        // Initial page: search
+        // Build and attach the sidebar
         search_page = new SearchPage ();
-        search_page.open_details.connect ((g, b) => {
-            show_details (g, b);
+        search_page.open_details.connect ((g, b) => show_details (g, b));
+        search_page.wants_clear.connect (() => {
+            search_page.focus_search_entry ();
         });
+        split_view.sidebar = search_page;
 
-        var page = new Adw.NavigationPage (search_page, _("Search"));
-        nav_view.push (page);
+        // Content side starts with a welcome page
+        welcome_page = new WelcomePage ();
+        split_view.content = welcome_page;
 
-        // Configure header controls and initial state
-        setup_header_controls ();
-        update_header_for_visible_page ();
-        nav_view.notify["visible-page"].connect (update_header_for_visible_page);
+        // Keyboard shortcuts
+        install_accels ();
 
-        // Small CSS tweak for compact headerbar
-        var css = """
-        headerbar {
-          min-height: 40px;
-          padding-top: 0;
-          padding-bottom: 0;
-        }
-        """;
-        var provider = new Gtk.CssProvider ();
-        provider.load_from_string (css);
-        var disp = Gdk.Display.get_default ();
-        if (disp != null)
-            Gtk.StyleContext.add_provider_for_display (disp, provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
-    }
-
-    /* ===== Menu action handlers ===== */
-    private void on_action_about ()    { open_about_dialog (); }
-    private void on_action_quit ()     { quit_app (); }
-
-    /* ===== Header & navigation wiring ===== */
-
-    // Search mode labels (indices match Data.SearchMode enum)
-    private const string[] MODE_LABELS = {
-        "Package", "Binary", "File", "Maintainer", "Task"
-    };
-
-    private const string[] MODE_PLACEHOLDERS = {
-        "Type a package name…",
-        "Type a binary package name…",
-        "Type a file path…",
-        "Type a maintainer nickname…",
-        "Type a package name or task ID…"
-    };
-
-    // Initialize branch dropdown, mode dropdown, search entry callbacks, and back button
-    private void setup_header_controls () {
-        var branches_model = new Gtk.StringList (null);
-        string[] branch_names = { "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2" };
-        foreach (string b in branch_names) branches_model.append (b);
-        branch_dropdown.model = branches_model;
-        branch_dropdown.selected = 0;
-
-        // Mode dropdown
-        var modes_model = new Gtk.StringList (null);
-        foreach (string m in MODE_LABELS) modes_model.append (_(m));
-        mode_dropdown.model = modes_model;
-        mode_dropdown.selected = 0;
-
-        mode_dropdown.notify["selected"].connect (() => {
-            var mode = (Data.SearchMode) mode_dropdown.selected;
-            search_page.set_mode (mode);
-            search_entry.set_placeholder_text (_(MODE_PLACEHOLDERS[mode]));
-            // Clear and re-search on mode change
-            search_page.set_query ((search_entry.text ?? "").strip ());
-            search_page.trigger_search_now ();
-        });
-
-        // Propagate initial values to the SearchPage
-        search_page.set_branch (get_current_branch ());
-        search_page.set_mode ((Data.SearchMode) mode_dropdown.selected);
-        search_page.set_query ((search_entry.text ?? "").strip ());
-
-        // Live search with debounce on typing
-        search_entry.search_changed.connect (() => {
-            search_page.set_query ((search_entry.text ?? "").strip ());
-            search_page.trigger_search_debounced ();
-        });
-
-        // Immediate search on Enter
-        search_entry.activate.connect (() => {
-            search_page.set_query ((search_entry.text ?? "").strip ());
-            search_page.trigger_search_now ();
-        });
-
-        // Change branch triggers a fresh search
-        branch_dropdown.notify["selected"].connect (() => {
-            search_page.set_branch (get_current_branch ());
-            search_page.trigger_search_now ();
-        });
-
-        // Back button only pops details page
-        back_btn.clicked.connect (() => {
-            var vpage = nav_view.get_visible_page ();
-            if (vpage != null && vpage.get_child () is DetailsPage)
-                nav_view.pop ();
+        // Global focus: defer to an idle callback so the widget is mapped
+        // before we try to grab focus in the search field.
+        Idle.add (() => {
+            search_page.focus_search_entry ();
+            return Source.REMOVE;
         });
     }
 
-    // Read the current branch name from dropdown; defaults to "sisyphus"
-    private string get_current_branch () {
-        int idx = (int) branch_dropdown.selected;
-        var m = branch_dropdown.model as Gtk.StringList;
-        if (m == null || idx < 0) return "sisyphus";
-        return m.get_string ((uint) idx);
+    /* ===== Action handlers ===== */
+
+    private void on_action_about ()     { open_about_dialog (); }
+    private void on_action_quit ()      { quit_app (); }
+    private void on_action_shortcuts () { show_shortcuts_window (); }
+
+    private void on_action_focus_search () {
+        // If on narrow screens details was shown, go back to sidebar first
+        if (split_view.collapsed && split_view.show_content)
+            split_view.show_content = false;
+        search_page.focus_search_entry ();
     }
 
-    // Update header content and visibility depending on the current page
-    private void update_header_for_visible_page () {
-        var vpage = nav_view.get_visible_page ();
-        bool on_details = (vpage != null) && (vpage.get_child () is DetailsPage);
-
-        back_btn.visible = on_details;
-        branch_dropdown.visible = !on_details;
-        mode_dropdown.visible = !on_details;
-
-        if (on_details) {
-            header_stack.set_visible_child_name ("title");
-            var dp = vpage.get_child () as DetailsPage;
-            title_lbl.label = dp != null ? (dp.title ?? _("Details")) : _("Details");
-        } else {
-            header_stack.set_visible_child_name ("search");
-            title_lbl.label = "PackageSearch";
-        }
+    private void on_action_refresh () {
+        search_page.trigger_search_now ();
     }
 
-    /* ===== Public helpers (used by SearchPage callback) ===== */
+    private void on_action_close_details () {
+        if (split_view.collapsed && split_view.show_content)
+            split_view.show_content = false;
+    }
 
-    // Push a new details page and reflect the header state
+    private void install_accels () {
+        var app = this.application as Gtk.Application;
+        if (app == null) return;
+
+        app.set_accels_for_action ("win.focus-search",  new string[] { "<Primary>f", "slash" });
+        app.set_accels_for_action ("win.refresh",       new string[] { "F5", "<Primary>r" });
+        app.set_accels_for_action ("win.close-details", new string[] { "Escape", "<Primary>w" });
+        app.set_accels_for_action ("win.shortcuts",     new string[] { "<Primary>question" });
+        app.set_accels_for_action ("win.quit",          new string[] { "<Primary>q" });
+    }
+
+    /* ===== Public: show details page ===== */
+
     public void show_details (Data.SourceGroup group, string branch) {
         var details = new DetailsPage (group, branch, this);
-        var details_page = new Adw.NavigationPage (details, _("Details"));
-        nav_view.push (details_page);
-        update_header_for_visible_page ();
+        current_details = details;
+        split_view.content = details;
+        split_view.show_content = true;
     }
 
-    /* ===== Dialogs and app control ===== */
+    /* ===== Dialogs ===== */
 
     public void open_about_dialog () {
         var about = new Adw.AboutDialog ();
@@ -182,11 +105,50 @@ public class MainWindow : Adw.ApplicationWindow {
         about.set_application_name ("PackageSearch");
         about.set_developer_name ("Vladislav Petrukhin");
         about.set_version ("0.1");
-        about.set_issue_url ("https://altlinux.space/vladislavpetrukhin/PackageSearch");
+        about.set_issue_url ("https://altlinux.space/vladislavpetrukhin/PackageSearch/-/issues");
         about.set_license_type (Gtk.License.GPL_3_0);
-        about.set_comments (_("GTK4/Libadwaita application for searching for packages in the ALT Linux Sisyphus, p11, p10, p9, c10f2 and c9f2 repositories and viewing detailed package information."));
+        about.set_comments (_("Search and inspect source packages across the ALT Linux Sisyphus, p11, p10, p9, c10f2 and c9f2 repositories."));
         about.set_website ("https://altlinux.space/vladislavpetrukhin/PackageSearch");
+        about.set_copyright ("© 2025 Vladislav Petrukhin");
+        about.set_developers (new string[] { "Vladislav Petrukhin" });
+        // Translators: NAME <EMAIL>, YEAR1, YEAR2
+        about.set_translator_credits (_("translator-credits"));
         about.present (this);
+    }
+
+    private void show_shortcuts_window () {
+        var dlg = new Adw.Dialog ();
+        dlg.set_content_width (420);
+        dlg.set_content_height (420);
+        dlg.set_title (_("Keyboard Shortcuts"));
+
+        var hb = new Adw.HeaderBar () { show_end_title_buttons = true };
+        hb.set_title_widget (new Adw.WindowTitle (_("Keyboard Shortcuts"), ""));
+
+        var grp = new Adw.PreferencesGroup () { title = _("General") };
+        grp.add (make_shortcut_row (_("Focus search"),             "Ctrl+F  /"));
+        grp.add (make_shortcut_row (_("Refresh search"),           "F5  Ctrl+R"));
+        grp.add (make_shortcut_row (_("Close details / back"),     "Esc  Ctrl+W"));
+        grp.add (make_shortcut_row (_("Show keyboard shortcuts"),  "Ctrl+?"));
+        grp.add (make_shortcut_row (_("Quit"),                     "Ctrl+Q"));
+
+        var page = new Adw.PreferencesPage ();
+        page.add (grp);
+
+        var tb = new Adw.ToolbarView ();
+        tb.add_top_bar (hb);
+        tb.set_content (page);
+
+        dlg.set_child (tb);
+        dlg.present (this);
+    }
+
+    private static Adw.ActionRow make_shortcut_row (string title, string keys) {
+        var row = new Adw.ActionRow () { title = title };
+        var tag = Style.make_tag (keys, "accent");
+        tag.valign = Gtk.Align.CENTER;
+        row.add_suffix (tag);
+        return row;
     }
 
     public void quit_app () {
@@ -195,3 +157,28 @@ public class MainWindow : Adw.ApplicationWindow {
     }
 }
 
+/* A small welcome page shown in the content area before the user picks a
+ * package. It's a NavigationPage so it slots into Adw.NavigationSplitView.
+ */
+public class WelcomePage : Adw.NavigationPage {
+    construct {
+        this.title = _("PackageSearch");
+        this.tag   = "welcome";
+
+        var status = new Adw.StatusPage () {
+            icon_name   = "system-search-symbolic",
+            title       = _("Welcome to PackageSearch"),
+            description = _("Pick a search mode and start typing in the panel on the left.\nSelect a package to see its details here.")
+        };
+
+        var toolbar = new Adw.ToolbarView ();
+        var header  = new Adw.HeaderBar () {
+            show_end_title_buttons = true
+        };
+        header.set_title_widget (new Adw.WindowTitle ("PackageSearch", ""));
+        toolbar.add_top_bar (header);
+        toolbar.set_content (status);
+
+        this.set_child (toolbar);
+    }
+}

@@ -2,7 +2,7 @@ using Gtk;
 using Adw;
 using GLib;
 using Gdk;
-using Intl; // for _() i18n helper
+using Intl;
 
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/details_page.ui")]
 public class DetailsPage : Adw.NavigationPage {
@@ -10,13 +10,22 @@ public class DetailsPage : Adw.NavigationPage {
     private string branch;
     private MainWindow win;
 
-    private static bool css_loaded = false;
-
-    // Business-layer service for system package operations
     private Business.PackageManager pkg_mgr = new Business.PackageManager ();
 
-    [GtkChild] private unowned Adw.ToastOverlay     toast_overlay;
-    [GtkChild] private unowned Gtk.Revealer         loading_revealer;
+    /* ---- hero ---- */
+    [GtkChild] private unowned Gtk.Label hero_name;
+    [GtkChild] private unowned Gtk.Label hero_summary;
+    [GtkChild] private unowned Gtk.Box   hero_badges;
+    [GtkChild] private unowned Gtk.Box   hero_actions;
+
+    /* ---- banner ---- */
+    [GtkChild] private unowned Adw.Banner banner;
+
+    /* ---- toast / title / switcher ---- */
+    [GtkChild] private unowned Adw.ToastOverlay   toast_overlay;
+    [GtkChild] private unowned Adw.WindowTitle    header_title;
+
+    /* ---- preferences groups, one per tab ---- */
     [GtkChild] private unowned Adw.PreferencesGroup info_group;
     [GtkChild] private unowned Adw.PreferencesGroup bins_group;
     [GtkChild] private unowned Adw.PreferencesGroup deps_group;
@@ -26,17 +35,14 @@ public class DetailsPage : Adw.NavigationPage {
     [GtkChild] private unowned Adw.PreferencesGroup spec_group;
     [GtkChild] private unowned Adw.PreferencesGroup changelog_group;
 
-    // Tunables kept close to usage
     private const int  MAX_CHANGE_PREVIEW = 200;
-    private const int DIALOG_W = 800;
-    private const int DIALOG_H = 560;
+    private const int  DIALOG_W = 860;
+    private const int  DIALOG_H = 600;
 
-    // Simple string helpers
     private static bool is_nonempty (string? s) {
         return s != null && s.strip ().length > 0;
     }
 
-    // Safe URL normalizer: adds scheme if missing
     private static string normalize_url (string raw) {
         string url = (raw ?? "").strip ();
         if (url.length == 0) return url;
@@ -45,53 +51,29 @@ public class DetailsPage : Adw.NavigationPage {
         return url;
     }
 
-    // Open URL in default browser (best-effort)
     private static void open_uri (string url) {
         try { AppInfo.launch_default_for_uri (url, null); }
         catch (Error e) { warning ("open url failed: %s", e.message); }
     }
 
-    // Copy a piece of text to the clipboard
     private void copy_to_clipboard (string text) {
         var disp = Gdk.Display.get_default ();
         if (disp != null) disp.get_clipboard ().set_text (text);
         toast_overlay.add_toast (new Adw.Toast (_("Copied")));
     }
 
-    // Adds info row if value is present
     private void add_info_row_if_nonempty (string title, string? value) {
         if (is_nonempty (value))
-            info_group.add (new Adw.ActionRow () { title = title,
-                            subtitle = GLib.Markup.escape_text (value, -1) });
+            info_group.add (new Adw.ActionRow () {
+                title = title,
+                subtitle = GLib.Markup.escape_text (value, -1)
+            });
     }
 
-    // Inject CSS once: pulsing green border while a package is installing.
-    private static void ensure_css () {
-        if (css_loaded) return;
-        var css = """
-        @keyframes ps-install-pulse {
-            0%   { border-color: alpha(@success_color, 0.35); }
-            50%  { border-color: @success_color; }
-            100% { border-color: alpha(@success_color, 0.35); }
-        }
-        button.ps-installing {
-            border: 2px solid @success_color;
-            animation: ps-install-pulse 1.2s ease-in-out infinite;
-        }
-        """;
-        var p = new Gtk.CssProvider ();
-        p.load_from_string (css);
-        var disp = Gdk.Display.get_default ();
-        if (disp != null)
-            Gtk.StyleContext.add_provider_for_display (
-                disp, p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
-        css_loaded = true;
-    }
-
-    // Apply the disabled "Installed" look to a button.
     private static void mark_installed (Gtk.Button btn) {
         btn.remove_css_class ("ps-installing");
         btn.remove_css_class ("suggested-action");
+        btn.add_css_class ("ps-installed");
         btn.label = _("Installed");
         btn.tooltip_text = _("Package is already installed");
         btn.sensitive = false;
@@ -102,19 +84,87 @@ public class DetailsPage : Adw.NavigationPage {
         this.branch = branch;
         this.win    = win;
 
-        ensure_css ();
+        Style.ensure ();
 
-        // Show basic title early; will be refined after details fetch
         this.title = group.name;
+
+        // Initial hero state (before data arrives)
+        hero_name.set_text (group.name ?? "");
+        hero_summary.set_text ("");
+        header_title.set_title (group.name ?? "");
+        header_title.set_subtitle (branch);
+
+        // Immediately show skeletons in every section
+        populate_skeletons ();
+
         load_details.begin ();
     }
 
-    private void set_loading (bool on) {
-        // Drives spinner/placeholder revealer in the template
-        loading_revealer.reveal_child = on;
+    /* ===== Skeleton loaders ===== */
+
+    private void populate_skeletons () {
+        clear_group (info_group);
+        for (int i = 0; i < 4; i++) info_group.add (make_skeleton_row ());
+
+        clear_group (bins_group);
+        for (int i = 0; i < 3; i++) bins_group.add (make_skeleton_row ());
+
+        clear_group (deps_group);
+        deps_group.add (make_skeleton_row ());
+        deps_group.add (make_skeleton_row ());
+
+        clear_group (security_group);
+        security_group.add (make_skeleton_row ());
+
+        clear_group (versions_group);
+        for (int i = 0; i < 4; i++) versions_group.add (make_skeleton_row ());
+
+        clear_group (downloads_group);
+        downloads_group.add (make_skeleton_row ());
+        downloads_group.add (make_skeleton_row ());
+
+        clear_group (spec_group);
+        spec_group.add (make_skeleton_row ());
+
+        clear_group (changelog_group);
+        for (int i = 0; i < 3; i++) changelog_group.add (make_skeleton_row ());
     }
 
-    // Remove all rows from a group
+    private Adw.ActionRow make_skeleton_row () {
+        var row = new Adw.ActionRow ();
+        row.add_css_class ("skeleton");
+
+        var main = new Gtk.Box (Gtk.Orientation.VERTICAL, 8) {
+            hexpand = true,
+            valign = Gtk.Align.CENTER,
+            margin_top = 12,
+            margin_bottom = 12,
+            margin_start = 6,
+            margin_end = 6
+        };
+
+        var l1 = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0) {
+            height_request = 10,
+            width_request = 180,
+            hexpand = false
+        };
+        l1.add_css_class ("skeleton-line");
+
+        var l2 = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0) {
+            height_request = 8,
+            width_request = 260,
+            hexpand = false
+        };
+        l2.add_css_class ("skeleton-line");
+
+        main.append (l1);
+        main.append (l2);
+        row.set_child (main);
+        return row;
+    }
+
+    /* ===== Helpers ===== */
+
     private void clear_group (Adw.PreferencesGroup grp) {
         for (var child = grp.get_first_child (); child != null; ) {
             var next = child.get_next_sibling ();
@@ -124,77 +174,71 @@ public class DetailsPage : Adw.NavigationPage {
         }
     }
 
-    // Utility for tests / sanity checks (not used at runtime)
-    private int count_rows (Adw.PreferencesGroup grp) {
-        int n = 0;
-        for (var child = grp.get_first_child (); child != null; child = child.get_next_sibling ())
-            if (child is Adw.PreferencesRow) n++;
-        return n;
+    private void clear_box (Gtk.Box box) {
+        for (var c = box.get_first_child (); c != null; ) {
+            var next = c.get_next_sibling ();
+            box.remove (c);
+            c = next;
+        }
     }
 
-    // Minimalistic text dialog to show a full changelog entry
-    private void show_changelog_dialog (string head, string body) {
+    // Tag-like label pointing at a CSS class for color
+    private Gtk.Label add_badge (Gtk.Box host, string text, string? css) {
+        var l = Style.make_tag (text, css);
+        host.append (l);
+        return l;
+    }
+
+    /* ===== Changelog / generic text dialog ===== */
+
+    private void show_text_dialog (string head, string body, bool monospace = true) {
         var dlg = new Adw.Dialog ();
         dlg.set_content_width (DIALOG_W);
         dlg.set_content_height (DIALOG_H);
 
-        // Header
-        var header = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
-        header.set_margin_top (12);
-        header.set_margin_start (12);
-        header.set_margin_end (12);
+        var hb = new Adw.HeaderBar () {
+            show_end_title_buttons = true
+        };
+        hb.set_title_widget (new Adw.WindowTitle (head, ""));
 
-        var title_lbl = new Gtk.Label (head ?? "") { xalign = 0.0f };
-        title_lbl.add_css_class ("title-3");
-        title_lbl.set_hexpand (true);
-        header.append (title_lbl);
-
-        var copy_btn = new Gtk.Button.with_label (_("Copy"));
-        //copy_btn.add_css_class ("flat");
+        var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
+            tooltip_text = _("Copy"),
+            valign = Gtk.Align.CENTER
+        };
+        copy_btn.add_css_class ("flat");
         copy_btn.clicked.connect (() => {
-            // Copy body text to system clipboard
             var disp = Gdk.Display.get_default ();
-            if (disp != null) {
-                var cb = disp.get_clipboard ();
-                cb.set_text (body ?? "");
-            }
+            if (disp != null) disp.get_clipboard ().set_text (body ?? "");
+            toast_overlay.add_toast (new Adw.Toast (_("Copied")));
         });
-        header.append (copy_btn);
+        hb.pack_end (copy_btn);
 
-        var close_btn = new Gtk.Button.with_label (_("Close"));
-        //close_btn.add_css_class ("flat");
-        close_btn.add_css_class ("suggested-action");
-        close_btn.clicked.connect (() => dlg.close ());
-        header.append (close_btn);
-
-        // Body
         var tv = new Gtk.TextView () {
             editable = false,
             cursor_visible = false,
-            wrap_mode = Gtk.WrapMode.WORD_CHAR
+            wrap_mode = Gtk.WrapMode.WORD_CHAR,
+            top_margin = 8, bottom_margin = 8,
+            left_margin = 12, right_margin = 12
         };
-        tv.add_css_class ("monospace");
+        if (monospace) tv.add_css_class ("monospace");
+        tv.add_css_class ("spec-view");
         tv.buffer.set_text (body ?? "");
 
         var sw = new Gtk.ScrolledWindow () { vexpand = true };
         sw.set_child (tv);
-        sw.set_margin_start (12);
-        sw.set_margin_end (12);
-        sw.set_margin_bottom (12);
 
-        var vbox = new Gtk.Box (Gtk.Orientation.VERTICAL, 12);
-        vbox.append (header);
-        vbox.append (sw);
+        var tb = new Adw.ToolbarView ();
+        tb.add_top_bar (hb);
+        tb.set_content (sw);
 
-        dlg.set_child (vbox);
+        dlg.set_child (tb);
         dlg.present (this.get_root () as Gtk.Window);
     }
 
-    // Animate button while the business layer performs the install, then
-    // update UI based on the result.
+    /* ===== Install flow ===== */
+
     private async void install_binary (string pkg_name, Gtk.Button btn,
                                        string? repo_evr, bool is_update) {
-        // Enter "installing" visual state
         btn.remove_css_class ("suggested-action");
         btn.add_css_class ("ps-installing");
         btn.label = is_update ? _("Updating…") : _("Installing…");
@@ -203,10 +247,8 @@ public class DetailsPage : Adw.NavigationPage {
         toast_overlay.add_toast (new Adw.Toast (
             (is_update ? _("Updating %s…") : _("Installing %s…")).printf (pkg_name)));
 
-        // Delegate to business layer
         string? error_msg = null;
-        var result = yield pkg_mgr.install_package (pkg_name, repo_evr,
-                                                     out error_msg);
+        var result = yield pkg_mgr.install_package (pkg_name, repo_evr, out error_msg);
 
         switch (result) {
         case Business.InstallResult.SUCCESS:
@@ -229,8 +271,7 @@ public class DetailsPage : Adw.NavigationPage {
             btn.label = is_update ? _("Update") : _("Install");
             btn.sensitive = true;
             if (error_msg != null) {
-                warning ("[DetailsPage] install failed for %s: %s",
-                         pkg_name, error_msg);
+                warning ("[DetailsPage] install failed for %s: %s", pkg_name, error_msg);
             }
             toast_overlay.add_toast (new Adw.Toast (
                 (is_update ? _("Failed to update %s") : _("Failed to install %s"))
@@ -239,39 +280,60 @@ public class DetailsPage : Adw.NavigationPage {
         }
     }
 
-    // Loads details and fills 3 groups: info, binaries, changelog
+    /* ===== Main loader: Overview + Binaries + Changelog ===== */
+
     private async void load_details () {
-        set_loading (true);
         try {
             var api = new Data.AltRepoClient ();
             var d = yield api.get_source_details (branch, group.name);
 
-            // Compose "name version-release" title if available
+            // Title bar
             var vr = (d.version ?? "");
             if (is_nonempty (d.release))
                 vr = (vr == "") ? d.release : vr + "-" + d.release;
             this.title = (vr != "") ? @"$(group.name) $(vr)" : group.name;
+            header_title.set_title (group.name);
+            header_title.set_subtitle (
+                (vr != "" ? vr + " · " : "") + branch
+            );
+
+            // Hero
+            hero_name.set_text (group.name ?? "");
+            hero_summary.set_text (d.summary ?? d.description ?? "");
+
+            clear_box (hero_badges);
+            if (is_nonempty (d.license))
+                add_badge (hero_badges, d.license, "accent");
+            if (is_nonempty (d.group))
+                add_badge (hero_badges, d.group, "neutral");
+            add_badge (hero_badges, branch, "success");
+            if (vr != "")
+                add_badge (hero_badges, vr, "neutral");
 
             // Info group
             clear_group (info_group);
-            add_info_row_if_nonempty (_("Version"),     d.version);
-            add_info_row_if_nonempty (_("Release"),     d.release);
-            add_info_row_if_nonempty (_("Maintainer"),  d.maintainer);
-            add_info_row_if_nonempty (_("Group"),       d.group);
-            add_info_row_if_nonempty (_("License"),     d.license);
+            add_info_row_if_nonempty (_("Version"),    d.version);
+            add_info_row_if_nonempty (_("Release"),    d.release);
+            add_info_row_if_nonempty (_("Maintainer"), d.maintainer);
+            add_info_row_if_nonempty (_("Group"),      d.group);
+            add_info_row_if_nonempty (_("License"),    d.license);
 
-            // Clickable homepage row (opens in default browser)
             if (is_nonempty (d.homepage)) {
                 string url = normalize_url (d.homepage ?? "");
                 if (url.length > 0) {
-                    var row_home = new Adw.ActionRow () { title = _("Homepage"),
-                                                     subtitle = GLib.Markup.escape_text (url, -1)
-                     };
+                    var row_home = new Adw.ActionRow () {
+                        title = _("Homepage"),
+                        subtitle = GLib.Markup.escape_text (url, -1)
+                    };
+                    var open_btn = new Gtk.Button.from_icon_name ("adw-external-link-symbolic") {
+                        valign = Gtk.Align.CENTER,
+                        tooltip_text = _("Open in browser")
+                    };
+                    open_btn.add_css_class ("flat");
+                    open_btn.clicked.connect (() => { open_uri (url); });
+                    row_home.add_suffix (open_btn);
                     row_home.activatable = true;
-                    row_home.activated.connect (() => {
-                        try { AppInfo.launch_default_for_uri (url, null); }
-                        catch (Error e) { warning ("open url failed: %s", e.message); }
-                    });
+                    row_home.activated.connect (() => { open_uri (url); });
                     info_group.add (row_home);
                 }
             }
@@ -279,16 +341,14 @@ public class DetailsPage : Adw.NavigationPage {
             add_info_row_if_nonempty (_("Summary"),     d.summary);
             add_info_row_if_nonempty (_("Description"), d.description);
 
-            // Binaries group (group by package name, list arches in subtitle)
+            // Binaries group
             clear_group (bins_group);
 
-            // Collect arches per binary name
             var by_name = new Gee.HashMap<string, Gee.ArrayList<string>> ();
             foreach (var bp in d.binaries) {
                 if (bp == null || bp.name == null) continue;
                 var name = bp.name;
                 var arch = bp.arch ?? "";
-
                 if (arch.strip ().length == 0) continue;
 
                 var list = by_name.get (name);
@@ -296,34 +356,31 @@ public class DetailsPage : Adw.NavigationPage {
                     list = new Gee.ArrayList<string> ();
                     by_name.set (name, list);
                 }
-                // Deduplicate arches
                 bool have = false;
                 foreach (var a in list) { if (a == arch) { have = true; break; } }
                 if (!have) list.add (arch);
             }
 
-            // Sort names for stable output
             var names = new Gee.ArrayList<string> ();
             foreach (var k in by_name.keys) names.add (k);
             names.sort ((a, b) => strcmp (a, b));
 
-            // Ask business layer whether install buttons apply
             var sys_branch = yield pkg_mgr.get_system_branch ();
             bool can_install = yield pkg_mgr.is_system_branch (branch);
 
-            // Show a hint when browsing a non-system branch
+            // Non-system-branch banner
             if (sys_branch.length > 0 && !can_install) {
-                bins_group.set_description (
-                    _("Installation is available only for the system repository (%s)")
-                        .printf (sys_branch));
+                banner.title = _("Install is available only for the system repository (%s)")
+                    .printf (sys_branch);
+                banner.revealed = true;
+            } else {
+                banner.revealed = false;
             }
 
-            // Prepare installed-packages map and repo EVR via business layer
             Gee.HashMap<string, string>? installed = null;
             string repo_evr = "";
             if (can_install) {
                 installed = yield pkg_mgr.get_installed_packages ();
-
                 if (is_nonempty (d.version)) {
                     repo_evr = "0:" + d.version;
                     if (is_nonempty (d.release))
@@ -331,22 +388,58 @@ public class DetailsPage : Adw.NavigationPage {
                 }
             }
 
+            // Add a quick "Install main package" button to the hero if the src
+            // package has a homonymous binary and we can install it
+            clear_box (hero_actions);
+            if (can_install && names.contains (group.name)) {
+                var install_hero = new Gtk.Button.with_label (_("Install")) {
+                    valign = Gtk.Align.CENTER,
+                    tooltip_text = _("Install via apt-get (requires authentication)")
+                };
+                install_hero.add_css_class ("suggested-action");
+                install_hero.add_css_class ("pill");
+
+                bool is_installed = installed.has_key (group.name);
+                bool needs_update = false;
+                if (is_installed && repo_evr.length > 0) {
+                    needs_update = Business.VersionCompare.compare_evr (
+                        installed.get (group.name), repo_evr) < 0;
+                }
+                if (is_installed && !needs_update) {
+                    mark_installed (install_hero);
+                } else {
+                    string captured_evr = repo_evr;
+                    if (needs_update) {
+                        install_hero.label = _("Update");
+                        install_hero.tooltip_text = _("Update via apt-get (requires authentication)");
+                    }
+                    install_hero.clicked.connect (() => {
+                        install_binary.begin (group.name, install_hero, captured_evr, needs_update);
+                    });
+                }
+                hero_actions.append (install_hero);
+            }
+
             foreach (var name in names) {
                 var arches = by_name.get (name);
+                var row = new Adw.ActionRow () { title = name };
 
-                var joined = string.joinv (", ", (string[]) arches.to_array ());
-                var subtitle = GLib.Markup.escape_text (joined, -1);
-
-                var row = new Adw.ActionRow () {
-                    title = name,
-                    subtitle = subtitle
+                // arches as badges on the row
+                var badges_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 4) {
+                    valign = Gtk.Align.CENTER,
+                    halign = Gtk.Align.END
                 };
+                foreach (var a in arches) {
+                    badges_box.append (Style.make_tag (a, "neutral"));
+                }
+                row.add_suffix (badges_box);
 
                 if (can_install) {
                     var install_btn = new Gtk.Button.with_label (_("Install")) {
                         valign = Gtk.Align.CENTER
                     };
                     install_btn.add_css_class ("suggested-action");
+                    install_btn.add_css_class ("pill");
                     install_btn.tooltip_text = _("Install via apt-get (requires authentication)");
 
                     bool is_installed = installed.has_key (name);
@@ -372,7 +465,6 @@ public class DetailsPage : Adw.NavigationPage {
                                                   captured_evr, is_update);
                         });
                     }
-
                     row.add_suffix (install_btn);
                 }
 
@@ -383,19 +475,15 @@ public class DetailsPage : Adw.NavigationPage {
             clear_group (changelog_group);
             try {
                 var log = yield api.get_changelog (branch, group.name, 50);
-                var exp = new Adw.ExpanderRow () { title = _("Changelog") };
 
                 bool any = false;
                 foreach (var it in log.changelog) {
                     any = true;
 
-                    // Header: "date — nick [evr]"
                     string head = "";
                     if (is_nonempty (it.date)) head = it.date;
                     if (is_nonempty (it.nick)) head = (head == "") ? it.nick : head + " — " + it.nick;
-                    if (is_nonempty (it.evr))  head = (head == "") ? ("[" + it.evr + "]") : head + " [" + it.evr + "]";
 
-                    // One-line preview (first line, trimmed, ellipsized)
                     string preview = (it.message ?? "").strip ();
                     int nl = preview.index_of_char ('\n');
                     if (nl >= 0) preview = preview.substring (0, nl);
@@ -409,18 +497,23 @@ public class DetailsPage : Adw.NavigationPage {
                     };
                     row.set_subtitle_lines (1);
                     row.activatable = true;
-                    row.activated.connect (() => {
-                        // Show full message in a scrollable dialog
-                        show_changelog_dialog (row.title, it.message ?? "");
-                    });
 
-                    exp.add_row (row);
+                    if (is_nonempty (it.evr)) {
+                        var tag = Style.make_tag (it.evr, "neutral");
+                        tag.valign = Gtk.Align.CENTER;
+                        row.add_suffix (tag);
+                    }
+
+                    string captured_title = row.title;
+                    string captured_body  = it.message ?? "";
+                    row.activated.connect (() => {
+                        show_text_dialog (captured_title, captured_body, false);
+                    });
+                    changelog_group.add (row);
                 }
 
                 if (!any)
-                    exp.add_row (new Adw.ActionRow () { title = _("No changes found") });
-
-                changelog_group.add (exp);
+                    changelog_group.add (new Adw.ActionRow () { title = _("No changes found") });
             } catch (Error ce) {
                 warning ("[DetailsPage] changelog failed: %s", ce.message);
                 changelog_group.add (new Adw.ActionRow () {
@@ -429,14 +522,11 @@ public class DetailsPage : Adw.NavigationPage {
                 });
             }
         } catch (Error e) {
-            // Surface a toast and keep the page responsive
             warning (@"[DetailsPage] load failed: %s", e.message);
             toast_overlay.add_toast (new Adw.Toast (_("Failed to load package details")));
-        } finally {
-            set_loading (false);
         }
 
-        // Secondary sections — loaded lazily, failures don't block the page
+        // Lazy sections — failures don't block the page
         load_dependencies.begin ();
         load_security.begin ();
         load_versions.begin ();
@@ -445,11 +535,11 @@ public class DetailsPage : Adw.NavigationPage {
     }
 
     /* ===== Dependencies ===== */
+
     private async void load_dependencies () {
         var api = new Data.AltRepoClient ();
         clear_group (deps_group);
 
-        // Build dependencies — expander row with one item per dep
         var build_exp = new Adw.ExpanderRow () {
             title = _("Build dependencies"),
             subtitle = _("Packages required to build %s").printf (group.name)
@@ -459,13 +549,17 @@ public class DetailsPage : Adw.NavigationPage {
             if (builds == null || builds.size == 0) {
                 build_exp.add_row (new Adw.ActionRow () { title = _("No dependencies found") });
             } else {
+                build_exp.set_subtitle (_("%d packages").printf (builds.size));
                 foreach (var d in builds) {
                     var vr = (d.version ?? "");
                     if (is_nonempty (d.release)) vr = (vr == "") ? d.release : vr + "-" + d.release;
-                    build_exp.add_row (new Adw.ActionRow () {
-                        title = d.name,
-                        subtitle = GLib.Markup.escape_text (vr, -1)
-                    });
+                    var r = new Adw.ActionRow () { title = d.name };
+                    if (vr != "") {
+                        var t = Style.make_tag (vr, "neutral");
+                        t.valign = Gtk.Align.CENTER;
+                        r.add_suffix (t);
+                    }
+                    build_exp.add_row (r);
                 }
             }
         } catch (Error e) {
@@ -477,7 +571,6 @@ public class DetailsPage : Adw.NavigationPage {
         }
         deps_group.add (build_exp);
 
-        // Reverse dependencies — who depends on this source
         var rev_exp = new Adw.ExpanderRow () {
             title = _("Reverse dependencies"),
             subtitle = _("Source packages that depend on %s").printf (group.name)
@@ -487,11 +580,15 @@ public class DetailsPage : Adw.NavigationPage {
             if (revs == null || revs.size == 0) {
                 rev_exp.add_row (new Adw.ActionRow () { title = _("No reverse dependencies") });
             } else {
+                rev_exp.set_subtitle (_("%d packages").printf (revs.size));
                 foreach (var d in revs) {
-                    rev_exp.add_row (new Adw.ActionRow () {
-                        title = d.name,
-                        subtitle = GLib.Markup.escape_text (d.branch ?? "", -1)
-                    });
+                    var r = new Adw.ActionRow () { title = d.name };
+                    if (is_nonempty (d.branch)) {
+                        var t = Style.make_tag (d.branch, "accent");
+                        t.valign = Gtk.Align.CENTER;
+                        r.add_suffix (t);
+                    }
+                    rev_exp.add_row (r);
                 }
             }
         } catch (Error e) {
@@ -504,7 +601,8 @@ public class DetailsPage : Adw.NavigationPage {
         deps_group.add (rev_exp);
     }
 
-    /* ===== Security (Bugzilla) ===== */
+    /* ===== Security ===== */
+
     private async void load_security () {
         var api = new Data.AltRepoClient ();
         clear_group (security_group);
@@ -517,15 +615,40 @@ public class DetailsPage : Adw.NavigationPage {
             } else {
                 bugs_exp.set_subtitle (_("%d bug(s) found").printf (bugs.size));
                 foreach (var b in bugs) {
-                    string head = "#" + b.id;
-                    if (is_nonempty (b.severity)) head += "  [" + b.severity + "]";
-                    if (is_nonempty (b.status))   head += "  " + b.status;
                     var row = new Adw.ActionRow () {
-                        title = head,
+                        title = "#" + b.id,
                         subtitle = GLib.Markup.escape_text (b.summary ?? "", -1)
                     };
                     row.set_subtitle_lines (2);
                     row.activatable = true;
+
+                    var badges = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 4) {
+                        valign = Gtk.Align.CENTER
+                    };
+                    if (is_nonempty (b.severity)) {
+                        string sv = b.severity;
+                        string? cls = "neutral";
+                        string lc = sv.down ();
+                        if (lc.contains ("critical") || lc.contains ("blocker"))
+                            cls = "error";
+                        else if (lc.contains ("major") || lc.contains ("normal"))
+                            cls = "warning";
+                        else if (lc.contains ("minor") || lc.contains ("trivial") || lc.contains ("enhancement"))
+                            cls = "accent";
+                        badges.append (Style.make_tag (sv, cls));
+                    }
+                    if (is_nonempty (b.status)) {
+                        string st = b.status;
+                        string? cls = "neutral";
+                        string lc = st.down ();
+                        if (lc.contains ("resolved") || lc.contains ("closed"))
+                            cls = "success";
+                        else if (lc.contains ("new") || lc.contains ("open"))
+                            cls = "accent";
+                        badges.append (Style.make_tag (st, cls));
+                    }
+                    row.add_suffix (badges);
+
                     string captured_id = b.id;
                     row.activated.connect (() => {
                         open_uri ("https://bugzilla.altlinux.org/" + captured_id);
@@ -544,6 +667,7 @@ public class DetailsPage : Adw.NavigationPage {
     }
 
     /* ===== Versions across branches ===== */
+
     private async void load_versions () {
         var api = new Data.AltRepoClient ();
         clear_group (versions_group);
@@ -556,12 +680,21 @@ public class DetailsPage : Adw.NavigationPage {
             foreach (var v in vs) {
                 string vr = (v.version ?? "");
                 if (is_nonempty (v.release)) vr = (vr == "") ? v.release : vr + "-" + v.release;
-                var row = new Adw.ActionRow () {
-                    title = v.branch,
-                    subtitle = GLib.Markup.escape_text (vr, -1)
+
+                var row = new Adw.ActionRow () { title = v.branch };
+
+                var right = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6) {
+                    valign = Gtk.Align.CENTER
                 };
-                // Mark current branch with an accent
-                if (v.branch == branch) row.add_css_class ("accent");
+                if (vr != "") {
+                    right.append (Style.make_tag (vr, "accent"));
+                }
+                if (v.branch == branch) {
+                    right.append (Style.make_tag (_("current"), "success"));
+                    row.add_css_class ("current-branch-row");
+                }
+                row.add_suffix (right);
+
                 versions_group.add (row);
             }
         } catch (Error e) {
@@ -574,11 +707,11 @@ public class DetailsPage : Adw.NavigationPage {
     }
 
     /* ===== Downloads ===== */
+
     private async void load_downloads () {
         var api = new Data.AltRepoClient ();
         clear_group (downloads_group);
 
-        // Source .src.rpm links
         var src_exp = new Adw.ExpanderRow () { title = _("Source (.src.rpm)") };
         try {
             var src_links = yield api.get_source_downloads (branch, group.name);
@@ -596,7 +729,6 @@ public class DetailsPage : Adw.NavigationPage {
         }
         downloads_group.add (src_exp);
 
-        // Binary .rpm links
         var bin_exp = new Adw.ExpanderRow () { title = _("Binaries (.rpm)") };
         try {
             var bin_links = yield api.get_binary_downloads (branch, group.name);
@@ -615,18 +747,20 @@ public class DetailsPage : Adw.NavigationPage {
         downloads_group.add (bin_exp);
     }
 
-    // Append a row to download expander — row opens the URL on activation,
-    // suffix copy button copies the URL to clipboard.
     private void add_download_row (Adw.ExpanderRow exp, Data.DownloadLink d) {
-        string sub = "";
-        if (is_nonempty (d.arch)) sub = d.arch;
-        if (is_nonempty (d.size)) sub = (sub == "") ? d.size : sub + " · " + d.size;
+        var row = new Adw.ActionRow () { title = d.name };
 
-        var row = new Adw.ActionRow () {
-            title = d.name,
-            subtitle = GLib.Markup.escape_text (sub, -1)
+        var right = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6) {
+            valign = Gtk.Align.CENTER
         };
+        if (is_nonempty (d.arch))
+            right.append (Style.make_tag (d.arch, "neutral"));
+        if (is_nonempty (d.size))
+            right.append (Style.make_tag (d.size, "accent"));
+
+        row.add_suffix (right);
         row.activatable = true;
+
         if (is_nonempty (d.url)) {
             string captured_url = d.url;
             row.activated.connect (() => { open_uri (captured_url); });
@@ -639,15 +773,17 @@ public class DetailsPage : Adw.NavigationPage {
             copy_btn.clicked.connect (() => { copy_to_clipboard (captured_url); });
             row.add_suffix (copy_btn);
         }
+
         exp.add_row (row);
     }
 
     /* ===== Spec file ===== */
+
     private async void load_specfile () {
         var api = new Data.AltRepoClient ();
         clear_group (spec_group);
 
-        Adw.ActionRow row = new Adw.ActionRow () {
+        var row = new Adw.ActionRow () {
             title = _("View spec file"),
             subtitle = _("Show the RPM spec file used to build this package")
         };
@@ -656,6 +792,7 @@ public class DetailsPage : Adw.NavigationPage {
         };
         view_btn.sensitive = false;
         view_btn.add_css_class ("suggested-action");
+        view_btn.add_css_class ("pill");
         row.add_suffix (view_btn);
         spec_group.add (row);
 
@@ -671,7 +808,13 @@ public class DetailsPage : Adw.NavigationPage {
             string title = spec.name ?? (group.name + ".spec");
             string body  = spec.content;
             view_btn.clicked.connect (() => {
-                show_changelog_dialog (title, body);
+                show_text_dialog (title, body, true);
+            });
+
+            // Also make the whole row activatable for bigger touch target
+            row.activatable = true;
+            row.activated.connect (() => {
+                show_text_dialog (title, body, true);
             });
         } catch (Error e) {
             warning ("[DetailsPage] specfile failed: %s", e.message);
@@ -679,4 +822,3 @@ public class DetailsPage : Adw.NavigationPage {
         }
     }
 }
-

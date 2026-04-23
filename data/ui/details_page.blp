@@ -3,65 +3,307 @@ using Adw 1;
 
 template $DetailsPage : Adw.NavigationPage {
   title: _("Details");
+  tag: "details";
 
-  child: Adw.ToastOverlay toast_overlay {
-    hexpand: true; vexpand: true;
+  child: Adw.BreakpointBin bp_bin {
+    width-request: 360;
+    height-request: 360;
 
-    child: Gtk.Overlay {
-      hexpand: true; vexpand: true;
+    Adw.Breakpoint bp_narrow {
+      condition ("max-width: 620sp")
 
-      child: Gtk.ScrolledWindow {
-        has-frame: false;
-        hexpand: true; vexpand: true;
-        hscrollbar-policy: never;
-        vscrollbar-policy: automatic;
-        propagate-natural-height: true;
+      setters {
+        switcher_stack.visible-child-name: "title";
+        switcher_bar.reveal: true;
+      }
+    }
 
-        Adw.Clamp {
-          maximum-size: 1500;
-          tightening-threshold: 1200;
-          margin-start: 0;
-          margin-end: 0;
-          margin-top: 0;
-          margin-bottom: 0;
+    child: Adw.ToastOverlay toast_overlay {
+      child: Adw.ToolbarView toolbar {
+        [top]
+        Adw.HeaderBar header_bar {
+          show-end-title-buttons: true;
 
-          child: Adw.PreferencesPage {
-            Adw.PreferencesGroup info_group       { title: _("Info"); }
-            Adw.PreferencesGroup bins_group       { title: _("Binaries"); }
-            Adw.PreferencesGroup deps_group       { title: _("Dependencies"); }
-            Adw.PreferencesGroup security_group   { title: _("Security"); }
-            Adw.PreferencesGroup versions_group   { title: _("Versions across branches"); }
-            Adw.PreferencesGroup downloads_group  { title: _("Downloads"); }
-            Adw.PreferencesGroup spec_group       { title: _("Spec file"); }
-            Adw.PreferencesGroup changelog_group  { title: _("Changelog"); }
+          title-widget: Gtk.Stack switcher_stack {
+            transition-type: crossfade;
+
+            Gtk.StackPage {
+              name: "switcher";
+
+              child: Adw.ViewSwitcher header_switcher {
+                stack: view_stack;
+                policy: wide;
+              };
+            }
+
+            Gtk.StackPage {
+              name: "title";
+
+              child: Adw.WindowTitle header_title {
+                title: _("Details");
+              };
+            }
           };
         }
-      };
 
-      [overlay]
-      Gtk.Revealer loading_revealer {
-        transition-type: crossfade;
-        reveal-child: false;
-        can-target: false;
+        [top]
+        Adw.Banner banner {
+          revealed: false;
+        }
 
-        child: Gtk.CenterBox {
-          valign: center;
-          halign: center;
+        content: Gtk.Box content_box {
+          orientation: vertical;
+          spacing: 0;
 
-          center-widget: Gtk.Box {
-            orientation: vertical;
-            spacing: 12;
-            halign: center;
-            valign: center;
+          Gtk.Box hero_frame {
+            margin-start: 18;
+            margin-end: 18;
+            margin-top: 10;
+            margin-bottom: 6;
 
-            Adw.Spinner {
-              width-request: 40;
-              height-request: 40;
+            Gtk.Box hero_box {
+              hexpand: true;
+              orientation: horizontal;
+              spacing: 16;
+              styles ["pkg-hero"]
+
+              Gtk.Image hero_icon {
+                icon-name: "package-x-generic-symbolic";
+                pixel-size: 48;
+                valign: center;
+                styles ["pkg-icon"]
+              }
+
+              Gtk.Box hero_center {
+                orientation: vertical;
+                spacing: 4;
+                hexpand: true;
+                valign: center;
+
+                Gtk.Label hero_name {
+                  xalign: 0.0;
+                  halign: start;
+                  hexpand: true;
+                  ellipsize: end;
+                  label: "";
+                  styles ["title-2", "pkg-name"]
+                }
+
+                Gtk.Label hero_summary {
+                  xalign: 0.0;
+                  halign: start;
+                  wrap: true;
+                  wrap-mode: word_char;
+                  max-width-chars: 80;
+                  lines: 2;
+                  ellipsize: end;
+                  label: "";
+                  styles ["pkg-summary"]
+                }
+
+                Gtk.Box hero_badges {
+                  orientation: horizontal;
+                  spacing: 6;
+                  halign: start;
+                  margin-top: 4;
+                }
+              }
+
+              Gtk.Box hero_actions {
+                orientation: horizontal;
+                spacing: 8;
+                valign: center;
+              }
             }
-            Gtk.Label { label: _("Loading data…"); }
-          };
+          }
+
+          Adw.ViewStack view_stack {
+            vexpand: true;
+
+            Adw.ViewStackPage overview_page {
+              name: "overview";
+              title: _("Overview");
+              icon-name: "dialog-information-symbolic";
+
+              child: Gtk.ScrolledWindow {
+                hscrollbar-policy: never;
+                vexpand: true;
+
+                child: Adw.Clamp {
+                  maximum-size: 1100;
+                  margin-start: 12;
+                  margin-end: 12;
+                  margin-bottom: 12;
+
+                  child: Adw.PreferencesGroup info_group {
+                    title: _("Info");
+                  };
+                };
+              };
+            }
+
+            Adw.ViewStackPage binaries_page {
+              name: "binaries";
+              title: _("Binaries");
+              icon-name: "package-x-generic-symbolic";
+
+              child: Gtk.ScrolledWindow {
+                hscrollbar-policy: never;
+                vexpand: true;
+
+                child: Adw.Clamp {
+                  maximum-size: 1100;
+                  margin-start: 12;
+                  margin-end: 12;
+                  margin-bottom: 12;
+
+                  child: Adw.PreferencesGroup bins_group {
+                    title: _("Binary packages");
+                  };
+                };
+              };
+            }
+
+            Adw.ViewStackPage deps_page {
+              name: "dependencies";
+              title: _("Dependencies");
+              icon-name: "emblem-synchronizing-symbolic";
+
+              child: Gtk.ScrolledWindow {
+                hscrollbar-policy: never;
+                vexpand: true;
+
+                child: Adw.Clamp {
+                  maximum-size: 1100;
+                  margin-start: 12;
+                  margin-end: 12;
+                  margin-bottom: 12;
+
+                  child: Adw.PreferencesGroup deps_group {
+                    title: _("Dependencies");
+                  };
+                };
+              };
+            }
+
+            Adw.ViewStackPage security_page {
+              name: "security";
+              title: _("Security");
+              icon-name: "security-medium-symbolic";
+
+              child: Gtk.ScrolledWindow {
+                hscrollbar-policy: never;
+                vexpand: true;
+
+                child: Adw.Clamp {
+                  maximum-size: 1100;
+                  margin-start: 12;
+                  margin-end: 12;
+                  margin-bottom: 12;
+
+                  child: Adw.PreferencesGroup security_group {
+                    title: _("Security");
+                  };
+                };
+              };
+            }
+
+            Adw.ViewStackPage versions_page {
+              name: "versions";
+              title: _("Versions");
+              icon-name: "view-list-symbolic";
+
+              child: Gtk.ScrolledWindow {
+                hscrollbar-policy: never;
+                vexpand: true;
+
+                child: Adw.Clamp {
+                  maximum-size: 1100;
+                  margin-start: 12;
+                  margin-end: 12;
+                  margin-bottom: 12;
+
+                  child: Adw.PreferencesGroup versions_group {
+                    title: _("Versions across branches");
+                  };
+                };
+              };
+            }
+
+            Adw.ViewStackPage downloads_page {
+              name: "downloads";
+              title: _("Downloads");
+              icon-name: "folder-download-symbolic";
+
+              child: Gtk.ScrolledWindow {
+                hscrollbar-policy: never;
+                vexpand: true;
+
+                child: Adw.Clamp {
+                  maximum-size: 1100;
+                  margin-start: 12;
+                  margin-end: 12;
+                  margin-bottom: 12;
+
+                  child: Adw.PreferencesGroup downloads_group {
+                    title: _("Downloads");
+                  };
+                };
+              };
+            }
+
+            Adw.ViewStackPage spec_page {
+              name: "spec";
+              title: _("Spec");
+              icon-name: "text-x-generic-symbolic";
+
+              child: Gtk.ScrolledWindow {
+                hscrollbar-policy: never;
+                vexpand: true;
+
+                child: Adw.Clamp {
+                  maximum-size: 1100;
+                  margin-start: 12;
+                  margin-end: 12;
+                  margin-bottom: 12;
+
+                  child: Adw.PreferencesGroup spec_group {
+                    title: _("Spec file");
+                  };
+                };
+              };
+            }
+
+            Adw.ViewStackPage changelog_page {
+              name: "changelog";
+              title: _("Changelog");
+              icon-name: "document-edit-symbolic";
+
+              child: Gtk.ScrolledWindow {
+                hscrollbar-policy: never;
+                vexpand: true;
+
+                child: Adw.Clamp {
+                  maximum-size: 1100;
+                  margin-start: 12;
+                  margin-end: 12;
+                  margin-bottom: 12;
+
+                  child: Adw.PreferencesGroup changelog_group {
+                    title: _("Changelog");
+                  };
+                };
+              };
+            }
+          }
         };
-      }
+
+        [bottom]
+        Adw.ViewSwitcherBar switcher_bar {
+          stack: view_stack;
+          reveal: false;
+        }
+      };
     };
   };
 }

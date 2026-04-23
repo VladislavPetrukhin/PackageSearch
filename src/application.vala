@@ -97,6 +97,19 @@ public class PackageSearchApp : Adw.Application {
             _("Copy download URL"); _("Copied");
             _("View spec file"); _("Show the RPM spec file used to build this package");
             _("Open"); _("Spec file not available"); _("Spec file unavailable: %s");
+            // New UI strings
+            _("Welcome to PackageSearch");
+            _("Pick a search mode and start typing in the panel on the left.\nSelect a package to see its details here.");
+            _("Search mode"); _("Repository branch");
+            _("Keyboard Shortcuts"); _("About PackageSearch");
+            _("General"); _("Focus search"); _("Refresh search"); _("Close details / back");
+            _("Show keyboard shortcuts"); _("Quit");
+            _("Clear search"); _("Try another branch"); _("Retry");
+            _("Overview"); _("Binary packages"); _("current");
+            _("Install is available only for the system repository (%s)");
+            _("Open in browser"); _("Copy"); _("%d packages");
+            _("Search and inspect source packages across the ALT Linux Sisyphus, p11, p10, p9, c10f2 and c9f2 repositories.");
+            _("translator-credits");
         }
     }
 }
