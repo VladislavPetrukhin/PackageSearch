@@ -12,21 +12,24 @@ public class SearchPage : Adw.NavigationPage {
     [GtkChild] private unowned Gtk.ListView       list_view;
     [GtkChild] private unowned Gtk.ScrolledWindow results_scroller;
 
-    // Header controls now live inside SearchPage's own blueprint
     [GtkChild] private unowned Gtk.DropDown    mode_dropdown;
     [GtkChild] private unowned Gtk.Box         branch_group;
     [GtkChild] private unowned Gtk.SearchEntry search_entry;
 
     private Gee.ArrayList<Gtk.ToggleButton> branch_buttons;
 
-    // Empty-/error-state action buttons
     [GtkChild] private unowned Gtk.Button clear_btn;
     [GtkChild] private unowned Gtk.Button try_other_branch_btn;
     [GtkChild] private unowned Gtk.Button retry_btn;
 
-    // "Maybe you meant…" suggestions under empty state
     [GtkChild] private unowned Gtk.Box suggestions_wrap;
     [GtkChild] private unowned Gtk.Box suggestions_box;
+
+    [GtkChild] private unowned Gtk.MenuButton history_btn;
+    private GLib.Settings? settings = null;
+    private const int HISTORY_LIMIT = 15;
+    private const string SETTINGS_SCHEMA = "space.altlinux.PackageSearch";
+    private const string KEY_RECENT     = "recent-queries";
 
     private GLib.ListStore  store;
     private GLib.ListStore  task_store;
@@ -47,7 +50,6 @@ public class SearchPage : Adw.NavigationPage {
     private GLib.Cancellable? suggestions_cancel = null;
     private uint64            query_seq = 0;
 
-    // Labels for the mode dropdown; index matches Data.SearchMode enum.
     private const string[] MODE_LABELS = {
         "Package", "Binary", "File", "Maintainer", "Task"
     };
@@ -60,7 +62,6 @@ public class SearchPage : Adw.NavigationPage {
     };
 
     public signal void open_details (Data.SourceGroup group, string branch);
-    // Emitted after "Clear search" button is pressed and nothing is left
     public signal void wants_clear ();
 
     private static bool is_nonempty (string? s) {
@@ -84,8 +85,6 @@ public class SearchPage : Adw.NavigationPage {
             return term.length >= 2;
         }
     }
-
-    /* ===== Public control API ===== */
 
     public void set_query (string? q) {
         current_query = (q != null) ? q.strip () : "";
@@ -158,6 +157,91 @@ public class SearchPage : Adw.NavigationPage {
         do_search.begin (in_flight, query_seq);
     }
 
+    private string[] load_history () {
+        if (settings == null) return new string[0];
+        return settings.get_strv (KEY_RECENT);
+    }
+
+    private void save_to_history (string q) {
+        if (settings == null) return;
+        var trimmed = q.strip ();
+        if (trimmed.length < 2) return;
+
+        var current = load_history ();
+        var dedup = new Gee.ArrayList<string> ();
+        dedup.add (trimmed);
+        foreach (var s in current) {
+            if (s == trimmed) continue;
+            dedup.add (s);
+            if (dedup.size >= HISTORY_LIMIT) break;
+        }
+        var arr = new string[dedup.size];
+        for (int i = 0; i < dedup.size; i++) arr[i] = dedup[i];
+        settings.set_strv (KEY_RECENT, arr);
+        rebuild_history_popover ();
+    }
+
+    private void rebuild_history_popover () {
+        var items = load_history ();
+        var popover = new Gtk.Popover ();
+        popover.set_size_request (260, -1);
+        popover.has_arrow = true;
+
+        var outer = new Gtk.Box (Gtk.Orientation.VERTICAL, 6) {
+            margin_top    = 6,
+            margin_bottom = 6,
+            margin_start  = 6,
+            margin_end    = 6
+        };
+
+        if (items.length == 0) {
+            var empty = new Gtk.Label (_("No recent searches yet")) {
+                halign = Gtk.Align.CENTER,
+                margin_top = 6,
+                margin_bottom = 6
+            };
+            empty.add_css_class ("dim-label");
+            outer.append (empty);
+        } else {
+            var list = new Gtk.ListBox () {
+                selection_mode = Gtk.SelectionMode.NONE
+            };
+            list.add_css_class ("boxed-list");
+            foreach (var q in items) {
+                var row = new Adw.ActionRow () {
+                    title = q,
+                    activatable = true
+                };
+                row.add_prefix (new Gtk.Image.from_icon_name ("document-open-recent-symbolic"));
+                string captured = q;
+                row.activated.connect (() => {
+                    search_entry.text = captured;
+                    set_query (captured);
+                    trigger_search_now ();
+                    popover.popdown ();
+                });
+                list.append (row);
+            }
+            outer.append (list);
+
+            var clear = new Gtk.Button.with_label (_("Clear history")) {
+                halign = Gtk.Align.CENTER,
+                margin_top = 4
+            };
+            clear.add_css_class ("flat");
+            clear.clicked.connect (() => {
+                if (settings != null)
+                    settings.set_strv (KEY_RECENT, new string[0]);
+                rebuild_history_popover ();
+                popover.popdown ();
+            });
+            outer.append (clear);
+        }
+
+        popover.set_child (outer);
+        history_btn.set_popover (popover);
+    }
+
     private void cancel_suggestions () {
         if (suggestions_cancel != null) {
             suggestions_cancel.cancel ();
@@ -175,7 +259,6 @@ public class SearchPage : Adw.NavigationPage {
         }
     }
 
-    // Focus the search entry (used by keyboard shortcut).
     public void focus_search_entry () {
         search_entry.grab_focus ();
     }
@@ -188,7 +271,16 @@ public class SearchPage : Adw.NavigationPage {
     construct {
         Style.ensure ();
 
-        // Branch buttons — linked toggle group, one active at a time
+        try {
+            var src = GLib.SettingsSchemaSource.get_default ();
+            if (src != null && src.lookup (SETTINGS_SCHEMA, true) != null) {
+                settings = new GLib.Settings (SETTINGS_SCHEMA);
+            }
+        } catch (Error e) {
+            warning ("[SearchPage] settings unavailable: %s", e.message);
+        }
+        rebuild_history_popover ();
+
         branch_buttons = new Gee.ArrayList<Gtk.ToggleButton> ();
         string[] branch_names = { "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2" };
         Gtk.ToggleButton? first = null;
@@ -205,19 +297,17 @@ public class SearchPage : Adw.NavigationPage {
             btn.toggled.connect (() => {
                 if (!btn.active) return;
                 set_branch (captured);
-                trigger_search_now ();
+                trigger_search_debounced ();
             });
             branch_group.append (btn);
             branch_buttons.add (btn);
         }
 
-        // Mode dropdown
         var modes_model = new Gtk.StringList (null);
         foreach (string m in MODE_LABELS) modes_model.append (_(m));
         mode_dropdown.model = modes_model;
         mode_dropdown.selected = 0;
 
-        // Stores / factories
         store        = new GLib.ListStore (typeof (Data.SourceGroup));
         no_sel       = new Gtk.NoSelection (store);
         task_store   = new GLib.ListStore (typeof (Data.TaskResult));
@@ -229,7 +319,6 @@ public class SearchPage : Adw.NavigationPage {
         list_view.factory = pkg_factory;
         list_view.model   = no_sel;
 
-        // Wire entry
         search_entry.search_changed.connect (() => {
             set_query ((search_entry.text ?? "").strip ());
             trigger_search_debounced ();
@@ -239,7 +328,6 @@ public class SearchPage : Adw.NavigationPage {
             trigger_search_now ();
         });
 
-        // Wire mode dropdown
         mode_dropdown.notify["selected"].connect (() => {
             var mode = (Data.SearchMode) mode_dropdown.selected;
             set_mode (mode);
@@ -248,17 +336,14 @@ public class SearchPage : Adw.NavigationPage {
             trigger_search_now ();
         });
 
-        // Initial state
         set_branch (read_branch ());
 
-        // Empty-/error-state buttons
         clear_btn.clicked.connect (() => {
             search_entry.text = "";
             search_entry.grab_focus ();
             wants_clear ();
         });
         try_other_branch_btn.clicked.connect (() => {
-            // Cycle to the next branch button in the group
             int n = branch_buttons.size;
             if (n <= 1) return;
             int current = 0;
@@ -281,9 +366,6 @@ public class SearchPage : Adw.NavigationPage {
         return "sisyphus";
     }
 
-    /* ===== Factories ===== */
-
-    // Returns a leading icon widget appropriate for the current search mode.
     private Gtk.Widget make_leading_for_mode (Data.SearchMode mode, string title_text) {
         switch (mode) {
         case Data.SearchMode.MAINTAINER:
@@ -409,7 +491,6 @@ public class SearchPage : Adw.NavigationPage {
                 subtitle.set_text (vr);
             }
 
-            // Swap leading icon to match current mode
             if (leading_host != null) {
                 var child = leading_host.get_first_child ();
                 if (child != null) leading_host.remove (child);
@@ -510,7 +591,6 @@ public class SearchPage : Adw.NavigationPage {
                 string st = (t.state ?? "").strip ();
                 if (st.length > 0) {
                     tag.label = st;
-                    // Remove previous modifiers, set per-state color
                     tag.remove_css_class ("success");
                     tag.remove_css_class ("warning");
                     tag.remove_css_class ("error");
@@ -638,6 +718,7 @@ public class SearchPage : Adw.NavigationPage {
                 run_suggestions.begin (current_query, current_mode, current_branch, query_seq);
             } else {
                 show_results ();
+                save_to_history (current_query);
             }
             return Source.REMOVE;
         });
@@ -654,19 +735,14 @@ public class SearchPage : Adw.NavigationPage {
                 run_suggestions.begin (current_query, current_mode, current_branch, query_seq);
             } else {
                 show_results ();
+                save_to_history (current_query);
             }
             return Source.REMOVE;
         });
     }
 
-    /* ===== Smart suggestions =====
-     * When a search in the active mode yields no results, probe the other
-     * modes with the same term and surface clickable "Maybe you meant…"
-     * hints. Each probe is cancellable so a fresh search aborts old probes.
-     */
     private async void run_suggestions (string term, Data.SearchMode original_mode,
                                         string branch, uint64 my_seq) {
-        // Invalidate any previous suggestion run
         if (suggestions_cancel != null) suggestions_cancel.cancel ();
         suggestions_cancel = new GLib.Cancellable ();
         var cancel = suggestions_cancel;
@@ -705,8 +781,6 @@ public class SearchPage : Adw.NavigationPage {
         if (!any_added) suggestions_wrap.visible = false;
     }
 
-    // Light-weight probe: counts how many results a given mode would return
-    // for `term`. Any error (incl. "no data") is treated as 0.
     private async int probe_mode (Data.AltRepoClient api, Data.SearchMode mode,
                                   string term, string branch,
                                   GLib.Cancellable? cancel) {
@@ -775,7 +849,6 @@ public class SearchPage : Adw.NavigationPage {
 
         var captured = mode;
         btn.clicked.connect (() => {
-            // Switch mode via the dropdown; its handler re-runs the search
             mode_dropdown.selected = (uint) captured;
         });
 

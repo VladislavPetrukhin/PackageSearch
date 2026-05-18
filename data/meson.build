@@ -82,3 +82,10 @@ i18n.merge_file(
   type: 'xml',
 )
 
+# GSettings schema — persistent search history etc.
+install_data(
+  '@0@.gschema.xml'.format(app_id),
+  install_dir: get_option('datadir') / 'glib-2.0' / 'schemas',
+)
+gnome.post_install(glib_compile_schemas: true)
+

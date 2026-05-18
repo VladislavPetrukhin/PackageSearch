@@ -1,6 +1,3 @@
-/* window.vala
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
 using Gtk;
 using Adw;
 using GLib;
@@ -25,13 +22,10 @@ public class MainWindow : Adw.ApplicationWindow {
     public MainWindow (Adw.Application app) {
         Object (application: app);
 
-        // Ensure the global CSS (tags, cards, hero, etc) is loaded.
         Style.ensure ();
 
-        // Register window actions
         this.add_action_entries (WIN_ACTIONS, this);
 
-        // Build and attach the sidebar
         search_page = new SearchPage ();
         search_page.open_details.connect ((g, b) => show_details (g, b));
         search_page.wants_clear.connect (() => {
@@ -39,30 +33,21 @@ public class MainWindow : Adw.ApplicationWindow {
         });
         split_view.sidebar = search_page;
 
-        // Start with no content: only the sidebar is shown.
-        // collapsed=true makes the split act like a navigation stack, so
-        // the sidebar fills the whole window until the user picks a package.
         split_view.collapsed = true;
 
-        // Keyboard shortcuts
         install_accels ();
 
-        // Global focus: defer to an idle callback so the widget is mapped
-        // before we try to grab focus in the search field.
         Idle.add (() => {
             search_page.focus_search_entry ();
             return Source.REMOVE;
         });
     }
 
-    /* ===== Action handlers ===== */
-
     private void on_action_about ()     { open_about_dialog (); }
     private void on_action_quit ()      { quit_app (); }
     private void on_action_shortcuts () { show_shortcuts_window (); }
 
     private void on_action_focus_search () {
-        // If on narrow screens details was shown, go back to sidebar first
         if (split_view.collapsed && split_view.show_content)
             split_view.show_content = false;
         search_page.focus_search_entry ();
@@ -88,20 +73,15 @@ public class MainWindow : Adw.ApplicationWindow {
         app.set_accels_for_action ("win.quit",          new string[] { "<Primary>q" });
     }
 
-    /* ===== Public: show details page ===== */
-
     public void show_details (Data.SourceGroup group, string branch) {
+        if (current_details != null) current_details.cancel_loading ();
+
         var details = new DetailsPage (group, branch, this);
         current_details = details;
         split_view.content = details;
-        // On wide screens: reveal the split so sidebar + details are visible
-        // side-by-side. On narrow screens the breakpoint keeps collapsed=true,
-        // and show_content=true slides details over the sidebar.
         split_view.collapsed = false;
         split_view.show_content = true;
     }
-
-    /* ===== Dialogs ===== */
 
     public void open_about_dialog () {
         var about = new Adw.AboutDialog ();
@@ -115,7 +95,6 @@ public class MainWindow : Adw.ApplicationWindow {
         about.set_website ("https://altlinux.space/vladislavpetrukhin/PackageSearch");
         about.set_copyright ("© 2025 Vladislav Petrukhin");
         about.set_developers (new string[] { "Vladislav Petrukhin" });
-        // Translators: NAME <EMAIL>, YEAR1, YEAR2
         about.set_translator_credits (_("translator-credits"));
         about.present (this);
     }

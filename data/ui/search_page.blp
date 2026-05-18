@@ -57,6 +57,13 @@ template $SearchPage : Adw.NavigationPage {
         activates-default: true;
         hexpand: true;
       }
+
+      Gtk.MenuButton history_btn {
+        icon-name: "document-open-recent-symbolic";
+        tooltip-text: _("Recent searches");
+        valign: center;
+        styles ["flat"]
+      }
     }
 
     content: Adw.ToastOverlay toast_overlay {

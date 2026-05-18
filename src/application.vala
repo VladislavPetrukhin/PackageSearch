@@ -33,11 +33,9 @@ public class PackageSearchApp : Adw.Application {
         foreach (var d in candidates)
             if (FileUtils.test (d, FileTest.IS_DIR)) return d;
 
-        // Fallback to system-wide default
         return "/usr/share/locale";
     }
 
-    // Initialize gettext for the app
     public static void init_gettext () {
         Intl.setlocale (LocaleCategory.ALL, "");
         var locdir = detect_locale_dir ();
@@ -59,7 +57,6 @@ public class PackageSearchApp : Adw.Application {
 
     private static void mark_blp_strings_for_gettext () {
         if (false) {
-            // DetailsPage
             _("Details"); _("Back"); _("Info"); _("Binaries"); _("Changelog"); _("Loading data…");
             _("Install"); _("Installing…"); _("Installed");
             _("Update");  _("Updating…");
@@ -70,18 +67,15 @@ public class PackageSearchApp : Adw.Application {
             _("Updating %s…");   _("Updated %s");   _("Failed to update %s");
             _("Installation cancelled"); _("Failed to launch installer: %s");
             _("Installation is available only for the system repository (%s)");
-            // SearchPage
             _("Search"); _("Type a package name…"); _("Search packages");
             _("Start typing a source package name, then pick it from the results.");
             _("Loading results…"); _("No results"); _("Try refining your query or choose another branch.");
             _("Error"); _("Failed to fetch data. Check your connection and package name.");
-            // Search modes
             _("Package"); _("Binary"); _("File"); _("Maintainer"); _("Task");
             _("Type a binary package name…");
             _("Type a file path…"); _("Type a maintainer nickname…"); _("Type a package name or task ID…");
             _("No source package found for binary \"%s\"");
             _("Task #%lld  —  %s");
-            // DetailsPage — extended sections
             _("Dependencies"); _("Security"); _("Versions across branches");
             _("Downloads"); _("Spec file");
             _("Build dependencies"); _("Packages required to build %s");
@@ -97,7 +91,6 @@ public class PackageSearchApp : Adw.Application {
             _("Copy download URL"); _("Copied");
             _("View spec file"); _("Show the RPM spec file used to build this package");
             _("Open"); _("Spec file not available"); _("Spec file unavailable: %s");
-            // New UI strings
             _("Welcome to PackageSearch");
             _("Pick a search mode and start typing in the panel on the left.\nSelect a package to see its details here.");
             _("Search mode"); _("Repository branch");
@@ -113,6 +106,16 @@ public class PackageSearchApp : Adw.Application {
             _("Loading spec file…");
             _("Maybe you meant to search as…");
             _("Search as %s");
+            _("Security advisories"); _("No security advisories");
+            _("%d advisories"); _("Advisories unavailable");
+            _("Recent searches"); _("No recent searches yet"); _("Clear history");
+            _("Compare selected"); _("Loading…"); _("Compare failed: %s");
+            _("Only two branches can be compared at a time");
+            _("Compare %s vs %s"); _("Tick two branches to compare versions side by side");
+            _("Branch"); _("Metadata"); _("Binary packages");
+            _("Only in %s"); _("In both branches"); _("%d packages");
+            _("%d common · %d only in %s · %d only in %s");
+            _("No binary packages reported");
         }
     }
 }

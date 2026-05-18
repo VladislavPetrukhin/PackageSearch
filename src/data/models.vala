@@ -2,7 +2,6 @@ using Gee;
 
 namespace Data {
 
-// Search mode for the main search entry
 public enum SearchMode {
     PACKAGE,
     BINARY,
@@ -11,7 +10,6 @@ public enum SearchMode {
     TASK
 }
 
-// Result group for search list (source package + short version/release)
 public class SourceGroup : GLib.Object {
     public string  name    { get; construct set; }
     public string? version { get; set; }
@@ -22,7 +20,6 @@ public class SourceGroup : GLib.Object {
     }
 }
 
-// Result for task search
 public class TaskResult : GLib.Object {
     public int64   task_id  { get; set; }
     public string  state    { get; set; default = ""; }
@@ -32,7 +29,6 @@ public class TaskResult : GLib.Object {
     public string  packages { get; set; default = ""; }
 }
 
-// One binary package produced by the source package
 public class BinaryPackage : GLib.Object {
     public string  name     { get; set; }
     public string? version  { get; set; }
@@ -42,7 +38,6 @@ public class BinaryPackage : GLib.Object {
     public string? pkghash  { get; set; }
 }
 
-// Dependency entry (build-dep or reverse-dep)
 public class DependencyPackage : GLib.Object {
     public string  name    { get; set; default = ""; }
     public string? version { get; set; }
@@ -52,7 +47,6 @@ public class DependencyPackage : GLib.Object {
     public string? arch    { get; set; }
 }
 
-// CVE info summary
 public class VulnerabilityItem : GLib.Object {
     public string  id        { get; set; default = ""; }
     public string? summary   { get; set; }
@@ -64,7 +58,6 @@ public class VulnerabilityItem : GLib.Object {
     public bool    rejected  { get; set; default = false; }
 }
 
-// Package fixed by a CVE
 public class VulnFixPackage : GLib.Object {
     public string  name       { get; set; default = ""; }
     public string? version    { get; set; }
@@ -75,7 +68,26 @@ public class VulnFixPackage : GLib.Object {
     public string? task_state { get; set; }
 }
 
-// Bugzilla bug
+public class ErrataRef : GLib.Object {
+    public string id     { get; set; default = ""; }
+    public string ref_type { get; set; default = ""; }  // "cve" | "bdu" | "bug"
+}
+
+public class ErrataInfo : GLib.Object {
+    public string  id           { get; set; default = ""; }
+    public string  errata_type  { get; set; default = ""; }  // "security" | "bugfix"
+    public string? created      { get; set; }
+    public string? updated      { get; set; }
+    public string? pkgset_name  { get; set; }
+    public string? pkg_version  { get; set; }
+    public string? pkg_release  { get; set; }
+    public Gee.ArrayList<ErrataRef> references { get; construct set; }
+
+    public ErrataInfo () {
+        references = new Gee.ArrayList<ErrataRef> ();
+    }
+}
+
 public class BugItem : GLib.Object {
     public string  id            { get; set; default = ""; }
     public string? status        { get; set; }
@@ -88,7 +100,6 @@ public class BugItem : GLib.Object {
     public string? last_changed  { get; set; }
 }
 
-// Version of a source package in a specific branch
 public class BranchVersion : GLib.Object {
     public string  branch  { get; set; default = ""; }
     public string? version { get; set; }
@@ -96,7 +107,6 @@ public class BranchVersion : GLib.Object {
     public string? pkghash { get; set; }
 }
 
-// Download link for a package file
 public class DownloadLink : GLib.Object {
     public string  name { get; set; default = ""; }
     public string? arch { get; set; }
@@ -105,14 +115,12 @@ public class DownloadLink : GLib.Object {
     public string? md5  { get; set; }
 }
 
-// Spec-file contents (base64 decoded)
 public class SpecFileInfo : GLib.Object {
     public string? name    { get; set; }
     public string? date    { get; set; }
     public string? content { get; set; }
 }
 
-// Full details for a source package
 public class PackageDetails : GLib.Object {
     public string? version     { get; set; }
     public string? release     { get; set; }
@@ -123,7 +131,6 @@ public class PackageDetails : GLib.Object {
     public string? summary     { get; set; }
     public string? description { get; set; }
 
-    // Flat list of binary packages (arch-specific builds)
     public Gee.ArrayList<BinaryPackage> binaries { get; construct set; }
 
     public PackageDetails () {

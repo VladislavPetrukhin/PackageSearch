@@ -1,5 +1,9 @@
 <schemalist gettext-domain="packagesearch">
   <schema id="space.altlinux.PackageSearch" path="/space/altlinux/PackageSearch/">
+    <key name="recent-queries" type="as">
+      <default>[]</default>
+      <summary>Recent search queries</summary>
+      <description>List of recently used search queries, newest first.</description>
+    </key>
   </schema>
 </schemalist>
-

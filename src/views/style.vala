@@ -1,7 +1,6 @@
 using Gtk;
 using Gdk;
 
-// Central place for app-wide CSS. Loaded once at first use.
 public class Style : GLib.Object {
     private static bool loaded = false;
 
@@ -119,6 +118,23 @@ public class Style : GLib.Object {
         padding-bottom: 0;
     }
 
+    /* ---- Bottom view-switcher (always-fits icon-only bar) ---- */
+    .bottom-switcher {
+        padding: 4px 6px;
+        background: alpha(@window_fg_color, 0.04);
+        border-top: 1px solid alpha(@window_fg_color, 0.10);
+    }
+    .bottom-switcher button {
+        padding: 6px 10px;
+        margin: 0 2px;
+        min-width: 36px;
+        border-radius: 8px;
+    }
+    .bottom-switcher button:checked {
+        background: alpha(@accent_bg_color, 0.20);
+        color: @accent_color;
+    }
+
     /* ---- Branch toggle group (segmented-control look) ---- */
     .branch-toggles {
         padding: 3px;
@@ -205,8 +221,6 @@ public class Style : GLib.Object {
         loaded = true;
     }
 
-    // Build a GtkLabel styled as a small pill. tag_class is "" / "neutral" /
-    // "success" / "warning" / "error" / "accent".
     public static Gtk.Label make_tag (string? text, string? tag_class = null) {
         var l = new Gtk.Label (text ?? "") { valign = Gtk.Align.CENTER };
         l.add_css_class ("tag");

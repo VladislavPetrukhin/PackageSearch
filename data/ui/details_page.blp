@@ -5,44 +5,14 @@ template $DetailsPage : Adw.NavigationPage {
   title: _("Details");
   tag: "details";
 
-  child: Adw.BreakpointBin bp_bin {
-    width-request: 360;
-    height-request: 360;
-
-    Adw.Breakpoint bp_narrow {
-      condition ("max-width: 820sp")
-
-      setters {
-        switcher_stack.visible-child-name: "title";
-        switcher_bar.reveal: true;
-      }
-    }
-
-    child: Adw.ToastOverlay toast_overlay {
+  child: Adw.ToastOverlay toast_overlay {
       child: Adw.ToolbarView toolbar {
         [top]
         Adw.HeaderBar header_bar {
           show-end-title-buttons: true;
 
-          title-widget: Gtk.Stack switcher_stack {
-            transition-type: crossfade;
-
-            Gtk.StackPage {
-              name: "switcher";
-
-              child: Adw.ViewSwitcher header_switcher {
-                stack: view_stack;
-                policy: narrow;
-              };
-            }
-
-            Gtk.StackPage {
-              name: "title";
-
-              child: Adw.WindowTitle header_title {
-                title: _("Details");
-              };
-            }
+          title-widget: Adw.WindowTitle header_title {
+            title: _("Details");
           };
         }
 
@@ -94,7 +64,7 @@ template $DetailsPage : Adw.NavigationPage {
                   halign: start;
                   wrap: true;
                   wrap-mode: word_char;
-                  max-width-chars: 80;
+                  max-width-chars: 40;
                   lines: 2;
                   ellipsize: end;
                   label: "";
@@ -344,11 +314,12 @@ template $DetailsPage : Adw.NavigationPage {
         };
 
         [bottom]
-        Adw.ViewSwitcherBar switcher_bar {
+        Adw.ViewSwitcher switcher_bar {
           stack: view_stack;
-          reveal: false;
+          policy: narrow;
+          halign: center;
+          styles ["bottom-switcher"]
         }
       };
     };
-  };
 }

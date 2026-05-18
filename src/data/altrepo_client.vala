@@ -7,8 +7,6 @@ public class AltRepoClient : GLib.Object {
     private AltRepo.Client cli;
     private Soup.Session   soup;
 
-    // Direct HTTP base, bypassing libalt-repo for endpoints where the library
-    // has mis-declared response shapes.
     private const string RAW_API_BASE = "https://rdb.altlinux.org/api";
 
     public AltRepoClient () {
@@ -17,11 +15,10 @@ public class AltRepoClient : GLib.Object {
         soup.timeout = 30;
     }
 
-    // Fetch URL, return root JSON node, or null if status is non-2xx.
-    // Throws only on network/parse errors.
     private async Json.Node? http_get_json (
         string url, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var msg = new Soup.Message ("GET", url);
         var bytes = yield soup.send_and_read_async (
             msg, GLib.Priority.DEFAULT, cancellable
@@ -34,7 +31,6 @@ public class AltRepoClient : GLib.Object {
         return parser.get_root ();
     }
 
-    // Helper: get string property from a JSON object, null-safe
     private static string? jstr (Json.Object? obj, string key) {
         if (obj == null || !obj.has_member (key)) return null;
         var m = obj.get_member (key);
@@ -42,7 +38,6 @@ public class AltRepoClient : GLib.Object {
         return m.get_string ();
     }
 
-    // Lightweight holder used for sorting search matches
     private class Candidate : GLib.Object {
         public double score;
         public SourceGroup sg;
@@ -52,27 +47,48 @@ public class AltRepoClient : GLib.Object {
         }
     }
 
-    // Detect "no results" responses from the API. The backend commonly
-    // replies with HTTP 404 body `{"details":{},"message":"..."}`, and for
-    // array-shaped endpoints the JSON layer reports "Node isn't array" when
-    // it receives that error object.
     private static bool is_no_data_error (GLib.Error e) {
         if (e == null) return false;
         string m = (e.message ?? "").down ();
         return m.contains ("no data not found in database")
+            || m.contains ("no data found in database")
             || m.contains ("no information found")
+            || m.contains ("no errata data found")
             || m.contains ("node isn't array")
             || m.contains ("nothing found")
             || m.contains ("not found in database")
             || m.contains ("no packages found")
             || m.contains ("not found in the database")
             || m.contains ("http 404")
-            || m.contains (" 404 ");
+            || m.contains (" 404 ")
+            || m.contains ("wrong type: expected json_node_array");
     }
 
-    /* ===== Helpers: name normalization ===== */
+    public static bool is_rate_limited_error (GLib.Error e) {
+        if (e == null) return false;
+        string m = (e.message ?? "").down ();
+        return m.contains ("too many requests")
+            || m.contains ("429");
+    }
 
-    // Keep only [a-z0-9], lowercase. Simplifies matching/scoring.
+    private static int64 last_req_ms = 0;
+    private const int    MIN_INTERVAL_MS = 280;
+
+    private static async void throttle () {
+        var now = GLib.get_monotonic_time () / 1000;
+        var wait = MIN_INTERVAL_MS - (int) (now - last_req_ms);
+        if (wait > 0) {
+            var src = new GLib.TimeoutSource ((uint) wait);
+            src.set_callback (() => {
+                throttle.callback ();
+                return GLib.Source.REMOVE;
+            });
+            src.attach (GLib.MainContext.default ());
+            yield;
+        }
+        last_req_ms = GLib.get_monotonic_time () / 1000;
+    }
+
     private static string norm (string s) {
         var out = new StringBuilder ();
         string d = s.down ();
@@ -87,8 +103,6 @@ public class AltRepoClient : GLib.Object {
         }
         return out.str;
     }
-
-    /* ===== Helpers: Levenshtein distance (byte-safe with UTF-8 indexing) ===== */
 
     private static int lev (string a, string b) {
         int n = a.length;
@@ -116,9 +130,6 @@ public class AltRepoClient : GLib.Object {
         return d[n * (m + 1) + m];
     }
 
-    /* ===== Helpers: word-boundary prefix search ===== */
-
-    // Find term at a word boundary in name: (^|[^a-z0-9])term ; returns byte index or -1
     private static int first_word_prefix_pos (string name, string term) {
         int n = name.length;
         int tlen = term.length;
@@ -141,7 +152,6 @@ public class AltRepoClient : GLib.Object {
         return -1;
     }
 
-    /* ===== Scoring ===== */
     private static double score_name (string name, string term) {
         if (name == term) return 1000.0;
 
@@ -171,37 +181,33 @@ public class AltRepoClient : GLib.Object {
         return 700.0 * sim * length_bias;
     }
 
-    /* ===== Search sources ===== */
     public async Gee.ArrayList<SourceGroup> search_source (
         string branch, string term, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var term_raw = term.strip ();
         var term_n = norm (term_raw);
         if (term_n.length < 2) return new Gee.ArrayList<SourceGroup> ();
 
         var groups = new Gee.ArrayList<SourceGroup> ();
-        // NB: library mis-types this as `SiteFingPackages` (typo in upstream).
         AltRepo.SiteFingPackages resp;
         try {
             resp = yield cli.get_site_find_packages_async (
-                { term_raw },       // terms (original, not normalized)
-                branch,             // branch
-                null,               // arch
-                Priority.DEFAULT,   // priority
-                null                // was: cancellable
+                { term_raw },
+                branch,
+                null,
+                Priority.DEFAULT,
+                null
             );
         } catch (Error e) {
-            // "No data" / "No information found" → treat as empty result so
-            // the UI can show the empty state (and suggest other modes).
             if (is_no_data_error (e)) return groups;
             throw e;
         }
 
         var candidates = new Gee.ArrayList<Candidate> ();
         foreach (var pkg in resp.packages) {
-            if (pkg.by_binary) continue; // only source packages
+            if (pkg.by_binary) continue;
 
-            // Take best non-deleted version in this branch
             AltRepo.SitePackageVersionsElement? best = null;
             foreach (var v in pkg.versions) {
                 if (v.branch == branch && !v.deleted) { best = v; break; }
@@ -214,12 +220,11 @@ public class AltRepoClient : GLib.Object {
 
             var name_n = norm (pkg.name);
             double s = score_name (name_n, term_n);
-            if (pkg.name.down () == term_raw.down ()) s += 5.0; // tiny boost
+            if (pkg.name.down () == term_raw.down ()) s += 5.0;
 
             candidates.add (new Candidate (s, g));
         }
 
-        // Sort by score desc, then shorter name, then lexicographically
         candidates.sort ((a, b) => {
             if (a.score > b.score) return -1;
             if (a.score < b.score) return 1;
@@ -231,24 +236,21 @@ public class AltRepoClient : GLib.Object {
             return strcmp (a.sg.name, b.sg.name);
         });
 
-        // Cap to top 100 items
         int cap = (candidates.size < 100) ? candidates.size : 100;
         for (int i = 0; i < cap; i++) groups.add (candidates[i].sg);
 
         return groups;
     }
 
-    /* ===== Source details + binaries ===== */
     public async PackageDetails get_source_details (
         string branch, string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var details = new PackageDetails ();
 
-        // Resolve src_name to pkghash first
         var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
 
-        // Fetch package info by hash; we request "source" view here
         var info = yield cli.get_site_package_info_pkghash_async (
             branch, pkghash, 50, "source", Priority.DEFAULT, null
         );
@@ -262,8 +264,6 @@ public class AltRepoClient : GLib.Object {
         details.description = info.description;
         details.group       = info.category;
 
-
-        // Expand binary packages, skip pure source entries ("src" arch only)
         foreach (var pa in info.package_archs) {
             var non_src_arches = new Gee.ArrayList<string> ();
             foreach (var arch in pa.archs) {
@@ -271,7 +271,6 @@ public class AltRepoClient : GLib.Object {
                     non_src_arches.add (arch);
             }
 
-            // if this is a source-only record then skip
             if (non_src_arches.size == 0)
                 continue;
             foreach (var arch in non_src_arches) {
@@ -288,10 +287,10 @@ public class AltRepoClient : GLib.Object {
         return details;
     }
 
-    /* ===== Search by file ===== */
     public async Gee.ArrayList<SourceGroup> search_by_file (
         string branch, string file_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var groups = new Gee.ArrayList<SourceGroup> ();
         AltRepo.FilePackagesByFile resp;
         try {
@@ -302,7 +301,6 @@ public class AltRepoClient : GLib.Object {
             if (is_no_data_error (e)) return groups;
             throw e;
         }
-        // Deduplicate by package name, keep first occurrence
         var seen = new Gee.HashSet<string> ();
         foreach (var pkg in resp.packages) {
             if (pkg.name == null || seen.contains (pkg.name)) continue;
@@ -315,15 +313,10 @@ public class AltRepoClient : GLib.Object {
         return groups;
     }
 
-    /* ===== Search by maintainer =====
-     *
-     * Direct HTTP call: the libalt-repo binding mis-declares the response
-     * shape for this endpoint (ArrayList<MaintainerPackages> vs. the single
-     * object that the API actually returns), so we parse the JSON ourselves.
-     */
     public async Gee.ArrayList<SourceGroup> search_by_maintainer (
         string branch, string maintainer, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var groups = new Gee.ArrayList<SourceGroup> ();
 
         var url = "%s/site/maintainer_packages?branch=%s&maintainer_nickname=%s".printf (
@@ -358,10 +351,10 @@ public class AltRepoClient : GLib.Object {
         return groups;
     }
 
-    /* ===== Search tasks ===== */
     public async Gee.ArrayList<TaskResult> search_tasks (
         string term, string? branch = null, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var results = new Gee.ArrayList<TaskResult> ();
         AltRepo.TasksList resp;
         try {
@@ -380,7 +373,6 @@ public class AltRepoClient : GLib.Object {
             tr.owner   = t.task_owner ?? "";
             tr.repo    = t.task_repo ?? "";
             tr.changed = t.task_changed ?? "";
-            // Collect package names from subtasks
             var pkg_names = new Gee.ArrayList<string> ();
             foreach (var st in t.subtasks) {
                 if (st.subtask_srpm_name != null && st.subtask_srpm_name.length > 0)
@@ -392,10 +384,10 @@ public class AltRepoClient : GLib.Object {
         return results;
     }
 
-    /* ===== Find source package by binary name ===== */
     public async string? find_source_by_binary (
         string branch, string binary_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         AltRepo.FindSourcePackageInBranch resp;
         try {
             resp = yield cli.get_site_find_source_package_async (
@@ -410,10 +402,10 @@ public class AltRepoClient : GLib.Object {
         return null;
     }
 
-    /* ===== Changelog ===== */
     public async AltRepo.SiteChangelog get_changelog (
         string branch, string src_name, int64 last = 50, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
         return yield cli.get_site_package_changelog_pkghash_async (
@@ -421,11 +413,11 @@ public class AltRepoClient : GLib.Object {
         );
     }
 
-    /* ===== Build-time dependencies (what this source needs to build) ===== */
     public async Gee.ArrayList<DependencyPackage> get_build_depends (
         string branch, string src_name, string? arch = "x86_64",
         GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var out_list = new Gee.ArrayList<DependencyPackage> ();
         var resp = yield cli.get_package_build_dependency_set_async (
             branch, { src_name }, arch, Priority.DEFAULT, null
@@ -444,11 +436,11 @@ public class AltRepoClient : GLib.Object {
         return out_list;
     }
 
-    /* ===== Reverse dependencies (what depends on this source) ===== */
     public async Gee.ArrayList<DependencyPackage> get_reverse_depends (
         string branch, string src_name, string? dp_type = "both",
         GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var out_list = new Gee.ArrayList<DependencyPackage> ();
         var resp = yield cli.get_dependencies_what_depends_src_async (
             src_name, branch, dp_type, Priority.DEFAULT, null
@@ -462,10 +454,10 @@ public class AltRepoClient : GLib.Object {
         return out_list;
     }
 
-    /* ===== Who depends on this binary package ===== */
     public async Gee.ArrayList<DependencyPackage> get_dependents_of_binary (
         string branch, string bin_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var out_list = new Gee.ArrayList<DependencyPackage> ();
         var resp = yield cli.get_dependencies_packages_by_dependency_async (
             branch, bin_name, "all", Priority.DEFAULT, null
@@ -482,10 +474,10 @@ public class AltRepoClient : GLib.Object {
         return out_list;
     }
 
-    /* ===== CVE info ===== */
     public async VulnerabilityItem? get_cve_info (
         string cve_id, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var resp = yield cli.get_vuln_cve_async (cve_id, true, Priority.DEFAULT, null);
         if (resp == null || resp.vuln_info == null) return null;
         var v = resp.vuln_info;
@@ -500,10 +492,10 @@ public class AltRepoClient : GLib.Object {
         return item;
     }
 
-    /* ===== CVE fixes (packages closing a CVE) ===== */
     public async Gee.ArrayList<VulnFixPackage> get_cve_fixes (
         string cve_id, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var out_list = new Gee.ArrayList<VulnFixPackage> ();
         var resp = yield cli.get_vuln_cve_fixes_async (cve_id, true, Priority.DEFAULT, null);
         foreach (var el in resp.packages) {
@@ -520,10 +512,45 @@ public class AltRepoClient : GLib.Object {
         return out_list;
     }
 
-    /* ===== Bugzilla issues for a source package ===== */
+    public async Gee.ArrayList<ErrataInfo> get_errata_for_package (
+        string branch, string src_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        yield throttle ();
+        var out_list = new Gee.ArrayList<ErrataInfo> ();
+        AltRepo.Erratas? resp = null;
+        try {
+            resp = yield cli.get_errata_search_async (
+                branch, src_name, null, null, Priority.DEFAULT, null
+            );
+        } catch (Error e) {
+            if (is_no_data_error (e)) return out_list;
+            throw e;
+        }
+        if (resp == null) return out_list;
+        foreach (var er in resp.erratas) {
+            var item = new ErrataInfo ();
+            item.id          = er.id ?? "";
+            item.errata_type = er.type_ ?? "";
+            item.created     = er.created;
+            item.updated     = er.updated;
+            item.pkgset_name = er.pkgset_name;
+            item.pkg_version = er.pkg_version;
+            item.pkg_release = er.pkg_release;
+            foreach (var r in er.references) {
+                var rr = new ErrataRef ();
+                rr.id       = r.id ?? "";
+                rr.ref_type = r.type_ ?? "";
+                item.references.add (rr);
+            }
+            out_list.add (item);
+        }
+        return out_list;
+    }
+
     public async Gee.ArrayList<BugItem> get_bugs_by_package (
         string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var out_list = new Gee.ArrayList<BugItem> ();
         Gee.List<AltRepo.BugzillaInfo>? resp_list = null;
         try {
@@ -531,8 +558,6 @@ public class AltRepoClient : GLib.Object {
                 src_name, "source", Priority.DEFAULT, null
             );
         } catch (Error e) {
-            // The API returns a 404-like error when the package has no bugs.
-            // Treat that as "no results", not as an error.
             if (is_no_data_error (e)) return out_list;
             throw e;
         }
@@ -555,10 +580,10 @@ public class AltRepoClient : GLib.Object {
         return out_list;
     }
 
-    /* ===== Package versions across all branches ===== */
     public async Gee.ArrayList<BranchVersion> get_package_versions_all (
         string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var out_list = new Gee.ArrayList<BranchVersion> ();
         var resp = yield cli.get_site_package_versions_async (
             src_name, "source", null, Priority.DEFAULT, null
@@ -574,19 +599,19 @@ public class AltRepoClient : GLib.Object {
         return out_list;
     }
 
-    /* ===== Compare two package sets ===== */
     public async AltRepo.PackagesetCompare compare_packagesets (
         string pkgset1, string pkgset2, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         return yield cli.get_packageset_compare_packagesets_async (
             pkgset1, pkgset2, Priority.DEFAULT, null
         );
     }
 
-    /* ===== Download links for source package (.src.rpm) ===== */
     public async Gee.ArrayList<DownloadLink> get_source_downloads (
         string branch, string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var out_list = new Gee.ArrayList<DownloadLink> ();
         var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
@@ -607,10 +632,10 @@ public class AltRepoClient : GLib.Object {
         return out_list;
     }
 
-    /* ===== Download links for binaries (.rpm) produced by source ===== */
     public async Gee.ArrayList<DownloadLink> get_binary_downloads (
         string branch, string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var out_list = new Gee.ArrayList<DownloadLink> ();
         var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
@@ -631,10 +656,10 @@ public class AltRepoClient : GLib.Object {
         return out_list;
     }
 
-    /* ===== Spec file (base64 -> plain text) ===== */
     public async SpecFileInfo get_specfile (
         string branch, string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        yield throttle ();
         var spec = new SpecFileInfo ();
         var resp = yield cli.get_package_specfile_by_name_async (
             branch, src_name, Priority.DEFAULT, null
@@ -643,7 +668,6 @@ public class AltRepoClient : GLib.Object {
         spec.date = resp.specfile_date;
         if (resp.specfile_content != null && resp.specfile_content.length > 0) {
             var raw = GLib.Base64.decode (resp.specfile_content);
-            // Ensure null-termination before casting to a Vala string
             var buf = new uint8[raw.length + 1];
             Memory.copy (buf, raw, raw.length);
             buf[raw.length] = 0;
