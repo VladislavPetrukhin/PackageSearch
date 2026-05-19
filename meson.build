@@ -1,4 +1,10 @@
-project('PackageSearch', 'vala', version: '0.1.0', meson_version: '>= 0.61')
+project('PackageSearch', 'vala',
+  version: '0.1.0',
+  meson_version: '>= 0.61',
+  # Все C-исходники в проекте сгенерированы valac'ом — править их нельзя,
+  # поэтому отключаем C-предупреждения, чтобы они не засоряли вывод сборки.
+  default_options: ['warning_level=0'],
+)
 
 fs = import('fs')
 gnome = import('gnome')
@@ -16,12 +22,15 @@ alt_repo_dep = dependency('libalt-repo-1', required: true)
 # blueprint-compiler
 bp = find_program('blueprint-compiler', required: true)
 
+localedir = join_paths(get_option('prefix'), get_option('localedir'))
+add_project_arguments(
+    '-w', '-DGETTEXT_PACKAGE="@0@"'.format(app_id),
+    language: 'c'
+)
+
 subdir('data')
 subdir('src')
 subdir('po')
-
-localedir = join_paths(get_option('prefix'), get_option('localedir'))
-add_project_arguments('-DGETTEXT_PACKAGE="@0@"'.format(app_id), language: 'c')
 
 vala_extra_args = [
   '--target-glib=2.74',
@@ -63,4 +72,6 @@ meson.add_install_script(
   '''
   .replace('@ICON_DIR@', icon_cache_dir)
 )
+
+subdir('tests')
 
