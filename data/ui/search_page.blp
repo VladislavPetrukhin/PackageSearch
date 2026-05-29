@@ -9,12 +9,6 @@ template $SearchPage : Adw.NavigationPage {
     [top]
     Adw.HeaderBar search_header {
       [start]
-      Gtk.DropDown branch_dropdown {
-        valign: center;
-        tooltip-text: _("Repository");
-      }
-
-      [start]
       Gtk.DropDown mode_dropdown {
         valign: center;
         tooltip-text: _("Search mode");

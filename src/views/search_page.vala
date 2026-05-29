@@ -10,7 +10,6 @@ public class SearchPage : Adw.NavigationPage {
     [GtkChild] private unowned Gtk.ListBox      results_list;
     [GtkChild] private unowned Gtk.Label        results_header;
 
-    [GtkChild] private unowned Gtk.DropDown    branch_dropdown;
     [GtkChild] private unowned Gtk.DropDown    mode_dropdown;
     [GtkChild] private unowned Gtk.SearchEntry search_entry;
 
@@ -25,7 +24,7 @@ public class SearchPage : Adw.NavigationPage {
 
     private uint   debounce_id    = 0;
     private string current_query  = "";
-    private string current_branch = "sisyphus";
+    private const string current_branch = "sisyphus";
     private Data.SearchMode current_mode = Data.SearchMode.PACKAGE;
 
     private const uint DEBOUNCE_MS = 250;
@@ -34,9 +33,6 @@ public class SearchPage : Adw.NavigationPage {
     private GLib.Cancellable? suggestions_cancel   = null;
     private uint64            query_seq            = 0;
 
-    private const string[] BRANCH_NAMES = {
-        "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2"
-    };
     private const string[] MODE_LABELS = {
         "Package", "Binary", "File", "Maintainer", "Task"
     };
@@ -80,16 +76,6 @@ public class SearchPage : Adw.NavigationPage {
             warning ("[SearchPage] settings unavailable: %s", e.message);
         }
         rebuild_history_popover ();
-
-        var branch_model = new Gtk.StringList (null);
-        foreach (var b in BRANCH_NAMES) branch_model.append (b);
-        branch_dropdown.model = branch_model;
-        branch_dropdown.selected = 0;
-        branch_dropdown.notify["selected"].connect (() => {
-            uint i = branch_dropdown.selected;
-            if (i < BRANCH_NAMES.length) current_branch = BRANCH_NAMES[i];
-            trigger_search_debounced ();
-        });
 
         var mode_model = new Gtk.StringList (null);
         foreach (var m in MODE_LABELS) mode_model.append (_(m));
