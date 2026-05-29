@@ -180,7 +180,7 @@ public class SearchPage : Adw.NavigationPage {
     private void show_error ()   { content_stack.set_visible_child_name ("error"); }
 
     private async void do_search (GLib.Cancellable? cancellable, uint64 my_seq) {
-        var term   = current_query;
+        var term   = Data.AltRepoClient.normalize_layout (current_query);
         var branch = current_branch;
         var mode   = current_mode;
 
@@ -198,7 +198,7 @@ public class SearchPage : Adw.NavigationPage {
             case Data.SearchMode.PACKAGE:
                 var r = yield api.search_source (branch, term, cancellable);
                 if (my_seq != query_seq) return;
-                apply_results (r, branch);
+                apply_results (r, branch, term);
                 break;
 
             case Data.SearchMode.BINARY:
@@ -207,25 +207,25 @@ public class SearchPage : Adw.NavigationPage {
                 var one = new Gee.ArrayList<Data.SourceGroup> ();
                 if (src_name != null && src_name.length > 0)
                     one.add (new Data.SourceGroup (src_name));
-                apply_results (one, branch);
+                apply_results (one, branch, term);
                 break;
 
             case Data.SearchMode.FILE:
                 var r = yield api.search_by_file (branch, term, cancellable);
                 if (my_seq != query_seq) return;
-                apply_results (r, branch);
+                apply_results (r, branch, term);
                 break;
 
             case Data.SearchMode.MAINTAINER:
                 var r = yield api.search_by_maintainer (branch, term, cancellable);
                 if (my_seq != query_seq) return;
-                apply_results (r, branch);
+                apply_results (r, branch, term);
                 break;
 
             case Data.SearchMode.TASK:
                 var r = yield api.search_tasks (term, branch, cancellable);
                 if (my_seq != query_seq) return;
-                apply_task_results (r, branch);
+                apply_task_results (r, branch, term);
                 break;
             }
         } catch (Error e) {
@@ -239,7 +239,7 @@ public class SearchPage : Adw.NavigationPage {
         }
     }
 
-    private void apply_results (Gee.ArrayList<Data.SourceGroup>? results, string branch) {
+    private void apply_results (Gee.ArrayList<Data.SourceGroup>? results, string branch, string term) {
         clear_results ();
         int n = 0;
         if (results != null) {
@@ -251,15 +251,15 @@ public class SearchPage : Adw.NavigationPage {
         }
         if (n == 0) {
             show_empty ();
-            run_suggestions.begin (current_query, current_mode, branch, query_seq);
+            run_suggestions.begin (term, current_mode, branch, query_seq);
         } else {
             results_header.label = _("Found %d in repository %s").printf (n, branch);
             show_results ();
-            save_to_history (current_query);
+            save_to_history (term);
         }
     }
 
-    private void apply_task_results (Gee.ArrayList<Data.TaskResult>? results, string branch) {
+    private void apply_task_results (Gee.ArrayList<Data.TaskResult>? results, string branch, string term) {
         clear_results ();
         int n = 0;
         if (results != null) {
@@ -271,11 +271,11 @@ public class SearchPage : Adw.NavigationPage {
         }
         if (n == 0) {
             show_empty ();
-            run_suggestions.begin (current_query, current_mode, branch, query_seq);
+            run_suggestions.begin (term, current_mode, branch, query_seq);
         } else {
             results_header.label = _("Found %d in repository %s").printf (n, branch);
             show_results ();
-            save_to_history (current_query);
+            save_to_history (term);
         }
     }
 

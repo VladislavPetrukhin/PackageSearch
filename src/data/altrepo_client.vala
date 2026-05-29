@@ -89,6 +89,48 @@ public class AltRepoClient : GLib.Object {
         last_req_ms = GLib.get_monotonic_time () / 1000;
     }
 
+    private static string? layout_char (unichar c) {
+        switch (c) {
+        case 'й': return "q"; case 'ц': return "w"; case 'у': return "e";
+        case 'к': return "r"; case 'е': return "t"; case 'н': return "y";
+        case 'г': return "u"; case 'ш': return "i"; case 'щ': return "o";
+        case 'з': return "p"; case 'х': return "["; case 'ъ': return "]";
+        case 'ф': return "a"; case 'ы': return "s"; case 'в': return "d";
+        case 'а': return "f"; case 'п': return "g"; case 'р': return "h";
+        case 'о': return "j"; case 'л': return "k"; case 'д': return "l";
+        case 'ж': return ";"; case 'э': return "'";
+        case 'я': return "z"; case 'ч': return "x"; case 'с': return "c";
+        case 'м': return "v"; case 'и': return "b"; case 'т': return "n";
+        case 'ь': return "m"; case 'б': return ","; case 'ю': return ".";
+        case 'ё': return "`";
+        default:  return null;
+        }
+    }
+
+    public static string normalize_layout (string s) {
+        if (s == null || s.length == 0) return s;
+
+        int n = s.char_count ();
+        bool has_cyr = false;
+        for (int i = 0; i < n; i++) {
+            unichar c = s.get_char (s.index_of_nth_char (i));
+            if ((c >= 0x0410 && c <= 0x044F) || c == 0x0401 || c == 0x0451) {
+                has_cyr = true;
+                break;
+            }
+        }
+        if (!has_cyr) return s;
+
+        var sb = new StringBuilder ();
+        for (int i = 0; i < n; i++) {
+            unichar c = s.get_char (s.index_of_nth_char (i));
+            string? rep = layout_char (c.tolower ());
+            if (rep != null) sb.append (rep);
+            else sb.append_unichar (c);
+        }
+        return sb.str;
+    }
+
     private static string norm (string s) {
         var out = new StringBuilder ();
         string d = s.down ();
