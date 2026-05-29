@@ -56,66 +56,17 @@ public class PackageSearchApp : Adw.Application {
     }
 
     private static void mark_blp_strings_for_gettext () {
-        if (false) {
-            _("Details"); _("Back"); _("Info"); _("Binaries"); _("Changelog"); _("Loading data…");
-            _("Install"); _("Installing…"); _("Installed");
-            _("Update");  _("Updating…");
-            _("Install via apt-get (requires authentication)");
-            _("Update via apt-get (requires authentication)");
-            _("Package is already installed");
-            _("Installing %s…"); _("Installed %s"); _("Failed to install %s");
-            _("Updating %s…");   _("Updated %s");   _("Failed to update %s");
-            _("Installation cancelled"); _("Failed to launch installer: %s");
-            _("Installation is available only for the system repository (%s)");
-            _("Search"); _("Type a package name…"); _("Search packages");
+        if (Environment.get_variable ("PACKAGESEARCH_NEVER") != null) {
+            _("Repository"); _("Search mode"); _("Type a package name…");
+            _("Search"); _("Search packages");
             _("Start typing a source package name, then pick it from the results.");
-            _("Loading results…"); _("No results"); _("Try refining your query or choose another branch.");
-            _("Error"); _("Failed to fetch data. Check your connection and package name.");
-            _("Package"); _("Binary"); _("File"); _("Maintainer"); _("Task");
-            _("Type a binary package name…");
-            _("Type a file path…"); _("Type a maintainer nickname…"); _("Type a package name or task ID…");
-            _("No source package found for binary \"%s\"");
-            _("Task #%lld  —  %s");
+            _("No results"); _("Try refining your query or choose another search mode.");
+            _("Connection error"); _("Failed to fetch data. Check your connection and try again.");
+            _("Retry"); _("Recent searches"); _("Main menu");
+            _("Clear search history"); _("About PackageSearch");
+            _("Details"); _("Information"); _("Binary packages");
             _("Dependencies"); _("Security"); _("Versions across branches");
-            _("Downloads"); _("Spec file");
-            _("Build dependencies"); _("Packages required to build %s");
-            _("Reverse dependencies"); _("Source packages that depend on %s");
-            _("No dependencies found"); _("No reverse dependencies");
-            _("Build dependencies unavailable"); _("Reverse dependencies unavailable");
-            _("Bugzilla"); _("No bugs found"); _("%d bug(s) found");
-            _("Bugzilla unavailable");
-            _("No versions found"); _("Versions unavailable");
-            _("Source (.src.rpm)"); _("Binaries (.rpm)");
-            _("No source downloads"); _("No binary downloads");
-            _("Source downloads unavailable"); _("Binary downloads unavailable");
-            _("Copy download URL"); _("Copied");
-            _("View spec file"); _("Show the RPM spec file used to build this package");
-            _("Open"); _("Spec file not available"); _("Spec file unavailable: %s");
-            _("Welcome to PackageSearch");
-            _("Pick a search mode and start typing in the panel on the left.\nSelect a package to see its details here.");
-            _("Search mode"); _("Repository branch");
-            _("Keyboard Shortcuts"); _("About PackageSearch");
-            _("General"); _("Focus search"); _("Refresh search"); _("Close details / back");
-            _("Show keyboard shortcuts"); _("Quit");
-            _("Clear search"); _("Try another branch"); _("Retry");
-            _("Overview"); _("Binary packages"); _("current");
-            _("Install is available only for the system repository (%s)");
-            _("Open in browser"); _("Copy"); _("%d packages");
-            _("Search and inspect source packages across the ALT Linux Sisyphus, p11, p10, p9, c10f2 and c9f2 repositories.");
-            _("translator-credits");
-            _("Loading spec file…");
-            _("Maybe you meant to search as…");
-            _("Search as %s");
-            _("Security advisories"); _("No security advisories");
-            _("%d advisories"); _("Advisories unavailable");
-            _("Recent searches"); _("No recent searches yet"); _("Clear history");
-            _("Compare selected"); _("Loading…"); _("Compare failed: %s");
-            _("Only two branches can be compared at a time");
-            _("Compare %s vs %s"); _("Tick two branches to compare versions side by side");
-            _("Branch"); _("Metadata"); _("Binary packages");
-            _("Only in %s"); _("In both branches"); _("%d packages");
-            _("%d common · %d only in %s · %d only in %s");
-            _("No binary packages reported");
+            _("Downloads"); _("Spec file"); _("Changelog"); _("Loading data…");
         }
     }
 }
