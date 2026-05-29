@@ -17,6 +17,8 @@ public class DependencyGraphPage : Adw.NavigationPage {
         public bool    expanded;
         public bool    loading;
         public bool    virtual;
+        public bool    probed;
+        public Gee.ArrayList<Data.DependencyPackage>? cached_children;
         public Gee.ArrayList<GNode> parents = new Gee.ArrayList<GNode> ();
         public GNode?   more_parent;
         public Gee.ArrayList<Data.DependencyPackage> pending = new Gee.ArrayList<Data.DependencyPackage> ();
@@ -56,6 +58,9 @@ public class DependencyGraphPage : Adw.NavigationPage {
     private double drag_oy  = 0.0;
     private bool   fitted   = false;
     private int    generation = 0;
+
+    private Gee.ArrayList<GNode> probe_queue = new Gee.ArrayList<GNode> ();
+    private bool probing = false;
 
     private GLib.Cancellable cancel = new GLib.Cancellable ();
 
@@ -168,6 +173,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         generation++;
         nodes.clear ();
         present.clear ();
+        probe_queue.clear ();
         fitted = false;
         stack.set_visible_child_name ("loading");
         load_root.begin ();
@@ -195,53 +201,62 @@ public class DependencyGraphPage : Adw.NavigationPage {
         relayout ();
     }
 
+    private async Gee.ArrayList<Data.DependencyPackage> fetch_deps (GNode n) {
+        var api = new Data.AltRepoClient ();
+        try {
+            Gee.ArrayList<Data.DependencyPackage>? r;
+            if (mode == Mode.BUILD)
+                r = yield api.get_direct_build_depends (branch, n.name, cancel);
+            else
+                r = yield api.get_reverse_depends (branch, n.name, "both", cancel);
+            return r ?? new Gee.ArrayList<Data.DependencyPackage> ();
+        } catch (Error e) {
+            if (!cancel.is_cancelled ())
+                warning ("[GraphPage] deps %s failed: %s", n.name, e.message);
+            return new Gee.ArrayList<Data.DependencyPackage> ();
+        }
+    }
+
     private async void expand_into (GNode n) {
         int g = generation;
-        n.loading = true;
-        canvas.queue_draw ();
-
-        var api = new Data.AltRepoClient ();
-        Gee.ArrayList<Data.DependencyPackage>? kids = null;
-        try {
-            if (mode == Mode.BUILD)
-                kids = yield api.get_direct_build_depends (branch, n.name, cancel);
-            else
-                kids = yield api.get_reverse_depends (branch, n.name, "both", cancel);
-        } catch (Error e) {
-            if (cancel.is_cancelled ()) return;
-            warning ("[GraphPage] expand %s failed: %s", n.name, e.message);
+        Gee.ArrayList<Data.DependencyPackage> kids;
+        if (n.probed && n.cached_children != null) {
+            kids = n.cached_children;
+        } else {
+            n.loading = true;
+            canvas.queue_draw ();
+            kids = yield fetch_deps (n);
+            n.loading = false;
+            if (cancel.is_cancelled () || g != generation) return;
+            n.probed = true;
+            n.cached_children = kids;
         }
-        if (cancel.is_cancelled () || g != generation) return;
 
-        n.loading = false;
         n.expanded = true;
+        materialize (n, kids);
+        relayout ();
+    }
 
-        bool added = false;
-        if (kids != null) {
-            int shown = 0;
-            var overflow = new Gee.ArrayList<Data.DependencyPackage> ();
-            foreach (var d in kids) {
-                if (!is_nonempty (d.name)) continue;
-                if (shown < CHILD_LIMIT) {
-                    add_child (n, d.name, d.branch ?? branch);
-                    shown++;
-                    added = true;
-                } else {
-                    overflow.add (d);
-                }
-            }
-            if (overflow.size > 0) {
-                var more = new GNode ();
-                more.is_more = true;
-                more.depth = n.depth + 1;
-                more.more_parent = n;
-                more.pending = overflow;
-                nodes.add (more);
-                added = true;
+    private void materialize (GNode n, Gee.ArrayList<Data.DependencyPackage> kids) {
+        int shown = 0;
+        var overflow = new Gee.ArrayList<Data.DependencyPackage> ();
+        foreach (var d in kids) {
+            if (!is_nonempty (d.name)) continue;
+            if (shown < CHILD_LIMIT) {
+                add_child (n, d.name, d.branch ?? branch);
+                shown++;
+            } else {
+                overflow.add (d);
             }
         }
-        if (!added) n.expandable = false;
-        relayout ();
+        if (overflow.size > 0) {
+            var more = new GNode ();
+            more.is_more = true;
+            more.depth = n.depth + 1;
+            more.more_parent = n;
+            more.pending = overflow;
+            nodes.add (more);
+        }
     }
 
     private void add_child (GNode parent, string name, string br) {
@@ -256,10 +271,40 @@ public class DependencyGraphPage : Adw.NavigationPage {
         n.branch     = br;
         n.depth      = parent.depth + 1;
         n.virtual    = !Data.AltRepoClient.is_valid_package_name (name);
-        n.expandable = !n.virtual;
+        n.expandable = false;
         n.parents.add (parent);
         nodes.add (n);
         present.set (name, n);
+        enqueue_probe (n);
+    }
+
+    private void enqueue_probe (GNode n) {
+        if (n.is_root || n.is_more || n.virtual || n.probed) return;
+        probe_queue.add (n);
+        if (!probing) run_probe.begin ();
+    }
+
+    private async void run_probe () {
+        probing = true;
+        while (probe_queue.size > 0) {
+            if (cancel.is_cancelled ()) break;
+            var n = probe_queue.remove_at (0);
+            if (n.probed || n.expanded || n.loading) continue;
+            int g = generation;
+            var kids = yield fetch_deps (n);
+            if (cancel.is_cancelled () || g != generation) break;
+            n.cached_children = kids;
+            n.probed = true;
+            n.expandable = has_real_children (kids);
+            canvas.queue_draw ();
+        }
+        probing = false;
+    }
+
+    private static bool has_real_children (Gee.ArrayList<Data.DependencyPackage> kids) {
+        foreach (var d in kids)
+            if (is_nonempty (d.name)) return true;
+        return false;
     }
 
     private void reveal_more (GNode more) {
