@@ -822,29 +822,22 @@ public class DetailsPage : Adw.NavigationPage {
                 return;
             }
 
-            var tv = new Gtk.TextView () {
-                editable = false, cursor_visible = false, monospace = true,
-                wrap_mode = Gtk.WrapMode.NONE,
-                top_margin = 8, bottom_margin = 8, left_margin = 12, right_margin = 12
-            };
-            tv.buffer.set_text (spec.content);
-
-            var sw = new Gtk.ScrolledWindow () {
-                hscrollbar_policy = Gtk.PolicyType.AUTOMATIC,
-                vscrollbar_policy = Gtk.PolicyType.AUTOMATIC,
-                min_content_height = 320, max_content_height = 520,
-                propagate_natural_height = true
-            };
-            sw.set_child (tv);
-            spec_group.add (sw);
-
             string content = spec.content;
-            var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
-                valign = Gtk.Align.CENTER, tooltip_text = _("Copy")
+            string fname = is_nonempty (spec.name) ? spec.name : group.name + ".spec";
+
+            var row = new Adw.ActionRow () { title = fname, activatable = true };
+            if (is_nonempty (spec.date))
+                row.subtitle = GLib.Markup.escape_text (spec.date, -1);
+
+            var open_btn = new Gtk.Button.with_label (_("Open")) {
+                valign = Gtk.Align.CENTER
             };
-            copy_btn.add_css_class ("flat");
-            copy_btn.clicked.connect (() => copy_to_clipboard (content));
-            spec_group.set_header_suffix (copy_btn);
+            open_btn.add_css_class ("flat");
+            open_btn.clicked.connect (() => show_text_dialog (fname, content));
+            row.add_suffix (open_btn);
+
+            row.activated.connect (() => show_text_dialog (fname, content));
+            spec_group.add (row);
         } catch (Error e) {
             warning ("[DetailsPage] specfile failed: %s", e.message);
             spec_group.add (new Adw.ActionRow () {
