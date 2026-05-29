@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-29 12:54+0000\n"
+"POT-Creation-Date: 2026-05-29 21:37+0000\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -11,107 +11,578 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/application.vala:60
-msgid "Repository"
-msgstr "Репозиторий"
-
-#: src/application.vala:60
-msgid "Search mode"
-msgstr "Режим поиска"
-
-#: src/application.vala:60
-msgid "Type a package name…"
-msgstr "Введите имя пакета…"
-
-#: src/application.vala:61
-msgid "Search"
-msgstr "Поиск"
-
-#: src/application.vala:61
-msgid "Search packages"
-msgstr "Поиск пакетов"
-
-#: src/application.vala:62
-msgid "Start typing a source package name, then pick it from the results."
-msgstr "Начните вводить имя исходного пакета и выберите его из результатов."
-
-#: src/application.vala:63
-msgid "No results"
-msgstr "Нет результатов"
-
-#: src/application.vala:63
-msgid "Try refining your query or choose another search mode."
-msgstr "Уточните запрос или выберите другой режим поиска."
-
-#: src/application.vala:64
-msgid "Connection error"
-msgstr "Ошибка соединения"
-
-#: src/application.vala:64
-msgid "Failed to fetch data. Check your connection and try again."
-msgstr "Не удалось получить данные. Проверьте соединение и повторите попытку."
-
-#: src/application.vala:65
-msgid "Retry"
-msgstr "Повторить"
-
-#: src/application.vala:65
-msgid "Recent searches"
-msgstr "Недавние запросы"
-
-#: src/application.vala:65
-msgid "Main menu"
-msgstr "Главное меню"
-
-#: src/application.vala:66
-msgid "Clear search history"
-msgstr "Очистить историю поиска"
-
-#: src/application.vala:66
-msgid "About PackageSearch"
-msgstr "О программе PackageSearch"
-
+#: data/ui/details_page.blp:5 data/ui/details_page.blp:12
 #: src/application.vala:67
 msgid "Details"
 msgstr "Подробности"
 
-#: src/application.vala:67
+#: data/ui/details_page.blp:38 src/application.vala:67
 msgid "Information"
 msgstr "Информация"
 
-#: src/application.vala:67 src/views/details_page.vala:678
+#: data/ui/details_page.blp:42
+msgid "Repositories"
+msgstr "Репозитории"
+
+#: data/ui/details_page.blp:46 src/application.vala:67
+#: src/views/details_page.vala:942
 msgid "Binary packages"
 msgstr "Бинарные пакеты"
 
-#: src/application.vala:68
+#: data/ui/details_page.blp:50 src/application.vala:68
 msgid "Dependencies"
 msgstr "Зависимости"
 
-#: src/application.vala:68
+#: data/ui/details_page.blp:54 src/application.vala:68
 msgid "Security"
 msgstr "Безопасность"
+
+#: data/ui/details_page.blp:58 src/application.vala:69
+msgid "Downloads"
+msgstr "Скачивание"
+
+#: data/ui/details_page.blp:62 src/application.vala:69
+#: src/views/details_page.vala:975 src/views/details_page.vala:986
+#: src/views/details_page.vala:1135
+msgid "Spec file"
+msgstr "Spec-файл"
+
+#: data/ui/details_page.blp:66 src/application.vala:69
+msgid "Changelog"
+msgstr "История изменений"
+
+#: data/ui/details_page.blp:92 src/application.vala:69
+msgid "Loading data…"
+msgstr "Загрузка данных…"
+
+#: data/ui/search_page.blp:5 src/application.vala:61
+msgid "Search"
+msgstr "Поиск"
+
+#: data/ui/search_page.blp:14 src/application.vala:60
+msgid "Search mode"
+msgstr "Режим поиска"
+
+#: data/ui/search_page.blp:18 src/application.vala:60
+msgid "Type a package name…"
+msgstr "Введите имя пакета…"
+
+#: data/ui/search_page.blp:28 src/application.vala:65
+msgid "Main menu"
+msgstr "Главное меню"
+
+#: data/ui/search_page.blp:37 src/application.vala:65
+msgid "Recent searches"
+msgstr "Недавние запросы"
+
+#: data/ui/search_page.blp:50 src/application.vala:61
+msgid "Search packages"
+msgstr "Поиск пакетов"
+
+#: data/ui/search_page.blp:51 src/application.vala:62
+msgid "Start typing a source package name, then pick it from the results."
+msgstr "Начните вводить имя исходного пакета и выберите его из результатов."
+
+#: data/ui/search_page.blp:107 src/application.vala:63
+msgid "No results"
+msgstr "Нет результатов"
+
+#: data/ui/search_page.blp:108 src/application.vala:63
+msgid "Try refining your query or choose another search mode."
+msgstr "Уточните запрос или выберите другой режим поиска."
+
+#: data/ui/search_page.blp:122 src/application.vala:64
+msgid "Connection error"
+msgstr "Ошибка соединения"
+
+#: data/ui/search_page.blp:123 src/application.vala:64
+msgid "Failed to fetch data. Check your connection and try again."
+msgstr "Не удалось получить данные. Проверьте соединение и повторите попытку."
+
+#: data/ui/search_page.blp:126 src/application.vala:65
+msgid "Retry"
+msgstr "Повторить"
+
+#: data/ui/search_page.blp:140 src/application.vala:66
+msgid "Clear search history"
+msgstr "Очистить историю поиска"
+
+#: data/ui/search_page.blp:145 src/application.vala:66
+msgid "About PackageSearch"
+msgstr "О программе PackageSearch"
+
+#: src/application.vala:60
+msgid "Repository"
+msgstr "Репозиторий"
 
 #: src/application.vala:68
 msgid "Versions across branches"
 msgstr "Версии по веткам"
 
-#: src/application.vala:69
-msgid "Downloads"
-msgstr "Скачивание"
+#: src/business/package_manager.vala:216
+msgid "Package lists are out of date, refreshing…"
+msgstr "Списки пакетов устарели, обновляем…"
 
-#: src/application.vala:69
-msgid "Spec file"
-msgstr "Spec-файл"
+#: src/views/details_page.vala:61
+msgid "Copied"
+msgstr "Скопировано"
 
-#: src/application.vala:69
-msgid "Changelog"
-msgstr "История изменений"
+#: src/views/details_page.vala:118
+msgid "Installed"
+msgstr "Установлено"
 
-#: src/application.vala:69
-msgid "Loading data…"
-msgstr "Загрузка данных…"
+#: src/views/details_page.vala:119
+msgid "Package is already installed"
+msgstr "Пакет уже установлен"
 
-#: src/window.vala:86
+#: src/views/details_page.vala:146
+msgid "Copy"
+msgstr "Копировать"
+
+#: src/views/details_page.vala:174
+msgid "Checking…"
+msgstr "Проверка…"
+
+#: src/views/details_page.vala:182
+#, c-format
+msgid "Could not compute changes for %s"
+msgstr "Не удалось рассчитать изменения для %s"
+
+#: src/views/details_page.vala:187
+msgid "Nothing to do"
+msgstr "Нечего делать"
+
+#: src/views/details_page.vala:194 src/views/details_page.vala:209
+msgid "Installation cancelled"
+msgstr "Установка отменена"
+
+#: src/views/details_page.vala:198
+msgid "Updating…"
+msgstr "Обновление…"
+
+#: src/views/details_page.vala:198
+msgid "Installing…"
+msgstr "Установка…"
+
+#: src/views/details_page.vala:204
+#, c-format
+msgid "Updated %s"
+msgstr "Обновлён %s"
+
+#: src/views/details_page.vala:204
+#, c-format
+msgid "Installed %s"
+msgstr "Установлен %s"
+
+#: src/views/details_page.vala:214
+#, c-format
+msgid "Failed to update %s"
+msgstr "Не удалось обновить %s"
+
+#: src/views/details_page.vala:214
+#, c-format
+msgid "Failed to install %s"
+msgstr "Не удалось установить %s"
+
+#: src/views/details_page.vala:221
+#, c-format
+msgid "Update %s?"
+msgstr "Обновить %s?"
+
+#: src/views/details_page.vala:221
+#, c-format
+msgid "Install %s?"
+msgstr "Установить %s?"
+
+#: src/views/details_page.vala:231 src/views/details_page.vala:303
+msgid "Cancel"
+msgstr "Отмена"
+
+#: src/views/details_page.vala:232 src/views/details_page.vala:462
+#: src/views/details_page.vala:498
+msgid "Update"
+msgstr "Обновить"
+
+#: src/views/details_page.vala:232 src/views/details_page.vala:445
+#: src/views/details_page.vala:481
+msgid "Install"
+msgstr "Установить"
+
+#: src/views/details_page.vala:244
+msgid "New packages"
+msgstr "Новые пакеты"
+
+#: src/views/details_page.vala:245
+msgid "Will be upgraded"
+msgstr "Будут обновлены"
+
+#: src/views/details_page.vala:246
+msgid "Will be REMOVED"
+msgstr "Будут УДАЛЕНЫ"
+
+#: src/views/details_page.vala:289
+#, c-format
+msgid "Updating %s…"
+msgstr "Обновление %s…"
+
+#: src/views/details_page.vala:289
+#, c-format
+msgid "Installing %s…"
+msgstr "Установка %s…"
+
+#: src/views/details_page.vala:347 src/views/details_page.vala:910
+msgid "Version"
+msgstr "Версия"
+
+#: src/views/details_page.vala:348
+msgid "Release"
+msgstr "Релиз"
+
+#: src/views/details_page.vala:352 src/views/details_page.vala:919
+msgid "Maintainer"
+msgstr "Сопровождающий"
+
+#: src/views/details_page.vala:360 src/views/details_page.vala:921
+msgid "Group"
+msgstr "Группа"
+
+#: src/views/details_page.vala:361 src/views/details_page.vala:920
+msgid "License"
+msgstr "Лицензия"
+
+#: src/views/details_page.vala:367
+msgid "Homepage"
+msgstr "Домашняя страница"
+
+#: src/views/details_page.vala:377
+msgid "Description"
+msgstr "Описание"
+
+#: src/views/details_page.vala:387
+msgid "Failed to load package details"
+msgstr "Не удалось загрузить сведения о пакете"
+
+#: src/views/details_page.vala:400 src/views/details_page.vala:863
+#: src/views/details_page.vala:1149
+msgid "Loading…"
+msgstr "Загрузка…"
+
+#: src/views/details_page.vala:427
+#, c-format
+msgid "Install is available only for the system repository (%s)"
+msgstr "Установка доступна только для системного репозитория (%s)"
+
+#: src/views/details_page.vala:447 src/views/details_page.vala:483
+msgid "Install via apt-get (requires authentication)"
+msgstr "Установить через apt-get (требуется аутентификация)"
+
+#: src/views/details_page.vala:463 src/views/details_page.vala:499
+msgid "Update via apt-get (requires authentication)"
+msgstr "Обновить через apt-get (требуется аутентификация)"
+
+#: src/views/details_page.vala:512
+msgid "No binary packages"
+msgstr "Нет бинарных пакетов"
+
+#: src/views/details_page.vala:534
+msgid "Change"
+msgstr "Изменение"
+
+#: src/views/details_page.vala:547
+msgid "No changes found"
+msgstr "Изменений не найдено"
+
+#: src/views/details_page.vala:551
+msgid "Changelog unavailable"
+msgstr "История изменений недоступна"
+
+#: src/views/details_page.vala:561 src/views/dependency_graph_page.vala:71
+#: src/views/dependency_graph_page.vala:86
+msgid "Dependency graph"
+msgstr "Граф зависимостей"
+
+#: src/views/details_page.vala:562
+#, c-format
+msgid "Visualize what %s needs and what depends on it"
+msgstr "Что нужно пакету %s и что зависит от него"
+
+#: src/views/details_page.vala:566
+msgid "Open graph"
+msgstr "Открыть граф"
+
+#: src/views/details_page.vala:577
+msgid "Build dependencies"
+msgstr "Зависимости сборки"
+
+#: src/views/details_page.vala:578
+#, c-format
+msgid "Packages required to build %s"
+msgstr "Пакеты, необходимые для сборки %s"
+
+#: src/views/details_page.vala:591
+msgid "Reverse dependencies"
+msgstr "Обратные зависимости"
+
+#: src/views/details_page.vala:592
+#, c-format
+msgid "Source packages that depend on %s"
+msgstr "Исходные пакеты, зависящие от %s"
+
+#: src/views/details_page.vala:612
+msgid "No dependencies found"
+msgstr "Зависимости не найдены"
+
+#: src/views/details_page.vala:614 src/views/details_page.vala:642
+#: src/views/details_page.vala:949 src/views/details_page.vala:957
+#: src/views/details_page.vala:965
+#, c-format
+msgid "%d packages"
+msgstr "Пакетов: %d"
+
+#: src/views/details_page.vala:627
+msgid "Build dependencies unavailable"
+msgstr "Зависимости сборки недоступны"
+
+#: src/views/details_page.vala:640
+msgid "No reverse dependencies"
+msgstr "Нет обратных зависимостей"
+
+#: src/views/details_page.vala:653
+msgid "Reverse dependencies unavailable"
+msgstr "Обратные зависимости недоступны"
+
+#: src/views/details_page.vala:662
+msgid "Security advisories"
+msgstr "Бюллетени безопасности"
+
+#: src/views/details_page.vala:673
+msgid "Bugzilla"
+msgstr "Bugzilla"
+
+#: src/views/details_page.vala:692
+msgid "No security advisories"
+msgstr "Нет бюллетеней безопасности"
+
+#: src/views/details_page.vala:694
+#, c-format
+msgid "%d advisories"
+msgstr "Бюллетеней: %d"
+
+#: src/views/details_page.vala:733
+msgid "Advisories unavailable"
+msgstr "Бюллетени недоступны"
+
+#: src/views/details_page.vala:746
+msgid "No bugs found"
+msgstr "Ошибки не найдены"
+
+#: src/views/details_page.vala:748
+#, c-format
+msgid "%d bug(s) found"
+msgstr "Найдено ошибок: %d"
+
+#: src/views/details_page.vala:771
+msgid "Bugzilla unavailable"
+msgstr "Bugzilla недоступна"
+
+#: src/views/details_page.vala:782 src/views/details_page.vala:874
+#: src/views/details_page.vala:878
+msgid "Compare selected"
+msgstr "Сравнить выбранные"
+
+#: src/views/details_page.vala:795
+msgid "Open a repository to view the package there, or tick two to compare"
+msgstr ""
+"Откройте репозиторий, чтобы посмотреть пакет в нём, или отметьте два для "
+"сравнения"
+
+#: src/views/details_page.vala:800
+msgid "No versions found"
+msgstr "Версии не найдены"
+
+#: src/views/details_page.vala:809
+msgid "current"
+msgstr "текущая"
+
+#: src/views/details_page.vala:817
+msgid "Only two branches can be compared at a time"
+msgstr "Одновременно можно сравнить только две ветки"
+
+#: src/views/details_page.vala:849
+msgid "Versions unavailable"
+msgstr "Версии недоступны"
+
+#: src/views/details_page.vala:873
+#, c-format
+msgid "Compare failed: %s"
+msgstr "Не удалось сравнить: %s"
+
+#: src/views/details_page.vala:891 src/views/details_page.vala:895
+#, c-format
+msgid "Compare %s vs %s"
+msgstr "Сравнение %s и %s"
+
+#: src/views/details_page.vala:898
+msgid "Only differences"
+msgstr "Только различия"
+
+#: src/views/details_page.vala:906
+msgid "Metadata"
+msgstr "Метаданные"
+
+#: src/views/details_page.vala:913 src/views/details_page.vala:914
+#, c-format
+msgid "%s is newer"
+msgstr "%s новее"
+
+#: src/views/details_page.vala:915
+msgid "Same version"
+msgstr "Одинаковая версия"
+
+#: src/views/details_page.vala:922
+msgid "Summary"
+msgstr "Краткое описание"
+
+#: src/views/details_page.vala:943
+#, c-format
+msgid "%d common · %d only in %s · %d only in %s"
+msgstr "%d общих · %d только в %s · %d только в %s"
+
+#: src/views/details_page.vala:948 src/views/details_page.vala:956
+#, c-format
+msgid "Only in %s"
+msgstr "Только в %s"
+
+#: src/views/details_page.vala:964
+msgid "In both branches"
+msgstr "В обеих ветках"
+
+#: src/views/details_page.vala:972
+msgid "No binary packages reported"
+msgstr "Бинарные пакеты не указаны"
+
+#: src/views/details_page.vala:979 src/views/details_page.vala:1157
+msgid "Spec file not available"
+msgstr "Spec-файл недоступен"
+
+#: src/views/details_page.vala:981
+msgid "Spec files are identical"
+msgstr "Spec-файлы идентичны"
+
+#: src/views/details_page.vala:984
+#, c-format
+msgid "Spec diff: %s ↔ %s"
+msgstr "Различия spec: %s ↔ %s"
+
+#: src/views/details_page.vala:987
+#, c-format
+msgid "Differences between %s and %s"
+msgstr "Различия между %s и %s"
+
+#: src/views/details_page.vala:990
+msgid "Show diff"
+msgstr "Показать различия"
+
+#: src/views/details_page.vala:1046
+msgid "Source (.src.rpm)"
+msgstr "Исходный код (.src.rpm)"
+
+#: src/views/details_page.vala:1057
+msgid "Binaries (.rpm)"
+msgstr "Бинарные пакеты (.rpm)"
+
+#: src/views/details_page.vala:1076
+msgid "No source downloads"
+msgstr "Нет исходных файлов для скачивания"
+
+#: src/views/details_page.vala:1084
+msgid "Source downloads unavailable"
+msgstr "Исходные файлы недоступны"
+
+#: src/views/details_page.vala:1097
+msgid "No binary downloads"
+msgstr "Нет бинарных файлов для скачивания"
+
+#: src/views/details_page.vala:1105
+msgid "Binary downloads unavailable"
+msgstr "Бинарные файлы недоступны"
+
+#: src/views/details_page.vala:1123
+msgid "Copy download URL"
+msgstr "Копировать ссылку"
+
+#: src/views/details_page.vala:1136
+msgid "Open"
+msgstr "Открыть"
+
+#: src/views/details_page.vala:1166
+msgid "Spec file unavailable"
+msgstr "Spec-файл недоступен"
+
+#: src/views/dependency_graph_page.vala:88
+msgid "Requires"
+msgstr "Требует"
+
+#: src/views/dependency_graph_page.vala:89
+msgid "Depended on by"
+msgstr "Зависят от него"
+
+#: src/views/dependency_graph_page.vala:103
+msgid "Fit"
+msgstr "Уместить"
+
+#: src/views/dependency_graph_page.vala:154
+msgid "No dependency data"
+msgstr "Нет данных о зависимостях"
+
+#: src/views/dependency_graph_page.vala:155
+#, c-format
+msgid "Could not build a graph for %s."
+msgstr "Не удалось построить граф для %s."
+
+#: src/views/dependency_graph_page.vala:381
+#, c-format
+msgid "show %d more"
+msgstr "показать ещё %d"
+
+#: src/views/maintainer_page.vala:74
+msgid "No packages"
+msgstr "Нет пакетов"
+
+#: src/views/maintainer_page.vala:75
+#, c-format
+msgid "This maintainer has no packages in %s."
+msgstr "У этого сопровождающего нет пакетов в %s."
+
+#: src/views/maintainer_page.vala:96
+#, c-format
+msgid "%d packages by %s"
+msgstr "Пакетов: %d (сопровождающий %s)"
+
+#: src/views/search_page.vala:120
+msgid "Search history cleared"
+msgstr "История поиска очищена"
+
+#: src/views/search_page.vala:245 src/views/search_page.vala:264
+#, c-format
+msgid "Found %d in repository %s"
+msgstr "Найдено %d в репозитории %s"
+
+#: src/views/search_page.vala:293
+#, c-format
+msgid "Task #%lld"
+msgstr "Задание #%lld"
+
+#: src/views/search_page.vala:343
+msgid "No recent searches yet"
+msgstr "Пока нет недавних запросов"
+
+#: src/views/search_page.vala:438
+#, c-format
+msgid "Search as %s (%d)"
+msgstr "Искать как «%s» (%d)"
+
+#: src/window.vala:94
 msgid ""
 "Search and inspect source packages across the ALT Linux Sisyphus, p11, p10, "
 "p9, c10f2 and c9f2 repositories."
@@ -119,414 +590,6 @@ msgstr ""
 "Поиск и просмотр исходных пакетов в репозиториях ALT Linux Sisyphus, p11, "
 "p10, p9, c10f2 и c9f2."
 
-#: src/window.vala:90
+#: src/window.vala:98
 msgid "translator-credits"
 msgstr "Владислав Петрухин"
-
-#: src/views/search_page.vala:131
-msgid "Search history cleared"
-msgstr "История поиска очищена"
-
-#: src/views/search_page.vala:256 src/views/search_page.vala:276
-#, c-format
-msgid "Found %d in repository %s"
-msgstr "Найдено %d в репозитории %s"
-
-#: src/views/search_page.vala:306
-#, c-format
-msgid "Task #%lld"
-msgstr "Задание #%lld"
-
-#: src/views/search_page.vala:356
-msgid "No recent searches yet"
-msgstr "Пока нет недавних запросов"
-
-#: src/views/search_page.vala:451
-#, c-format
-msgid "Search as %s (%d)"
-msgstr "Искать как «%s» (%d)"
-
-#: src/views/details_page.vala:61
-msgid "Copied"
-msgstr "Скопировано"
-
-#: src/views/details_page.vala:114
-msgid "Installed"
-msgstr "Установлено"
-
-#: src/views/details_page.vala:115
-msgid "Package is already installed"
-msgstr "Пакет уже установлен"
-
-#: src/views/details_page.vala:142 src/views/details_page.vala:826
-msgid "Copy"
-msgstr "Копировать"
-
-#: src/views/details_page.vala:168
-msgid "Updating…"
-msgstr "Обновление…"
-
-#: src/views/details_page.vala:168
-msgid "Installing…"
-msgstr "Установка…"
-
-#: src/views/details_page.vala:171
-#, c-format
-msgid "Updating %s…"
-msgstr "Обновление %s…"
-
-#: src/views/details_page.vala:171
-#, c-format
-msgid "Installing %s…"
-msgstr "Установка %s…"
-
-#: src/views/details_page.vala:179
-#, c-format
-msgid "Updated %s"
-msgstr "Обновлён %s"
-
-#: src/views/details_page.vala:179
-#, c-format
-msgid "Installed %s"
-msgstr "Установлен %s"
-
-#: src/views/details_page.vala:182 src/views/details_page.vala:187
-#: src/views/details_page.vala:313 src/views/details_page.vala:349
-msgid "Update"
-msgstr "Обновить"
-
-#: src/views/details_page.vala:182 src/views/details_page.vala:187
-#: src/views/details_page.vala:296 src/views/details_page.vala:332
-msgid "Install"
-msgstr "Установить"
-
-#: src/views/details_page.vala:184
-msgid "Installation cancelled"
-msgstr "Установка отменена"
-
-#: src/views/details_page.vala:191
-#, c-format
-msgid "Failed to update %s"
-msgstr "Не удалось обновить %s"
-
-#: src/views/details_page.vala:191
-#, c-format
-msgid "Failed to install %s"
-msgstr "Не удалось установить %s"
-
-#: src/views/details_page.vala:212 src/views/details_page.vala:653
-msgid "Version"
-msgstr "Версия"
-
-#: src/views/details_page.vala:213
-msgid "Release"
-msgstr "Релиз"
-
-#: src/views/details_page.vala:214 src/views/details_page.vala:655
-msgid "Maintainer"
-msgstr "Сопровождающий"
-
-#: src/views/details_page.vala:215 src/views/details_page.vala:657
-msgid "Group"
-msgstr "Группа"
-
-#: src/views/details_page.vala:216 src/views/details_page.vala:656
-msgid "License"
-msgstr "Лицензия"
-
-#: src/views/details_page.vala:222
-msgid "Homepage"
-msgstr "Домашняя страница"
-
-#: src/views/details_page.vala:232
-msgid "Description"
-msgstr "Описание"
-
-#: src/views/details_page.vala:242
-msgid "Failed to load package details"
-msgstr "Не удалось загрузить сведения о пакете"
-
-#: src/views/details_page.vala:278
-#, c-format
-msgid "Install is available only for the system repository (%s)"
-msgstr "Установка доступна только для системного репозитория (%s)"
-
-#: src/views/details_page.vala:298 src/views/details_page.vala:334
-msgid "Install via apt-get (requires authentication)"
-msgstr "Установить через apt-get (требуется аутентификация)"
-
-#: src/views/details_page.vala:314 src/views/details_page.vala:350
-msgid "Update via apt-get (requires authentication)"
-msgstr "Обновить через apt-get (требуется аутентификация)"
-
-#: src/views/details_page.vala:363
-msgid "No binary packages"
-msgstr "Нет бинарных пакетов"
-
-#: src/views/details_page.vala:384
-msgid "Change"
-msgstr "Изменение"
-
-#: src/views/details_page.vala:397
-msgid "No changes found"
-msgstr "Изменений не найдено"
-
-#: src/views/details_page.vala:401
-msgid "Changelog unavailable"
-msgstr "История изменений недоступна"
-
-#: src/views/details_page.vala:412
-msgid "Build dependencies"
-msgstr "Зависимости сборки"
-
-#: src/views/details_page.vala:413
-#, c-format
-msgid "Packages required to build %s"
-msgstr "Пакеты, необходимые для сборки %s"
-
-#: src/views/details_page.vala:418
-msgid "No dependencies found"
-msgstr "Зависимости не найдены"
-
-#: src/views/details_page.vala:420 src/views/details_page.vala:447
-#: src/views/details_page.vala:685 src/views/details_page.vala:693
-#: src/views/details_page.vala:701
-#, c-format
-msgid "%d packages"
-msgstr "Пакетов: %d"
-
-#: src/views/details_page.vala:432
-msgid "Build dependencies unavailable"
-msgstr "Зависимости сборки недоступны"
-
-#: src/views/details_page.vala:439
-msgid "Reverse dependencies"
-msgstr "Обратные зависимости"
-
-#: src/views/details_page.vala:440
-#, c-format
-msgid "Source packages that depend on %s"
-msgstr "Исходные пакеты, зависящие от %s"
-
-#: src/views/details_page.vala:445
-msgid "No reverse dependencies"
-msgstr "Нет обратных зависимостей"
-
-#: src/views/details_page.vala:457
-msgid "Reverse dependencies unavailable"
-msgstr "Обратные зависимости недоступны"
-
-#: src/views/details_page.vala:468
-msgid "Security advisories"
-msgstr "Бюллетени безопасности"
-
-#: src/views/details_page.vala:472
-msgid "No security advisories"
-msgstr "Нет бюллетеней безопасности"
-
-#: src/views/details_page.vala:474
-#, c-format
-msgid "%d advisories"
-msgstr "Бюллетеней: %d"
-
-#: src/views/details_page.vala:512
-msgid "Advisories unavailable"
-msgstr "Бюллетени недоступны"
-
-#: src/views/details_page.vala:518
-msgid "Bugzilla"
-msgstr "Bugzilla"
-
-#: src/views/details_page.vala:522
-msgid "No bugs found"
-msgstr "Ошибки не найдены"
-
-#: src/views/details_page.vala:524
-#, c-format
-msgid "%d bug(s) found"
-msgstr "Найдено ошибок: %d"
-
-#: src/views/details_page.vala:546
-msgid "Bugzilla unavailable"
-msgstr "Bugzilla недоступна"
-
-#: src/views/details_page.vala:558 src/views/details_page.vala:634
-#: src/views/details_page.vala:638
-msgid "Compare selected"
-msgstr "Сравнить выбранные"
-
-#: src/views/details_page.vala:571
-msgid "Tick two branches to compare versions side by side"
-msgstr "Отметьте две ветки для сравнения версий"
-
-#: src/views/details_page.vala:576
-msgid "No versions found"
-msgstr "Версии не найдены"
-
-#: src/views/details_page.vala:584
-msgid "current"
-msgstr "текущая"
-
-#: src/views/details_page.vala:592
-msgid "Only two branches can be compared at a time"
-msgstr "Одновременно можно сравнить только две ветки"
-
-#: src/views/details_page.vala:609
-msgid "Versions unavailable"
-msgstr "Версии недоступны"
-
-#: src/views/details_page.vala:623
-msgid "Loading…"
-msgstr "Загрузка…"
-
-#: src/views/details_page.vala:633
-#, c-format
-msgid "Compare failed: %s"
-msgstr "Не удалось сравнить: %s"
-
-#: src/views/details_page.vala:644 src/views/details_page.vala:648
-#, c-format
-msgid "Compare %s vs %s"
-msgstr "Сравнение %s и %s"
-
-#: src/views/details_page.vala:652
-msgid "Metadata"
-msgstr "Метаданные"
-
-#: src/views/details_page.vala:658
-msgid "Summary"
-msgstr "Краткое описание"
-
-#: src/views/details_page.vala:679
-#, c-format
-msgid "%d common · %d only in %s · %d only in %s"
-msgstr "%d общих · %d только в %s · %d только в %s"
-
-#: src/views/details_page.vala:684 src/views/details_page.vala:692
-#, c-format
-msgid "Only in %s"
-msgstr "Только в %s"
-
-#: src/views/details_page.vala:700
-msgid "In both branches"
-msgstr "В обеих ветках"
-
-#: src/views/details_page.vala:707
-msgid "No binary packages reported"
-msgstr "Бинарные пакеты не указаны"
-
-#: src/views/details_page.vala:742
-msgid "Source (.src.rpm)"
-msgstr "Исходный код (.src.rpm)"
-
-#: src/views/details_page.vala:746
-msgid "No source downloads"
-msgstr "Нет исходных файлов для скачивания"
-
-#: src/views/details_page.vala:753
-msgid "Source downloads unavailable"
-msgstr "Исходные файлы недоступны"
-
-#: src/views/details_page.vala:759
-msgid "Binaries (.rpm)"
-msgstr "Бинарные пакеты (.rpm)"
-
-#: src/views/details_page.vala:763
-msgid "No binary downloads"
-msgstr "Нет бинарных файлов для скачивания"
-
-#: src/views/details_page.vala:770
-msgid "Binary downloads unavailable"
-msgstr "Бинарные файлы недоступны"
-
-#: src/views/details_page.vala:789
-msgid "Copy download URL"
-msgstr "Копировать ссылку"
-
-#: src/views/details_page.vala:804
-msgid "Spec file not available"
-msgstr "Spec-файл недоступен"
-
-#: src/views/details_page.vala:834
-msgid "Spec file unavailable"
-msgstr "Spec-файл недоступен"
-
-#~ msgid "Back"
-#~ msgstr "Назад"
-
-#~ msgid "Info"
-#~ msgstr "Информация"
-
-#~ msgid "Loading results…"
-#~ msgstr "Загрузка результатов…"
-
-#~ msgid "Error"
-#~ msgstr "Ошибка"
-
-#~ msgid ""
-#~ "GTK4/Libadwaita application for searching for packages in the ALT Linux "
-#~ "Sisyphus and p11 repositories and viewing detailed package information."
-#~ msgstr ""
-#~ "Приложение на GTK4/Libadwaita для поиска пакетов в репозиториях ALT Linux "
-#~ "Sisyphus и p11 и просмотра подробной информации о пакете."
-
-#~ msgid "Language"
-#~ msgstr "Язык"
-
-#~ msgid "Choose interface language"
-#~ msgstr "Выберите язык интерфейса"
-
-#~ msgid "System"
-#~ msgstr "Системный"
-
-#~ msgid "Restart required"
-#~ msgstr "Требуется перезапуск"
-
-#~ msgid "To apply the language change, the app needs to restart."
-#~ msgstr "Чтобы сменить язык, необходимо перезапустить приложение."
-
-#~ msgid "Cancel"
-#~ msgstr "Отмена"
-
-#~ msgid "Restart now"
-#~ msgstr "Перезапустить"
-
-#~ msgid "Restart failed"
-#~ msgstr "Не удалось перезапустить"
-
-#~ msgid "Close"
-#~ msgstr "Закрыть"
-
-#~ msgid "Menu"
-#~ msgstr "Меню"
-
-#~ msgid "Language…"
-#~ msgstr "Язык…"
-
-#~ msgid "About"
-#~ msgstr "О приложении"
-
-#~ msgid "Quit"
-#~ msgstr "Выход"
-
-#, fuzzy
-#~ msgid "Results"
-#~ msgstr "Нет результатов"
-
-#~ msgid "Not implemented yet"
-#~ msgstr "Пока не реализовано"
-
-#~ msgid "Preferences"
-#~ msgstr "Настройки"
-
-#~ msgid "Language switch"
-#~ msgstr "Язык"
-
-#~ msgid "System Language"
-#~ msgstr "Системный язык"
-
-#~ msgid "English"
-#~ msgstr "Английский"
-
-#~ msgid "Русский"
-#~ msgstr "Русский"

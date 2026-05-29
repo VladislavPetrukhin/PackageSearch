@@ -1,6 +1,12 @@
 # List of source files containing translatable strings.
 # Please keep this file sorted alphabetically.
+data/ui/details_page.blp
+data/ui/main_window.blp
+data/ui/search_page.blp
 src/application.vala
-src/window.vala
-src/views/search_page.vala
+src/business/package_manager.vala
 src/views/details_page.vala
+src/views/dependency_graph_page.vala
+src/views/maintainer_page.vala
+src/views/search_page.vala
+src/window.vala
