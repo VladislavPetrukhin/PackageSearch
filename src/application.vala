@@ -74,4 +74,3 @@ public class PackageSearchApp : Adw.Application {
 int main (string[] args) {
     return new PackageSearchApp ().run (args);
 }
-

@@ -1,19 +1,12 @@
-/* package_manager.vala — System package management integration.
- * Business-layer module: encapsulates apt-repo, rpm and apt-get calls.
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
 using GLib;
 using Intl;
 
 namespace Business {
 
-    /**
-     * Result of an installation attempt.
-     */
     public enum InstallResult {
         SUCCESS,
-        CANCELLED,   // user cancelled pkexec auth dialog (exit 126)
-        FAILED       // apt-get returned an error
+        CANCELLED,
+        FAILED
     }
 
     public class InstallPlan : GLib.Object {
@@ -31,33 +24,12 @@ namespace Business {
         }
     }
 
-    /**
-     * Encapsulates system-level package operations:
-     *  - detecting the active repository branch (apt-repo)
-     *  - querying installed packages and their versions (rpm -qa)
-     *  - installing / updating a package (pkexec apt-get install)
-     *
-     * Caches are static and shared across all callers within one process.
-     */
     public class PackageManager : GLib.Object {
 
-        // Cached system branch (lowercase). null = not queried yet, "" = detection failed.
         private static string? _system_branch = null;
 
-        // Cached installed packages: name -> "epoch:version-release".
         private static Gee.HashMap<string, string>? _installed_cache = null;
 
-        /* ---------- system branch detection ---------- */
-
-        /**
-         * Detect the system repository branch by running `apt-repo`.
-         *
-         * Parses lines like:
-         *   rpm [alt] rsync://mirror.yandex.ru/altlinux Sisyphus/x86_64 classic
-         *
-         * Returns the branch name in lowercase (e.g. "sisyphus", "p11")
-         * or "" if detection failed.
-         */
         public async string get_system_branch () {
             if (_system_branch != null) return _system_branch;
             string detected = "";
@@ -92,22 +64,11 @@ namespace Business {
             return _system_branch;
         }
 
-        /**
-         * Check whether a given branch name matches the system branch.
-         * Comparison is case-insensitive.
-         */
         public async bool is_system_branch (string branch) {
             var sys = yield get_system_branch ();
             return sys.length > 0 && sys == branch.down ();
         }
 
-        /* ---------- installed packages query ---------- */
-
-        /**
-         * Query rpm for all installed packages.
-         * Returns a map: package_name -> "epoch:version-release".
-         * The result is cached for the process lifetime.
-         */
         public async Gee.HashMap<string, string> get_installed_packages () {
             if (_installed_cache != null) return _installed_cache;
             var map = new Gee.HashMap<string, string> ();
@@ -137,26 +98,17 @@ namespace Business {
             return _installed_cache;
         }
 
-        /**
-         * Check whether a specific package is installed.
-         */
         public async bool is_installed (string pkg_name) {
             var pkgs = yield get_installed_packages ();
             return pkgs.has_key (pkg_name);
         }
 
-        /**
-         * Check whether an installed package needs an update given the
-         * repository EVR. Returns true if installed version is older.
-         */
         public async bool needs_update (string pkg_name, string repo_evr) {
             var pkgs = yield get_installed_packages ();
             if (!pkgs.has_key (pkg_name)) return false;
             string installed_evr = pkgs.get (pkg_name);
             return VersionCompare.compare_evr (installed_evr, repo_evr) < 0;
         }
-
-        /* ---------- package installation ---------- */
 
         public signal void install_progress (string line);
 

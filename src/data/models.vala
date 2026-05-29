@@ -70,12 +70,12 @@ public class VulnFixPackage : GLib.Object {
 
 public class ErrataRef : GLib.Object {
     public string id     { get; set; default = ""; }
-    public string ref_type { get; set; default = ""; }  // "cve" | "bdu" | "bug"
+    public string ref_type { get; set; default = ""; }
 }
 
 public class ErrataInfo : GLib.Object {
     public string  id           { get; set; default = ""; }
-    public string  errata_type  { get; set; default = ""; }  // "security" | "bugfix"
+    public string  errata_type  { get; set; default = ""; }
     public string? created      { get; set; }
     public string? updated      { get; set; }
     public string? pkgset_name  { get; set; }
@@ -139,4 +139,3 @@ public class PackageDetails : GLib.Object {
 }
 
 }
-

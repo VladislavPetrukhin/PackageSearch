@@ -58,6 +58,20 @@ public class AltRepoClient : GLib.Object {
         }
     }
 
+    public static bool is_valid_package_name (string? s) {
+        if (s == null) return false;
+        var t = s.strip ();
+        if (t.length == 0) return false;
+        if (!t.get_char (0).isalnum ()) return false;
+        int idx = 0;
+        unichar c;
+        while (t.get_next_char (ref idx, out c)) {
+            if (c.isalnum () || c == '.' || c == '_' || c == '+' || c == '-') continue;
+            return false;
+        }
+        return true;
+    }
+
     private static bool is_no_data_error (GLib.Error e) {
         if (e == null) return false;
         string m = (e.message ?? "").down ();
@@ -524,6 +538,29 @@ public class AltRepoClient : GLib.Object {
         return out_list;
     }
 
+    public async string? resolve_capability_source (
+        string branch, string dp_name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        if (is_valid_package_name (dp_name)) return dp_name;
+        try {
+            yield throttle ();
+            var resp = yield cli.get_dependencies_packages_by_dependency_async (
+                branch, dp_name, "all", Priority.DEFAULT, null
+            );
+            if (resp.packages == null || resp.packages.size == 0) return null;
+            string? bin = null;
+            foreach (var el in resp.packages) {
+                if (el.name != null && el.name.length > 0) { bin = el.name; break; }
+            }
+            if (bin == null) return null;
+            var src = yield find_source_by_binary (branch, bin);
+            return (src != null) ? src : bin;
+        } catch (Error e) {
+            if (is_no_data_error (e)) return null;
+            throw e;
+        }
+    }
+
     public async Gee.ArrayList<DependencyPackage> get_dependents_of_binary (
         string branch, string bin_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
@@ -751,4 +788,3 @@ public class AltRepoClient : GLib.Object {
 }
 
 }
-

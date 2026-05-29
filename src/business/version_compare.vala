@@ -1,20 +1,6 @@
-/* version_compare.vala — RPM version comparison utilities.
- * Business-layer module: pure logic, no UI dependencies.
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
 namespace Business {
 
-    /**
-     * Faithful Vala port of rpm's rpmvercmp algorithm.
-     *
-     * Segment-wise comparison with special handling for:
-     *   ~ (tilde)  — sorts before everything (used for pre-release)
-     *   ^ (caret)  — sorts after alphanumeric but before empty
-     */
     public class VersionCompare : GLib.Object {
-
-        /* ---- character classification helpers ---- */
 
         public static bool is_digit (char c) {
             return c >= '0' && c <= '9';
@@ -28,29 +14,22 @@ namespace Business {
             return is_digit (c) || is_alpha (c);
         }
 
-        /* ---- core algorithm ---- */
-
-        /**
-         * Compare two bare version strings using the RPM algorithm.
-         * Returns <0 if a < b, 0 if equal, >0 if a > b.
-         */
         public static int rpmvercmp (string a, string b) {
             if (a == b) return 0;
             int i = 0, j = 0;
             int la = a.length, lb = b.length;
 
             while (i < la || j < lb) {
-                // Skip non-alphanumeric separators (except ~ and ^)
+
                 while (i < la && !is_alnum (a[i]) && a[i] != '~' && a[i] != '^') i++;
                 while (j < lb && !is_alnum (b[j]) && b[j] != '~' && b[j] != '^') j++;
 
-                // Handle tilde: sorts before everything
                 if ((i < la && a[i] == '~') || (j < lb && b[j] == '~')) {
                     if (i >= la || a[i] != '~') return 1;
                     if (j >= lb || b[j] != '~') return -1;
                     i++; j++; continue;
                 }
-                // Handle caret: sorts after alnum but before empty
+
                 if ((i < la && a[i] == '^') || (j < lb && b[j] == '^')) {
                     if (i >= la) return -1;
                     if (j >= lb) return 1;
@@ -60,7 +39,6 @@ namespace Business {
                 }
                 if (i >= la || j >= lb) break;
 
-                // Grab a segment of the same type (all-digit or all-alpha)
                 int sa = i, sb = j;
                 bool isnum = is_digit (a[i]);
                 if (isnum) {
@@ -78,7 +56,7 @@ namespace Business {
                 string seg_b = b.substring (sb, j - sb);
 
                 if (isnum) {
-                    // Strip leading zeroes and compare by length first
+
                     int za = 0, zb = 0;
                     while (za < seg_a.length && seg_a[za] == '0') za++;
                     while (zb < seg_b.length && seg_b[zb] == '0') zb++;
@@ -96,10 +74,6 @@ namespace Business {
             return 1;
         }
 
-        /**
-         * Parse an EVR string "[epoch:]version[-release]" into its parts.
-         * Defaults: epoch = 0, release = "".
-         */
         public static void parse_evr (string s, out int epoch,
                                        out string ver, out string rel) {
             epoch = 0;
@@ -119,10 +93,6 @@ namespace Business {
             }
         }
 
-        /**
-         * Compare two full EVR strings (epoch:version-release).
-         * Returns <0 if a is older than b.
-         */
         public static int compare_evr (string a, string b) {
             int ea, eb;
             string va, vb, ra, rb;

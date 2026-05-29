@@ -16,6 +16,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         public bool    expandable;
         public bool    expanded;
         public bool    loading;
+        public bool    virtual;
         public Gee.ArrayList<GNode> parents = new Gee.ArrayList<GNode> ();
         public GNode?   more_parent;
         public Gee.ArrayList<Data.DependencyPackage> pending = new Gee.ArrayList<Data.DependencyPackage> ();
@@ -254,7 +255,8 @@ public class DependencyGraphPage : Adw.NavigationPage {
         n.name       = name;
         n.branch     = br;
         n.depth      = parent.depth + 1;
-        n.expandable = true;
+        n.virtual    = !Data.AltRepoClient.is_valid_package_name (name);
+        n.expandable = !n.virtual;
         n.parents.add (parent);
         nodes.add (n);
         present.set (name, n);
@@ -334,8 +336,6 @@ public class DependencyGraphPage : Adw.NavigationPage {
         return _("show %d more").printf (n.pending.size) + "  →";
     }
 
-    /* ---------- colours ---------- */
-
     private struct Palette {
         Gdk.RGBA text; Gdk.RGBA dim; Gdk.RGBA card; Gdk.RGBA brd;
         Gdk.RGBA accent; Gdk.RGBA accent_brd; Gdk.RGBA edge;
@@ -367,8 +367,6 @@ public class DependencyGraphPage : Adw.NavigationPage {
             ? rgb (0.16, 0.74, 0.46) : rgb (0.76, 0.45, 0.82);
         return p;
     }
-
-    /* ---------- drawing ---------- */
 
     private void draw (Gtk.DrawingArea da, Cairo.Context cr, int width, int height) {
         if (!fitted && width > 0 && height > 0 && nodes.size > 1) {
@@ -435,7 +433,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         cr.stroke ();
 
         double tx = x + 12.0;
-        if (!n.is_root) {
+        if (!n.is_root && !n.virtual) {
             cr.set_source_rgba (p.edge.red, p.edge.green, p.edge.blue, 1.0);
             cr.arc (x + 11.0, n.gy, 3.5, 0, 2 * Math.PI);
             cr.fill ();
@@ -450,6 +448,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         var layout = new Pango.Layout (canvas.get_pango_context ());
         var fd = canvas.get_pango_context ().get_font_description ().copy ();
         fd.set_weight (n.is_root ? Pango.Weight.BOLD : Pango.Weight.NORMAL);
+        if (n.virtual) fd.set_style (Pango.Style.ITALIC);
         fd.set_absolute_size (13 * Pango.SCALE);
         layout.set_font_description (fd);
         layout.set_text (n.name, -1);
@@ -458,10 +457,8 @@ public class DependencyGraphPage : Adw.NavigationPage {
         int lw, lh;
         layout.get_pixel_size (out lw, out lh);
 
-        cr.set_source_rgba (
-            (n.is_root ? p.accent : p.text).red,
-            (n.is_root ? p.accent : p.text).green,
-            (n.is_root ? p.accent : p.text).blue, 1.0);
+        Gdk.RGBA name_col = n.is_root ? p.accent : (n.virtual ? p.dim : p.text);
+        cr.set_source_rgba (name_col.red, name_col.green, name_col.blue, name_col.alpha);
         cr.move_to (tx, n.gy - lh / 2.0);
         Pango.cairo_show_layout (cr, layout);
 
@@ -528,8 +525,6 @@ public class DependencyGraphPage : Adw.NavigationPage {
         cr.close_path ();
     }
 
-    /* ---------- interaction ---------- */
-
     private void on_click (Gtk.GestureClick g, int n_press, double px, double py) {
         int width  = canvas.get_width ();
         int height = canvas.get_height ();
@@ -543,6 +538,8 @@ public class DependencyGraphPage : Adw.NavigationPage {
 
             if (n.is_more) { reveal_more (n); return; }
 
+            if (n.virtual) { resolve_and_open.begin (n); return; }
+
             if (!n.is_root && n.expandable && !n.expanded && !n.loading) {
                 double bx = x + n.w - 13.0;
                 if ((gx - bx) * (gx - bx) + (gy - n.gy) * (gy - n.gy) <= 12.0 * 12.0) {
@@ -555,7 +552,21 @@ public class DependencyGraphPage : Adw.NavigationPage {
         }
     }
 
-    /* ---------- fit ---------- */
+    private async void resolve_and_open (GNode n) {
+        if (n.loading) return;
+        n.loading = true;
+        var api = new Data.AltRepoClient ();
+        string? real = null;
+        try {
+            real = yield api.resolve_capability_source (branch, n.name, cancel);
+        } catch (Error e) {
+            warning ("[GraphPage] resolve %s failed: %s", n.name, e.message);
+        }
+        n.loading = false;
+        if (cancel.is_cancelled ()) return;
+        if (real != null)
+            win.show_details (new Data.SourceGroup (real), branch);
+    }
 
     private void fit_to_content () {
         fit_to_content_in (canvas.get_width (), canvas.get_height ());
