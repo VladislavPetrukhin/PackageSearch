@@ -224,52 +224,95 @@ namespace Business {
                                                 out string? error_output) {
             error_output = null;
             try {
-                var launcher = new SubprocessLauncher (
-                    SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_MERGE);
-                launcher.setenv ("LC_ALL", "C", true);
-                var sp = launcher.spawnv (
-                    { "pkexec", "apt-get", "install", "-y", pkg_name });
+                string output;
+                var res = yield run_apt_stream (
+                    { "pkexec", "sh", "-c",
+                      "LC_ALL=C apt-get install -y \"$1\"", "sh", pkg_name },
+                    cancellable, out output);
 
-                ulong cancel_id = cancellable.connect (() => {
-                    sp.force_exit ();
-                });
-
-                var dis = new DataInputStream (sp.get_stdout_pipe ());
-                var last = new StringBuilder ();
-                try {
-                    string? line;
-                    while ((line = yield dis.read_line_async (Priority.DEFAULT, cancellable)) != null) {
-                        var t = line.strip ();
-                        if (t.length > 0) {
-                            last.assign (t);
-                            install_progress (t);
-                        }
-                    }
-                } catch (IOError.CANCELLED ce) {
+                if (res == InstallResult.FAILED
+                    && !cancellable.is_cancelled ()
+                    && looks_like_stale_index (output)) {
+                    install_progress (_("Package lists are out of date, refreshing…"));
+                    res = yield run_apt_stream (
+                        { "pkexec", "sh", "-c",
+                          "LC_ALL=C apt-get update && LC_ALL=C apt-get install -y \"$1\"",
+                          "sh", pkg_name },
+                        cancellable, out output);
                 }
 
-                yield sp.wait_async (null);
-                cancellable.disconnect (cancel_id);
-
-                if (cancellable.is_cancelled ())
-                    return InstallResult.CANCELLED;
-
-                if (sp.get_successful ()) {
+                if (res == InstallResult.SUCCESS) {
                     if (_installed_cache != null && repo_evr != null && repo_evr.length > 0)
                         _installed_cache.set (pkg_name, repo_evr);
                     return InstallResult.SUCCESS;
                 }
 
-                if (sp.get_if_exited () && sp.get_exit_status () == 126)
-                    return InstallResult.CANCELLED;
-
-                error_output = last.str;
-                return InstallResult.FAILED;
+                if (res == InstallResult.FAILED)
+                    error_output = last_line (output);
+                return res;
             } catch (Error e) {
                 warning ("[PackageManager] install spawn failed: %s", e.message);
                 error_output = e.message;
                 return InstallResult.FAILED;
             }
+        }
+
+        private async InstallResult run_apt_stream (string[] argv,
+                                                    GLib.Cancellable cancellable,
+                                                    out string output) throws GLib.Error {
+            var collected = new StringBuilder ();
+            var launcher = new SubprocessLauncher (
+                SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_MERGE);
+            launcher.setenv ("LC_ALL", "C", true);
+            var sp = launcher.spawnv (argv);
+
+            ulong cancel_id = cancellable.connect (() => {
+                sp.force_exit ();
+            });
+
+            var dis = new DataInputStream (sp.get_stdout_pipe ());
+            try {
+                string? line;
+                while ((line = yield dis.read_line_async (Priority.DEFAULT, cancellable)) != null) {
+                    var t = line.strip ();
+                    if (t.length > 0) {
+                        collected.append (t);
+                        collected.append_c ('\n');
+                        install_progress (t);
+                    }
+                }
+            } catch (IOError.CANCELLED ce) {
+            }
+
+            yield sp.wait_async (null);
+            cancellable.disconnect (cancel_id);
+            output = collected.str;
+
+            if (cancellable.is_cancelled ())
+                return InstallResult.CANCELLED;
+            if (sp.get_successful ())
+                return InstallResult.SUCCESS;
+            if (sp.get_if_exited () && sp.get_exit_status () == 126)
+                return InstallResult.CANCELLED;
+            return InstallResult.FAILED;
+        }
+
+        private static bool looks_like_stale_index (string output) {
+            var o = output.down ();
+            return o.contains ("404")
+                || o.contains ("not found")
+                || o.contains ("failed to fetch")
+                || o.contains ("hash sum mismatch")
+                || o.contains ("size mismatch");
+        }
+
+        private static string last_line (string s) {
+            var lines = s.split ("\n");
+            for (int i = lines.length - 1; i >= 0; i--) {
+                var t = lines[i].strip ();
+                if (t.length > 0) return t;
+            }
+            return s.strip ();
         }
     }
 }
