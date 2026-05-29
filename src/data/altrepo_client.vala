@@ -305,6 +305,7 @@ public class AltRepoClient : GLib.Object {
         var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
 
+        yield throttle ();
         var info = yield cli.get_site_package_info_pkghash_async (
             branch, pkghash, 50, "source", Priority.DEFAULT, null
         );
@@ -462,6 +463,7 @@ public class AltRepoClient : GLib.Object {
         yield throttle ();
         var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
+        yield throttle ();
         return yield cli.get_site_package_changelog_pkghash_async (
             pkghash, last, Priority.DEFAULT, null
         );
@@ -670,6 +672,7 @@ public class AltRepoClient : GLib.Object {
         var out_list = new Gee.ArrayList<DownloadLink> ();
         var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
+        yield throttle ();
         var resp = yield cli.get_site_package_downloads_src_pkghash_async (
             branch, pkghash, Priority.DEFAULT, null
         );
@@ -694,6 +697,7 @@ public class AltRepoClient : GLib.Object {
         var out_list = new Gee.ArrayList<DownloadLink> ();
         var h = cli.get_site_pkghash_by_name (branch, src_name, null);
         var pkghash = int64.parse (h.pkghash);
+        yield throttle ();
         var resp = yield cli.get_site_package_downloads_pkghash_async (
             branch, pkghash, Priority.DEFAULT, null
         );
