@@ -203,7 +203,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         Gee.ArrayList<Data.DependencyPackage>? kids = null;
         try {
             if (mode == Mode.BUILD)
-                kids = yield api.get_build_depends (branch, n.name, "x86_64", cancel);
+                kids = yield api.get_direct_build_depends (branch, n.name, cancel);
             else
                 kids = yield api.get_reverse_depends (branch, n.name, "both", cancel);
         } catch (Error e) {

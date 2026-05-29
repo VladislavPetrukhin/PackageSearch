@@ -605,7 +605,7 @@ public class DetailsPage : Adw.NavigationPage {
     private async void fill_build_depends (Adw.ExpanderRow exp, Adw.ActionRow placeholder) {
         var api = new Data.AltRepoClient ();
         try {
-            var builds = yield api.get_build_depends (branch, group.name, "x86_64");
+            var builds = yield api.get_direct_build_depends (branch, group.name);
             if (cancel.is_cancelled ()) return;
             exp.remove (placeholder);
             if (builds == null || builds.size == 0) {

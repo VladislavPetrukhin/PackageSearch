@@ -469,25 +469,34 @@ public class AltRepoClient : GLib.Object {
         );
     }
 
-    public async Gee.ArrayList<DependencyPackage> get_build_depends (
-        string branch, string src_name, string? arch = "x86_64",
-        GLib.Cancellable? cancellable = null
+    public async Gee.ArrayList<DependencyPackage> get_direct_build_depends (
+        string branch, string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
-        yield throttle ();
         var out_list = new Gee.ArrayList<DependencyPackage> ();
-        var resp = yield cli.get_package_build_dependency_set_async (
-            branch, { src_name }, arch, Priority.DEFAULT, null
-        );
-        foreach (var grp in resp.packages) {
-            foreach (var d in grp.depends) {
+        var seen = new Gee.HashSet<string> ();
+        try {
+            yield throttle ();
+            var h = cli.get_site_pkghash_by_name (branch, src_name, null);
+            var pkghash = int64.parse (h.pkghash);
+            yield throttle ();
+            var resp = yield cli.get_dependencies_source_package_dependencies_pkghash_async (
+                branch, pkghash, 1, Priority.DEFAULT, null
+            );
+            foreach (var el in resp.dependencies) {
+                var nm = el.name ?? "";
+                if (nm.length == 0 || seen.contains (nm)) continue;
+                if (nm.has_prefix ("/") || nm.has_prefix ("rpmlib(") || nm.has_prefix ("rtld("))
+                    continue;
+                seen.add (nm);
                 var dp = new DependencyPackage ();
-                dp.name    = d.name ?? "";
-                dp.version = d.version;
-                dp.release = d.release;
+                dp.name    = nm;
+                dp.version = el.version;
                 dp.branch  = branch;
-                dp.arch    = (d.archs.size > 0) ? string.joinv (", ", (string[]) d.archs.to_array ()) : null;
                 out_list.add (dp);
             }
+        } catch (Error e) {
+            if (is_no_data_error (e)) return out_list;
+            throw e;
         }
         return out_list;
     }
@@ -496,16 +505,21 @@ public class AltRepoClient : GLib.Object {
         string branch, string src_name, string? dp_type = "both",
         GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
-        yield throttle ();
         var out_list = new Gee.ArrayList<DependencyPackage> ();
-        var resp = yield cli.get_dependencies_what_depends_src_async (
-            src_name, branch, dp_type, Priority.DEFAULT, null
-        );
-        foreach (var el in resp.dependencies) {
-            var dp = new DependencyPackage ();
-            dp.name   = el.name ?? "";
-            dp.branch = el.branch;
-            out_list.add (dp);
+        try {
+            yield throttle ();
+            var resp = yield cli.get_dependencies_what_depends_src_async (
+                src_name, branch, dp_type, Priority.DEFAULT, null
+            );
+            foreach (var el in resp.dependencies) {
+                var dp = new DependencyPackage ();
+                dp.name   = el.name ?? "";
+                dp.branch = el.branch;
+                out_list.add (dp);
+            }
+        } catch (Error e) {
+            if (is_no_data_error (e)) return out_list;
+            throw e;
         }
         return out_list;
     }
