@@ -162,16 +162,27 @@ namespace Business {
 
         public async InstallPlan simulate_install (string pkg_name) {
             var plan = new InstallPlan ();
+            string? cache_dir = null;
             try {
+                try {
+                    cache_dir = DirUtils.make_tmp ("packagesearch-apt-XXXXXX");
+                } catch (Error e) {
+                    cache_dir = null;
+                }
+
                 var launcher = new SubprocessLauncher (
                     SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_PIPE);
                 launcher.setenv ("LC_ALL", "C", true);
-                var sp = launcher.spawnv (
-                    { "apt-get", "--simulate", "install", pkg_name });
+                var sp = (cache_dir != null)
+                    ? launcher.spawnv ({ "apt-get", "-o", "Dir::Cache=" + cache_dir,
+                                         "--simulate", "install", pkg_name })
+                    : launcher.spawnv ({ "apt-get", "--simulate", "install", pkg_name });
 
                 string? out_buf = null;
                 string? err_buf = null;
                 yield sp.communicate_utf8_async (null, null, out out_buf, out err_buf);
+
+                if (cache_dir != null) { rm_rf (cache_dir); cache_dir = null; }
 
                 if (!sp.get_successful () && (out_buf == null || out_buf.strip ().length == 0)) {
                     plan.ok = false;
@@ -211,11 +222,28 @@ namespace Business {
                 plan.ok = true;
                 return plan;
             } catch (Error e) {
+                if (cache_dir != null) rm_rf (cache_dir);
                 warning ("[PackageManager] simulate failed: %s", e.message);
                 plan.ok = false;
                 plan.error = e.message;
                 return plan;
             }
+        }
+
+        private static void rm_rf (string path) {
+            try {
+                var dir = Dir.open (path);
+                string? name;
+                while ((name = dir.read_name ()) != null) {
+                    var child = Path.build_filename (path, name);
+                    if (FileUtils.test (child, FileTest.IS_DIR))
+                        rm_rf (child);
+                    else
+                        FileUtils.unlink (child);
+                }
+            } catch (Error e) {
+            }
+            DirUtils.remove (path);
         }
 
         public async InstallResult run_install (string pkg_name,
@@ -248,7 +276,7 @@ namespace Business {
                 }
 
                 if (res == InstallResult.FAILED)
-                    error_output = last_line (output);
+                    error_output = output.strip ();
                 return res;
             } catch (Error e) {
                 warning ("[PackageManager] install spawn failed: %s", e.message);
@@ -304,15 +332,6 @@ namespace Business {
                 || o.contains ("failed to fetch")
                 || o.contains ("hash sum mismatch")
                 || o.contains ("size mismatch");
-        }
-
-        private static string last_line (string s) {
-            var lines = s.split ("\n");
-            for (int i = lines.length - 1; i >= 0; i--) {
-                var t = lines[i].strip ();
-                if (t.length > 0) return t;
-            }
-            return s.strip ();
         }
     }
 }

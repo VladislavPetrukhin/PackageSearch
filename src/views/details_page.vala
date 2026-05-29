@@ -178,7 +178,8 @@ public class DetailsPage : Adw.NavigationPage {
 
         if (!plan.ok) {
             btn.sensitive = true;
-            toast (_("Could not compute changes: %s").printf (plan.error ?? ""));
+            warning ("[DetailsPage] simulate failed for %s:\n%s", pkg_name, plan.error ?? "(no output)");
+            toast (_("Could not compute changes for %s").printf (pkg_name));
             return;
         }
         if (plan.is_empty ()) {
@@ -322,8 +323,8 @@ public class DetailsPage : Adw.NavigationPage {
         pkg_mgr.disconnect (sig_id);
         pdlg.force_close ();
 
-        if (result == Business.InstallResult.FAILED && err != null)
-            warning ("[DetailsPage] install failed for %s: %s", pkg_name, err);
+        if (result == Business.InstallResult.FAILED)
+            warning ("[DetailsPage] install failed for %s:\n%s", pkg_name, err ?? "(no output)");
         return result;
     }
 
