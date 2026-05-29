@@ -24,7 +24,9 @@ bp = find_program('blueprint-compiler', required: true)
 
 localedir = join_paths(get_option('prefix'), get_option('localedir'))
 add_project_arguments(
-    '-w', '-DGETTEXT_PACKAGE="@0@"'.format(app_id),
+    '-w',
+    '-DGETTEXT_PACKAGE="@0@"'.format(app_id),
+    '-DLOCALEDIR="@0@"'.format(localedir),
     language: 'c'
 )
 
@@ -40,8 +42,6 @@ vala_extra_args = [
   '--pkg=libsoup-3.0',
   '--pkg=gee-0.8',
   '--pkg=libalt-repo-1',
-  '--Xcc=-DGETTEXT_PACKAGE="@0@"'.format(app_id),
-  '--Xcc=-DLOCALEDIR="@0@"'.format(localedir),
 ]
 
 executable(
