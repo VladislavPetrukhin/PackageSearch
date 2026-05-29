@@ -73,7 +73,11 @@ public class DetailsPage : Adw.NavigationPage {
     }
 
     private static Gtk.Label dim_label (string text) {
-        var l = new Gtk.Label (text) { valign = Gtk.Align.CENTER };
+        var l = new Gtk.Label (text) {
+            valign = Gtk.Align.CENTER,
+            ellipsize = Pango.EllipsizeMode.END,
+            max_width_chars = 24
+        };
         l.add_css_class ("dim-label");
         return l;
     }

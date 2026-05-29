@@ -99,7 +99,10 @@ public class SearchPage : Adw.NavigationPage {
 
         results_list.row_activated.connect ((row) => {
             var sg = row.get_data<Data.SourceGroup> ("sg");
-            if (sg != null) open_details (sg, current_branch);
+            if (sg != null) {
+                if (is_nonempty (sg.name)) save_to_history (sg.name);
+                open_details (sg, current_branch);
+            }
         });
 
         retry_btn.clicked.connect (() => trigger_search_now ());
@@ -241,7 +244,6 @@ public class SearchPage : Adw.NavigationPage {
         } else {
             results_header.label = _("Found %d in repository %s").printf (n, branch);
             show_results ();
-            save_to_history (term);
         }
     }
 
@@ -261,7 +263,6 @@ public class SearchPage : Adw.NavigationPage {
         } else {
             results_header.label = _("Found %d in repository %s").printf (n, branch);
             show_results ();
-            save_to_history (term);
         }
     }
 
