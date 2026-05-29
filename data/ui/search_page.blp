@@ -8,61 +8,40 @@ template $SearchPage : Adw.NavigationPage {
   child: Adw.ToolbarView {
     [top]
     Adw.HeaderBar search_header {
-      show-start-title-buttons: true;
-      show-end-title-buttons: true;
-
-      title-widget: Gtk.ScrolledWindow branch_scroller {
-        hscrollbar-policy: external;
-        vscrollbar-policy: never;
-        propagate-natural-width: true;
-        propagate-natural-height: true;
-        hexpand: false;
+      [start]
+      Gtk.DropDown branch_dropdown {
         valign: center;
-
-        child: Gtk.Box branch_group {
-          orientation: horizontal;
-          halign: center;
-          valign: center;
-          spacing: 2;
-          styles ["branch-toggles"]
-        };
-      };
-
-      [end]
-      Gtk.MenuButton menu_btn {
-        icon-name: "open-menu-symbolic";
-        tooltip-text: _("Menu");
-        menu-model: menu_main;
-        valign: center;
-        primary: true;
+        tooltip-text: _("Repository");
       }
-    }
 
-    [top]
-    Gtk.Box search_bar_row {
-      orientation: horizontal;
-      spacing: 6;
-      margin-start: 12;
-      margin-end: 12;
-      margin-top: 6;
-      margin-bottom: 6;
-
+      [start]
       Gtk.DropDown mode_dropdown {
         valign: center;
         tooltip-text: _("Search mode");
       }
 
-      Gtk.SearchEntry search_entry {
+      title-widget: Gtk.SearchEntry search_entry {
         placeholder-text: _("Type a package name…");
         activates-default: true;
+        width-request: 360;
         hexpand: true;
+        valign: center;
+      };
+
+      [end]
+      Gtk.MenuButton menu_btn {
+        icon-name: "open-menu-symbolic";
+        tooltip-text: _("Main menu");
+        menu-model: menu_main;
+        valign: center;
+        primary: true;
       }
 
+      [end]
       Gtk.MenuButton history_btn {
         icon-name: "document-open-recent-symbolic";
         tooltip-text: _("Recent searches");
         valign: center;
-        styles ["flat"]
       }
     }
 
@@ -72,9 +51,7 @@ template $SearchPage : Adw.NavigationPage {
 
         Adw.ViewStackPage {
           name: "idle";
-          title: _("Search");
-
-          child: Adw.StatusPage {
+          child: Adw.StatusPage idle_status {
             icon-name: "system-search-symbolic";
             title: _("Search packages");
             description: _("Start typing a source package name, then pick it from the results.");
@@ -83,52 +60,47 @@ template $SearchPage : Adw.NavigationPage {
 
         Adw.ViewStackPage {
           name: "loading";
-          title: _("Loading");
-
           child: Gtk.CenterBox {
             valign: center;
             halign: center;
 
-            center-widget: Gtk.Box {
-              orientation: vertical;
-              spacing: 12;
-              halign: center;
-              valign: center;
-
-              Gtk.Spinner {
-                spinning: true;
-                width-request: 42;
-                height-request: 42;
-              }
-
-              Gtk.Label {
-                label: _("Loading results…");
-              }
+            center-widget: Gtk.Spinner {
+              spinning: true;
+              width-request: 42;
+              height-request: 42;
             };
           };
         }
 
         Adw.ViewStackPage {
           name: "results";
-          title: _("Results");
-
-          child: Gtk.ScrolledWindow results_scroller {
-            styles ["results-scroll"]
-            has-frame: false;
-            vexpand: true;
+          child: Gtk.ScrolledWindow {
             hscrollbar-policy: never;
+            vexpand: true;
 
-            child: Adw.ClampScrollable {
-              maximum-size: 1500;
-              tightening-threshold: 1200;
-              margin-start: 8;
-              margin-end: 8;
-              margin-top: 8;
-              margin-bottom: 8;
+            child: Adw.Clamp {
+              maximum-size: 800;
+              margin-start: 12;
+              margin-end: 12;
+              margin-top: 12;
+              margin-bottom: 12;
 
-              child: Gtk.ListView list_view {
-                margin-start: 8;
-                margin-end: 8;
+              child: Gtk.Box {
+                orientation: vertical;
+                spacing: 12;
+
+                Gtk.Label results_header {
+                  xalign: 0.0;
+                  halign: start;
+                  margin-start: 4;
+                  styles ["dim-label"]
+                }
+
+                Gtk.ListBox results_list {
+                  selection-mode: none;
+                  valign: start;
+                  styles ["boxed-list"]
+                }
               };
             };
           };
@@ -136,64 +108,25 @@ template $SearchPage : Adw.NavigationPage {
 
         Adw.ViewStackPage {
           name: "empty";
-          title: _("No results");
-
           child: Adw.StatusPage empty_status {
             icon-name: "edit-find-replace-symbolic";
             title: _("No results");
-            description: _("Try refining your query or choose another branch.");
+            description: _("Try refining your query or choose another search mode.");
 
-            child: Gtk.Box {
+            child: Gtk.Box suggestions_box {
               orientation: vertical;
               halign: center;
-              spacing: 14;
-
-              Gtk.Box {
-                orientation: horizontal;
-                halign: center;
-                spacing: 8;
-
-                Gtk.Button clear_btn {
-                  label: _("Clear search");
-                  styles ["pill"]
-                }
-
-                Gtk.Button try_other_branch_btn {
-                  label: _("Try another branch");
-                  styles ["pill", "suggested-action"]
-                }
-              }
-
-              Gtk.Box suggestions_wrap {
-                orientation: vertical;
-                halign: center;
-                spacing: 6;
-                visible: false;
-
-                Gtk.Label suggestions_header {
-                  label: _("Maybe you meant to search as…");
-                  halign: center;
-                  styles ["dim-label", "caption-heading"]
-                }
-
-                Gtk.Box suggestions_box {
-                  orientation: vertical;
-                  halign: center;
-                  spacing: 6;
-                }
-              }
+              spacing: 6;
             };
           };
         }
 
         Adw.ViewStackPage {
           name: "error";
-          title: _("Error");
-
           child: Adw.StatusPage {
-            icon-name: "dialog-error-symbolic";
-            title: _("Error");
-            description: _("Failed to fetch data. Check your connection and package name.");
+            icon-name: "network-error-symbolic";
+            title: _("Connection error");
+            description: _("Failed to fetch data. Check your connection and try again.");
 
             child: Gtk.Button retry_btn {
               label: _("Retry");
@@ -210,8 +143,8 @@ template $SearchPage : Adw.NavigationPage {
 menu menu_main {
   section {
     item {
-      label: _("Keyboard Shortcuts");
-      action: "win.shortcuts";
+      label: _("Clear search history");
+      action: "win.clear-history";
     }
 
     item {

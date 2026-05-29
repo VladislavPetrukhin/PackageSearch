@@ -3,22 +3,10 @@ using Adw 1;
 
 template $MainWindow : Adw.ApplicationWindow {
   title: "PackageSearch";
-  default-width: 1200;
-  default-height: 780;
+  default-width: 900;
+  default-height: 640;
   width-request: 360;
   height-request: 480;
 
-  Adw.Breakpoint bp_collapse {
-    condition ("max-width: 760sp")
-
-    setters {
-      split_view.collapsed: true;
-    }
-  }
-
-  content: Adw.NavigationSplitView split_view {
-    min-sidebar-width: 340;
-    max-sidebar-width: 540;
-    sidebar-width-fraction: 0.36;
-  };
+  content: Adw.NavigationView nav_view {};
 }
