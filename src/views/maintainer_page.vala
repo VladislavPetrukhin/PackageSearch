@@ -19,7 +19,6 @@ public class MaintainerPage : Adw.NavigationPage {
         this.branch = branch;
 
         this.title = nick;
-        this.tag   = "maintainer";
 
         build_ui ();
         this.hidden.connect (() => {

@@ -709,7 +709,7 @@ public class DetailsPage : Adw.NavigationPage {
             show_compare_dialog.begin (picks[0], picks[1]);
         });
         versions_group.set_header_suffix (compare_btn);
-        versions_group.set_description (_("Tick two branches to compare versions side by side"));
+        versions_group.set_description (_("Open a repository to view the package there, or tick two to compare"));
 
         try {
             var vs = yield api.get_package_versions_all (group.name);

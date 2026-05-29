@@ -9,6 +9,17 @@ public class AltRepoClient : GLib.Object {
 
     private const string RAW_API_BASE = "https://rdb.altlinux.org/api";
 
+    private const string[] ALLOWED_BRANCHES = {
+        "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2"
+    };
+
+    public static bool branch_allowed (string? b) {
+        if (b == null) return false;
+        var lc = b.down ();
+        foreach (var a in ALLOWED_BRANCHES) if (a == lc) return true;
+        return false;
+    }
+
     public AltRepoClient () {
         cli  = new AltRepo.Client ();
         soup = new Soup.Session ();
@@ -52,6 +63,7 @@ public class AltRepoClient : GLib.Object {
         string m = (e.message ?? "").down ();
         return m.contains ("no data not found in database")
             || m.contains ("no data found in database")
+            || m.contains ("no data found in db")
             || m.contains ("no information found")
             || m.contains ("no errata data found")
             || m.contains ("node isn't array")
@@ -72,7 +84,7 @@ public class AltRepoClient : GLib.Object {
     }
 
     private static int64 last_req_ms = 0;
-    private const int    MIN_INTERVAL_MS = 280;
+    private const int    MIN_INTERVAL_MS = 450;
 
     private static async void throttle () {
         var now = GLib.get_monotonic_time () / 1000;
@@ -631,6 +643,7 @@ public class AltRepoClient : GLib.Object {
             src_name, "source", null, Priority.DEFAULT, null
         );
         foreach (var v in resp.versions) {
+            if (!branch_allowed (v.branch)) continue;
             var bv = new BranchVersion ();
             bv.branch  = v.branch ?? "";
             bv.version = v.version;
