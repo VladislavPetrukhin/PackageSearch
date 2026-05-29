@@ -235,7 +235,7 @@ public class DetailsPage : Adw.NavigationPage {
 
             loading_revealer.reveal_child = false;
 
-            yield load_changelog (api);
+            yield load_versions ();
         } catch (Error e) {
             loading_revealer.reveal_child = false;
             warning ("[DetailsPage] load failed: %s", e.message);
@@ -243,11 +243,11 @@ public class DetailsPage : Adw.NavigationPage {
         }
 
         if (cancel.is_cancelled ()) return;
+        yield load_changelog ();
+        if (cancel.is_cancelled ()) return;
         yield load_dependencies ();
         if (cancel.is_cancelled ()) return;
         yield load_security ();
-        if (cancel.is_cancelled ()) return;
-        yield load_versions ();
         if (cancel.is_cancelled ()) return;
         yield load_downloads ();
         if (cancel.is_cancelled ()) return;
@@ -363,7 +363,8 @@ public class DetailsPage : Adw.NavigationPage {
             bins_group.add (new Adw.ActionRow () { title = _("No binary packages") });
     }
 
-    private async void load_changelog (Data.AltRepoClient api) {
+    private async void load_changelog () {
+        var api = new Data.AltRepoClient ();
         clear_group (changelog_group);
         try {
             var log = yield api.get_changelog (branch, group.name, 50);
@@ -580,8 +581,9 @@ public class DetailsPage : Adw.NavigationPage {
                 string vr = (v.version ?? "");
                 if (is_nonempty (v.release)) vr = (vr == "") ? v.release : vr + "-" + v.release;
 
+                bool is_current = (v.branch == branch);
                 var row = new Adw.ActionRow () { title = v.branch };
-                if (v.branch == branch) row.subtitle = _("current");
+                if (is_current) row.subtitle = _("current");
 
                 var chk = new Gtk.CheckButton () { valign = Gtk.Align.CENTER };
                 string captured_branch = v.branch;
@@ -601,6 +603,21 @@ public class DetailsPage : Adw.NavigationPage {
                 });
                 row.add_prefix (chk);
                 if (vr != "") row.add_suffix (dim_label (vr));
+
+                if (!is_current) {
+                    row.activatable = true;
+                    string nav_branch = v.branch;
+                    string? nav_ver = v.version;
+                    string? nav_rel = v.release;
+                    row.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
+                    row.activated.connect (() => {
+                        var g = new Data.SourceGroup (group.name);
+                        g.version = nav_ver;
+                        g.release = nav_rel;
+                        win.show_details (g, nav_branch);
+                    });
+                }
+
                 versions_group.add (row);
             }
         } catch (Error e) {

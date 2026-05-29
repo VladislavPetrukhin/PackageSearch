@@ -39,6 +39,10 @@ template $DetailsPage : Adw.NavigationPage {
               title: _("Information");
             }
 
+            Adw.PreferencesGroup versions_group {
+              title: _("Repositories");
+            }
+
             Adw.PreferencesGroup bins_group {
               title: _("Binary packages");
             }
@@ -49,10 +53,6 @@ template $DetailsPage : Adw.NavigationPage {
 
             Adw.PreferencesGroup security_group {
               title: _("Security");
-            }
-
-            Adw.PreferencesGroup versions_group {
-              title: _("Versions across branches");
             }
 
             Adw.PreferencesGroup downloads_group {
