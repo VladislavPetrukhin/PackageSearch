@@ -665,6 +665,13 @@ public class DetailsPage : Adw.NavigationPage {
         compare_btn.label = _("Compare selected");
         compare_btn.sensitive = (selected_branches.size == 2);
 
+        Data.SpecFileInfo? spec_a = null;
+        Data.SpecFileInfo? spec_b = null;
+        try { spec_a = yield api.get_specfile (branch_a, group.name); }
+        catch (Error e) { warning ("[DetailsPage] compare spec %s failed: %s", branch_a, e.message); }
+        try { spec_b = yield api.get_specfile (branch_b, group.name); }
+        catch (Error e) { warning ("[DetailsPage] compare spec %s failed: %s", branch_b, e.message); }
+
         var dlg = new Adw.Dialog ();
         dlg.set_content_width (820);
         dlg.set_content_height (640);
@@ -674,15 +681,32 @@ public class DetailsPage : Adw.NavigationPage {
         hb.set_title_widget (new Adw.WindowTitle (
             _("Compare %s vs %s").printf (branch_a, branch_b), group.name));
 
+        var only_diff = new Gtk.ToggleButton () {
+            label = _("Only differences"), active = true, valign = Gtk.Align.CENTER
+        };
+        hb.pack_start (only_diff);
+
+        var equal_widgets = new Gee.ArrayList<Gtk.Widget> ();
+
         var page = new Adw.PreferencesPage ();
 
         var meta_grp = new Adw.PreferencesGroup () { title = _("Metadata") };
-        meta_grp.add (make_compare_text_row (_("Version"),
-            evr_string (a.version, a.release), evr_string (b.version, b.release)));
-        meta_grp.add (make_compare_text_row (_("Maintainer"), a.maintainer ?? "—", b.maintainer ?? "—"));
-        meta_grp.add (make_compare_text_row (_("License"), a.license ?? "—", b.license ?? "—"));
-        meta_grp.add (make_compare_text_row (_("Group"), a.group ?? "—", b.group ?? "—"));
-        meta_grp.add (make_compare_text_row (_("Summary"), a.summary ?? "—", b.summary ?? "—"));
+
+        string evr_a = evr_string (a.version, a.release);
+        string evr_b = evr_string (b.version, b.release);
+        var ver_row = make_compare_text_row (_("Version"), evr_a, evr_b);
+        if (evr_a != "—" && evr_b != "—") {
+            int c = Business.VersionCompare.compare_evr (evr_a, evr_b);
+            if (c > 0)      ver_row.subtitle = _("%s is newer").printf (branch_a);
+            else if (c < 0) ver_row.subtitle = _("%s is newer").printf (branch_b);
+            else            ver_row.subtitle = _("Same version");
+        }
+        meta_grp.add (ver_row);
+
+        add_compare_row (meta_grp, equal_widgets, _("Maintainer"), a.maintainer ?? "—", b.maintainer ?? "—");
+        add_compare_row (meta_grp, equal_widgets, _("License"), a.license ?? "—", b.license ?? "—");
+        add_compare_row (meta_grp, equal_widgets, _("Group"), a.group ?? "—", b.group ?? "—");
+        add_compare_row (meta_grp, equal_widgets, _("Summary"), a.summary ?? "—", b.summary ?? "—");
         page.add (meta_grp);
 
         var names_a = new Gee.HashSet<string> ();
@@ -729,10 +753,41 @@ public class DetailsPage : Adw.NavigationPage {
             };
             foreach (var n in common) r.add_row (new Adw.ActionRow () { title = n });
             bins_grp.add (r);
+            equal_widgets.add (r);
         }
         if (only_a.size == 0 && only_b.size == 0 && common.size == 0)
             bins_grp.add (new Adw.ActionRow () { title = _("No binary packages reported") });
         page.add (bins_grp);
+
+        var spec_grp = new Adw.PreferencesGroup () { title = _("Spec file") };
+        string sa = (spec_a != null && spec_a.content != null) ? spec_a.content : "";
+        string sb = (spec_b != null && spec_b.content != null) ? spec_b.content : "";
+        if (sa.strip () == "" && sb.strip () == "") {
+            spec_grp.add (new Adw.ActionRow () { title = _("Spec file not available") });
+        } else if (sa == sb) {
+            spec_grp.add (new Adw.ActionRow () { title = _("Spec files are identical") });
+        } else {
+            string diff = Business.TextDiff.only_differences (sa, sb);
+            string diff_head = _("Spec diff: %s ↔ %s").printf (branch_a, branch_b);
+            var srow = new Adw.ActionRow () {
+                title = _("Spec file"),
+                subtitle = _("Differences between %s and %s").printf (branch_a, branch_b),
+                activatable = true
+            };
+            var sbtn = new Gtk.Button.with_label (_("Show diff")) { valign = Gtk.Align.CENTER };
+            sbtn.add_css_class ("flat");
+            sbtn.clicked.connect (() => show_text_dialog (diff_head, diff));
+            srow.add_suffix (sbtn);
+            srow.activated.connect (() => show_text_dialog (diff_head, diff));
+            spec_grp.add (srow);
+        }
+        page.add (spec_grp);
+
+        only_diff.toggled.connect (() => {
+            bool on = only_diff.active;
+            foreach (var w in equal_widgets) w.visible = !on;
+        });
+        foreach (var w in equal_widgets) w.visible = false;
 
         var tb = new Adw.ToolbarView ();
         tb.add_top_bar (hb);
@@ -741,7 +796,15 @@ public class DetailsPage : Adw.NavigationPage {
         dlg.present (this.get_root () as Gtk.Window);
     }
 
+    private void add_compare_row (Adw.PreferencesGroup grp, Gee.ArrayList<Gtk.Widget> equal_widgets,
+                                  string title, string a, string b) {
+        var row = make_compare_text_row (title, a, b);
+        grp.add (row);
+        if (a == b) equal_widgets.add (row);
+    }
+
     private Adw.ActionRow make_compare_text_row (string title, string a, string b) {
+        bool differ = (a != b);
         var row = new Adw.ActionRow () { title = title };
         var content = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12) {
             valign = Gtk.Align.CENTER, hexpand = true
@@ -754,8 +817,10 @@ public class DetailsPage : Adw.NavigationPage {
             xalign = 0.0f, halign = Gtk.Align.START, hexpand = true,
             wrap = true, wrap_mode = Pango.WrapMode.WORD_CHAR, max_width_chars = 36
         };
-        la.add_css_class ("dim-label");
-        lb.add_css_class ("dim-label");
+        if (!differ) {
+            la.add_css_class ("dim-label");
+            lb.add_css_class ("dim-label");
+        }
         content.append (la);
         content.append (lb);
         row.add_suffix (content);

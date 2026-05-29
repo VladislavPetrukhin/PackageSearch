@@ -7,6 +7,7 @@ src = files(
   'data/models.vala',
   'data/altrepo_client.vala',
   'business/version_compare.vala',
+  'business/text_diff.vala',
   'business/package_manager.vala',
 )
 
@@ -17,6 +18,7 @@ lib_testable = static_library(
   sources: [
     'data/models.vala',
     'business/version_compare.vala',
+    'business/text_diff.vala',
     'business/package_manager.vala',
   ],
   dependencies: [
