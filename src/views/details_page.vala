@@ -556,6 +556,22 @@ public class DetailsPage : Adw.NavigationPage {
     private void load_dependencies () {
         clear_group (deps_group);
 
+        var graph_row = new Adw.ActionRow () {
+            title = _("Dependency graph"),
+            subtitle = _("Visualize what %s needs and what depends on it").printf (group.name),
+            activatable = true
+        };
+        graph_row.add_prefix (new Gtk.Image.from_icon_name ("application-x-addon-symbolic"));
+        var graph_btn = new Gtk.Button.with_label (_("Open graph")) {
+            valign = Gtk.Align.CENTER
+        };
+        graph_btn.add_css_class ("flat");
+        graph_row.add_suffix (graph_btn);
+        graph_row.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
+        graph_row.activated.connect (() => win.show_dependency_graph (group.name, branch));
+        graph_btn.clicked.connect (() => win.show_dependency_graph (group.name, branch));
+        deps_group.add (graph_row);
+
         var build_exp = new Adw.ExpanderRow () {
             title = _("Build dependencies"),
             subtitle = _("Packages required to build %s").printf (group.name)
