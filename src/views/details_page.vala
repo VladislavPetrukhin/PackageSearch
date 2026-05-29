@@ -211,7 +211,17 @@ public class DetailsPage : Adw.NavigationPage {
 
             add_info_row_if_nonempty (_("Version"),    d.version);
             add_info_row_if_nonempty (_("Release"),    d.release);
-            add_info_row_if_nonempty (_("Maintainer"), d.maintainer);
+            if (is_nonempty (d.maintainer)) {
+                string nick = d.maintainer;
+                var row_m = new Adw.ActionRow () {
+                    title = _("Maintainer"),
+                    subtitle = GLib.Markup.escape_text (nick, -1),
+                    activatable = true
+                };
+                row_m.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
+                row_m.activated.connect (() => win.show_maintainer (nick, branch));
+                info_group.add (row_m);
+            }
             add_info_row_if_nonempty (_("Group"),      d.group);
             add_info_row_if_nonempty (_("License"),    d.license);
 

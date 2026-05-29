@@ -75,6 +75,10 @@ public class MainWindow : Adw.ApplicationWindow {
         nav_view.push (details);
     }
 
+    public void show_maintainer (string nick, string branch) {
+        nav_view.push (new MaintainerPage (this, nick, branch));
+    }
+
     public void open_about_dialog () {
         var about = new Adw.AboutDialog ();
         about.set_application_icon ("space.altlinux.PackageSearch");

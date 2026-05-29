@@ -3,6 +3,7 @@ src = files(
   'window.vala',
   'views/search_page.vala',
   'views/details_page.vala',
+  'views/maintainer_page.vala',
   'data/models.vala',
   'data/altrepo_client.vala',
   'business/version_compare.vala',
