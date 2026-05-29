@@ -16,6 +16,21 @@ namespace Business {
         FAILED       // apt-get returned an error
     }
 
+    public class InstallPlan : GLib.Object {
+        public Gee.ArrayList<string> install { get; default = new Gee.ArrayList<string> (); }
+        public Gee.ArrayList<string> upgrade { get; default = new Gee.ArrayList<string> (); }
+        public Gee.ArrayList<string> remove  { get; default = new Gee.ArrayList<string> (); }
+        public string  summary  { get; set; default = ""; }
+        public string  download { get; set; default = ""; }
+        public string  disk     { get; set; default = ""; }
+        public bool    ok       { get; set; default = false; }
+        public string? error    { get; set; default = null; }
+
+        public bool is_empty () {
+            return install.size == 0 && upgrade.size == 0 && remove.size == 0;
+        }
+    }
+
     /**
      * Encapsulates system-level package operations:
      *  - detecting the active repository branch (apt-repo)
@@ -143,38 +158,112 @@ namespace Business {
 
         /* ---------- package installation ---------- */
 
-        /**
-         * Install (or update) a package via `pkexec apt-get install -y`.
-         *
-         * On success, updates the installed cache with the given repo_evr
-         * so subsequent queries reflect the new state.
-         *
-         * Returns an InstallResult and an optional error message.
-         */
-        public async InstallResult install_package (string pkg_name,
-                                                     string? repo_evr,
-                                                     out string? error_output) {
+        public signal void install_progress (string line);
+
+        public async InstallPlan simulate_install (string pkg_name) {
+            var plan = new InstallPlan ();
+            try {
+                var launcher = new SubprocessLauncher (
+                    SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_PIPE);
+                launcher.setenv ("LC_ALL", "C", true);
+                var sp = launcher.spawnv (
+                    { "apt-get", "--simulate", "install", pkg_name });
+
+                string? out_buf = null;
+                string? err_buf = null;
+                yield sp.communicate_utf8_async (null, null, out out_buf, out err_buf);
+
+                if (!sp.get_successful () && (out_buf == null || out_buf.strip ().length == 0)) {
+                    plan.ok = false;
+                    plan.error = (err_buf != null && err_buf.strip ().length > 0)
+                        ? err_buf.strip () : "apt-get simulation failed";
+                    return plan;
+                }
+
+                string mode = "";
+                foreach (var raw in (out_buf ?? "").split ("\n")) {
+                    if (raw.length == 0) continue;
+                    bool indented = (raw[0] == ' ' || raw[0] == '\t');
+                    var line = raw.strip ();
+                    if (line.length == 0) continue;
+
+                    if (line.has_prefix ("The following NEW packages")) { mode = "install"; continue; }
+                    if (line.has_prefix ("The following extra packages")) { mode = "skip"; continue; }
+                    if (line.contains ("will be upgraded")) { mode = "upgrade"; continue; }
+                    if (line.contains ("will be REMOVED")) { mode = "remove"; continue; }
+
+                    if (indented && mode != "") {
+                        foreach (var tok in line.split (" ")) {
+                            var t = tok.strip ();
+                            if (t.length == 0) continue;
+                            if (mode == "install" && !plan.install.contains (t)) plan.install.add (t);
+                            else if (mode == "upgrade" && !plan.upgrade.contains (t)) plan.upgrade.add (t);
+                            else if (mode == "remove" && !plan.remove.contains (t)) plan.remove.add (t);
+                        }
+                        continue;
+                    }
+
+                    mode = "";
+                    if (line.has_prefix ("Need to get")) plan.download = line;
+                    else if (line.has_prefix ("After unpacking") || line.contains ("disk space")) plan.disk = line;
+                    else if (line.contains ("newly installed") || line.contains ("upgraded,")) plan.summary = line;
+                }
+                plan.ok = true;
+                return plan;
+            } catch (Error e) {
+                warning ("[PackageManager] simulate failed: %s", e.message);
+                plan.ok = false;
+                plan.error = e.message;
+                return plan;
+            }
+        }
+
+        public async InstallResult run_install (string pkg_name,
+                                                string? repo_evr,
+                                                GLib.Cancellable cancellable,
+                                                out string? error_output) {
             error_output = null;
             try {
-                var sp = new Subprocess.newv (
-                    { "pkexec", "apt-get", "install", "-y", pkg_name },
-                    SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_PIPE
-                );
-                string? stderr_buf = null;
-                yield sp.communicate_utf8_async (null, null, null, out stderr_buf);
+                var launcher = new SubprocessLauncher (
+                    SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_MERGE);
+                launcher.setenv ("LC_ALL", "C", true);
+                var sp = launcher.spawnv (
+                    { "pkexec", "apt-get", "install", "-y", pkg_name });
+
+                ulong cancel_id = cancellable.connect (() => {
+                    sp.force_exit ();
+                });
+
+                var dis = new DataInputStream (sp.get_stdout_pipe ());
+                var last = new StringBuilder ();
+                try {
+                    string? line;
+                    while ((line = yield dis.read_line_async (Priority.DEFAULT, cancellable)) != null) {
+                        var t = line.strip ();
+                        if (t.length > 0) {
+                            last.assign (t);
+                            install_progress (t);
+                        }
+                    }
+                } catch (IOError.CANCELLED ce) {
+                }
+
+                yield sp.wait_async (null);
+                cancellable.disconnect (cancel_id);
+
+                if (cancellable.is_cancelled ())
+                    return InstallResult.CANCELLED;
 
                 if (sp.get_successful ()) {
-                    // Update cache so the UI reflects the new state immediately
                     if (_installed_cache != null && repo_evr != null && repo_evr.length > 0)
                         _installed_cache.set (pkg_name, repo_evr);
                     return InstallResult.SUCCESS;
                 }
 
-                // pkexec exits 126 when the user cancels the auth prompt
                 if (sp.get_if_exited () && sp.get_exit_status () == 126)
                     return InstallResult.CANCELLED;
 
-                error_output = stderr_buf;
+                error_output = last.str;
                 return InstallResult.FAILED;
             } catch (Error e) {
                 warning ("[PackageManager] install spawn failed: %s", e.message);
