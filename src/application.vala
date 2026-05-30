@@ -18,6 +18,28 @@ public class PackageSearchApp : Adw.Application {
         if (display != null) {
             var theme = Gtk.IconTheme.get_for_display(display);
             theme.add_resource_path ("/space/altlinux/PackageSearch/icons");
+
+            var css = new Gtk.CssProvider ();
+            css.load_from_string ("""
+.cards-list {
+  background: transparent;
+}
+.cards-list > row {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border-radius: 12px;
+  background-color: @card_bg_color;
+  border: 1px solid alpha(@card_fg_color, 0.08);
+  box-shadow: 0 1px 3px @card_shadow_color;
+  transition: box-shadow 150ms ease;
+}
+.cards-list > row:hover {
+  box-shadow: 0 2px 8px @card_shadow_color;
+}
+""");
+            Gtk.StyleContext.add_provider_for_display (
+                display, css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            );
         }
     }
 
