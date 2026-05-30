@@ -8,6 +8,8 @@ src = files(
   'views/task_details_page.vala',
   'views/security_rows.vala',
   'data/models.vala',
+  'data/search_text.vala',
+  'data/validation.vala',
   'data/altrepo_client.vala',
   'business/version_compare.vala',
   'business/text_diff.vala',
@@ -20,6 +22,8 @@ lib_testable = static_library(
   'testable',
   sources: [
     'data/models.vala',
+    'data/search_text.vala',
+    'data/validation.vala',
     'business/version_compare.vala',
     'business/text_diff.vala',
     'business/package_manager.vala',

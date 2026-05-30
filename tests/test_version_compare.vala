@@ -1,7 +1,3 @@
-/* test_version_compare.vala — unit tests for Business.VersionCompare
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
 using Business;
 
 private static void t_rpmvercmp_equal () {
@@ -18,20 +14,17 @@ private static void t_rpmvercmp_numeric () {
 }
 
 private static void t_rpmvercmp_leading_zeros () {
-    // Leading zeroes are stripped: "007" == "7"
     assert (VersionCompare.rpmvercmp ("007", "7") == 0);
     assert (VersionCompare.rpmvercmp ("1.007", "1.7") == 0);
 }
 
 private static void t_rpmvercmp_tilde () {
-    // ~ sorts BEFORE everything — pre-release marker
     assert (VersionCompare.rpmvercmp ("1.0~rc1", "1.0") < 0);
     assert (VersionCompare.rpmvercmp ("1.0", "1.0~rc1") > 0);
     assert (VersionCompare.rpmvercmp ("1.0~alpha", "1.0~beta") < 0);
 }
 
 private static void t_rpmvercmp_caret () {
-    // ^ sorts AFTER alnum but BEFORE empty
     assert (VersionCompare.rpmvercmp ("1.0^", "1.0") > 0);
     assert (VersionCompare.rpmvercmp ("1.0", "1.0^") < 0);
     assert (VersionCompare.rpmvercmp ("1.0^20240101", "1.0^20240202") < 0);
@@ -43,7 +36,6 @@ private static void t_rpmvercmp_alpha () {
 }
 
 private static void t_rpmvercmp_separators_ignored () {
-    // Non-alphanumeric separators (other than ~ and ^) are ignored
     assert (VersionCompare.rpmvercmp ("1.0", "1_0") == 0);
     assert (VersionCompare.rpmvercmp ("1..0", "1.0") == 0);
 }
@@ -76,19 +68,14 @@ private static void t_parse_evr_no_release () {
 }
 
 private static void t_compare_evr () {
-    // Epoch trumps everything
     assert (VersionCompare.compare_evr ("0:9.9-alt1", "1:0.1-alt1") < 0);
-    // Same epoch, version compared
     assert (VersionCompare.compare_evr ("1.0-alt1", "1.1-alt1") < 0);
-    // Same version, release compared
     assert (VersionCompare.compare_evr ("1.0-alt1", "1.0-alt2") < 0);
     assert (VersionCompare.compare_evr ("1.0-alt2", "1.0-alt1") > 0);
-    // Identical
     assert (VersionCompare.compare_evr ("1:1.0-alt1", "1:1.0-alt1") == 0);
 }
 
 private static void t_compare_evr_pre_release () {
-    // RC build is older than the final release
     assert (VersionCompare.compare_evr ("1.0~rc1-alt1", "1.0-alt1") < 0);
 }
 

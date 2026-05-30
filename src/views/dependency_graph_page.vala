@@ -234,7 +234,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         n.name       = name;
         n.branch     = br;
         n.depth      = parent.depth + 1;
-        n.virtual    = !Data.AltRepoClient.is_valid_package_name (name);
+        n.virtual    = !Data.Validation.is_valid_package_name (name);
         n.expandable = false;
         n.parents.add (parent);
         nodes.add (n);

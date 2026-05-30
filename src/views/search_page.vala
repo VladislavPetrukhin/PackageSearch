@@ -240,7 +240,7 @@ public class SearchPage : Adw.NavigationPage {
     private void show_error ()   { content_stack.set_visible_child_name ("error"); }
 
     private async void do_search (GLib.Cancellable? cancellable, uint64 my_seq) {
-        var term = Data.AltRepoClient.normalize_layout (current_query);
+        var term = Data.SearchText.normalize_layout (current_query);
         var mode = current_mode;
 
         if (term.length == 0 || !is_reasonable_term (term, mode)) {

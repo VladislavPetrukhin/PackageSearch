@@ -112,6 +112,40 @@ namespace Business {
 
         public signal void install_progress (string line);
 
+        public static InstallPlan parse_apt_simulation (string output) {
+            var plan = new InstallPlan ();
+            string mode = "";
+            foreach (var raw in output.split ("\n")) {
+                if (raw.length == 0) continue;
+                bool indented = (raw[0] == ' ' || raw[0] == '\t');
+                var line = raw.strip ();
+                if (line.length == 0) continue;
+
+                if (line.has_prefix ("The following NEW packages")) { mode = "install"; continue; }
+                if (line.has_prefix ("The following extra packages")) { mode = "skip"; continue; }
+                if (line.contains ("will be upgraded")) { mode = "upgrade"; continue; }
+                if (line.contains ("will be REMOVED")) { mode = "remove"; continue; }
+
+                if (indented && mode != "") {
+                    foreach (var tok in line.split (" ")) {
+                        var t = tok.strip ();
+                        if (t.length == 0) continue;
+                        if (mode == "install" && !plan.install.contains (t)) plan.install.add (t);
+                        else if (mode == "upgrade" && !plan.upgrade.contains (t)) plan.upgrade.add (t);
+                        else if (mode == "remove" && !plan.remove.contains (t)) plan.remove.add (t);
+                    }
+                    continue;
+                }
+
+                mode = "";
+                if (line.has_prefix ("Need to get")) plan.download = line;
+                else if (line.has_prefix ("After unpacking") || line.contains ("disk space")) plan.disk = line;
+                else if (line.contains ("newly installed") || line.contains ("upgraded,")) plan.summary = line;
+            }
+            plan.ok = true;
+            return plan;
+        }
+
         public async InstallPlan simulate_install (string pkg_name) {
             var plan = new InstallPlan ();
             string? cache_dir = null;
@@ -143,36 +177,7 @@ namespace Business {
                     return plan;
                 }
 
-                string mode = "";
-                foreach (var raw in (out_buf ?? "").split ("\n")) {
-                    if (raw.length == 0) continue;
-                    bool indented = (raw[0] == ' ' || raw[0] == '\t');
-                    var line = raw.strip ();
-                    if (line.length == 0) continue;
-
-                    if (line.has_prefix ("The following NEW packages")) { mode = "install"; continue; }
-                    if (line.has_prefix ("The following extra packages")) { mode = "skip"; continue; }
-                    if (line.contains ("will be upgraded")) { mode = "upgrade"; continue; }
-                    if (line.contains ("will be REMOVED")) { mode = "remove"; continue; }
-
-                    if (indented && mode != "") {
-                        foreach (var tok in line.split (" ")) {
-                            var t = tok.strip ();
-                            if (t.length == 0) continue;
-                            if (mode == "install" && !plan.install.contains (t)) plan.install.add (t);
-                            else if (mode == "upgrade" && !plan.upgrade.contains (t)) plan.upgrade.add (t);
-                            else if (mode == "remove" && !plan.remove.contains (t)) plan.remove.add (t);
-                        }
-                        continue;
-                    }
-
-                    mode = "";
-                    if (line.has_prefix ("Need to get")) plan.download = line;
-                    else if (line.has_prefix ("After unpacking") || line.contains ("disk space")) plan.disk = line;
-                    else if (line.contains ("newly installed") || line.contains ("upgraded,")) plan.summary = line;
-                }
-                plan.ok = true;
-                return plan;
+                return parse_apt_simulation (out_buf ?? "");
             } catch (Error e) {
                 if (cache_dir != null) rm_rf (cache_dir);
                 warning ("[PackageManager] simulate failed: %s", e.message);
@@ -277,7 +282,7 @@ namespace Business {
             return InstallResult.FAILED;
         }
 
-        private static bool looks_like_stale_index (string output) {
+        public static bool looks_like_stale_index (string output) {
             var o = output.down ();
             return o.contains ("404")
                 || o.contains ("not found")
