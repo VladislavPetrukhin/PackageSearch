@@ -115,6 +115,47 @@ public class AltRepoClient : GLib.Object {
         last_req_ms = GLib.get_monotonic_time () / 1000;
     }
 
+    private class CacheBox : GLib.Object {
+        public int64       ts;
+        public GLib.Object? obj;
+        public string?     str;
+        public bool        has_str;
+    }
+
+    private const int64 CACHE_TTL_MS = 90000;
+    private const int   CACHE_MAX    = 200;
+    private static Gee.HashMap<string, CacheBox>? search_cache = null;
+
+    private static CacheBox? cache_get (string key) {
+        if (search_cache == null) return null;
+        var box = search_cache.get (key);
+        if (box == null) return null;
+        if (GLib.get_monotonic_time () / 1000 - box.ts > CACHE_TTL_MS) {
+            search_cache.unset (key);
+            return null;
+        }
+        return box;
+    }
+
+    private static void cache_put_obj (string key, GLib.Object? o) {
+        if (search_cache == null) search_cache = new Gee.HashMap<string, CacheBox> ();
+        if (search_cache.size >= CACHE_MAX) search_cache.clear ();
+        var box = new CacheBox ();
+        box.ts = GLib.get_monotonic_time () / 1000;
+        box.obj = o;
+        search_cache.set (key, box);
+    }
+
+    private static void cache_put_str (string key, string? s) {
+        if (search_cache == null) search_cache = new Gee.HashMap<string, CacheBox> ();
+        if (search_cache.size >= CACHE_MAX) search_cache.clear ();
+        var box = new CacheBox ();
+        box.ts = GLib.get_monotonic_time () / 1000;
+        box.str = s;
+        box.has_str = true;
+        search_cache.set (key, box);
+    }
+
     private static string? layout_char (unichar c) {
         switch (c) {
         case 'й': return "q"; case 'ц': return "w"; case 'у': return "e";
@@ -252,8 +293,13 @@ public class AltRepoClient : GLib.Object {
     public async Gee.ArrayList<SourceGroup> search_source (
         string branch, string term, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
-        yield throttle ();
         var term_raw = term.strip ();
+        var key = "src|%s|%s".printf (branch, term_raw);
+        var cached = cache_get (key);
+        if (cached != null && cached.obj is Gee.ArrayList)
+            return (Gee.ArrayList<SourceGroup>) cached.obj;
+
+        yield throttle ();
         var term_n = norm (term_raw);
         if (term_n.length < 2) return new Gee.ArrayList<SourceGroup> ();
 
@@ -268,7 +314,7 @@ public class AltRepoClient : GLib.Object {
                 null
             );
         } catch (Error e) {
-            if (is_no_data_error (e)) return groups;
+            if (is_no_data_error (e)) { cache_put_obj (key, groups); return groups; }
             throw e;
         }
 
@@ -307,6 +353,7 @@ public class AltRepoClient : GLib.Object {
         int cap = (candidates.size < 100) ? candidates.size : 100;
         for (int i = 0; i < cap; i++) groups.add (candidates[i].sg);
 
+        cache_put_obj (key, groups);
         return groups;
     }
 
@@ -359,6 +406,11 @@ public class AltRepoClient : GLib.Object {
     public async Gee.ArrayList<SourceGroup> search_by_file (
         string branch, string file_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        var key = "file|%s|%s".printf (branch, file_name.strip ());
+        var cached = cache_get (key);
+        if (cached != null && cached.obj is Gee.ArrayList)
+            return (Gee.ArrayList<SourceGroup>) cached.obj;
+
         yield throttle ();
         var groups = new Gee.ArrayList<SourceGroup> ();
         AltRepo.FilePackagesByFile resp;
@@ -367,7 +419,7 @@ public class AltRepoClient : GLib.Object {
                 branch, file_name, Priority.DEFAULT, null
             );
         } catch (Error e) {
-            if (is_no_data_error (e)) return groups;
+            if (is_no_data_error (e)) { cache_put_obj (key, groups); return groups; }
             throw e;
         }
         var seen = new Gee.HashSet<string> ();
@@ -379,12 +431,18 @@ public class AltRepoClient : GLib.Object {
             g.release = pkg.release;
             groups.add (g);
         }
+        cache_put_obj (key, groups);
         return groups;
     }
 
     public async Gee.ArrayList<SourceGroup> search_by_maintainer (
         string branch, string maintainer, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        var key = "maint|%s|%s".printf (branch, maintainer.strip ());
+        var cached = cache_get (key);
+        if (cached != null && cached.obj is Gee.ArrayList)
+            return (Gee.ArrayList<SourceGroup>) cached.obj;
+
         yield throttle ();
         var groups = new Gee.ArrayList<SourceGroup> ();
 
@@ -417,12 +475,18 @@ public class AltRepoClient : GLib.Object {
             groups.add (g);
         }
         groups.sort ((a, b) => strcmp (a.name, b.name));
+        cache_put_obj (key, groups);
         return groups;
     }
 
     public async Gee.ArrayList<TaskResult> search_tasks (
         string term, string? branch = null, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        var key = "task|%s|%s".printf (branch ?? "", term.strip ());
+        var cached = cache_get (key);
+        if (cached != null && cached.obj is Gee.ArrayList)
+            return (Gee.ArrayList<TaskResult>) cached.obj;
+
         yield throttle ();
         var results = new Gee.ArrayList<TaskResult> ();
         AltRepo.TasksList resp;
@@ -432,7 +496,7 @@ public class AltRepoClient : GLib.Object {
                 Priority.DEFAULT, null
             );
         } catch (Error e) {
-            if (is_no_data_error (e)) return results;
+            if (is_no_data_error (e)) { cache_put_obj (key, results); return results; }
             throw e;
         }
         foreach (var t in resp.tasks) {
@@ -450,12 +514,17 @@ public class AltRepoClient : GLib.Object {
             tr.packages = string.joinv (", ", (string[]) pkg_names.to_array ());
             results.add (tr);
         }
+        cache_put_obj (key, results);
         return results;
     }
 
     public async string? find_source_by_binary (
         string branch, string binary_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
+        var key = "bin|%s|%s".printf (branch, binary_name.strip ());
+        var cached = cache_get (key);
+        if (cached != null && cached.has_str) return cached.str;
+
         yield throttle ();
         AltRepo.FindSourcePackageInBranch resp;
         try {
@@ -463,11 +532,14 @@ public class AltRepoClient : GLib.Object {
                 branch, binary_name, Priority.DEFAULT, null
             );
         } catch (Error e) {
-            if (is_no_data_error (e)) return null;
+            if (is_no_data_error (e)) { cache_put_str (key, null); return null; }
             throw e;
         }
-        if (resp.source_package != null && resp.source_package.length > 0)
+        if (resp.source_package != null && resp.source_package.length > 0) {
+            cache_put_str (key, resp.source_package);
             return resp.source_package;
+        }
+        cache_put_str (key, null);
         return null;
     }
 

@@ -66,6 +66,37 @@ public class SearchPage : Adw.NavigationPage {
         }
     }
 
+    private static bool is_all_digits (string s) {
+        if (s.length == 0) return false;
+        for (int i = 0; i < s.length; i++)
+            if (s[i] < '0' || s[i] > '9') return false;
+        return true;
+    }
+
+    private static Data.SearchMode[] probe_order (string term) {
+        if (is_all_digits (term))
+            return { Data.SearchMode.TASK, Data.SearchMode.PACKAGE,
+                     Data.SearchMode.BINARY, Data.SearchMode.MAINTAINER, Data.SearchMode.FILE };
+        if (term.contains ("/"))
+            return { Data.SearchMode.FILE, Data.SearchMode.PACKAGE,
+                     Data.SearchMode.BINARY, Data.SearchMode.MAINTAINER, Data.SearchMode.TASK };
+        return { Data.SearchMode.MAINTAINER, Data.SearchMode.BINARY,
+                 Data.SearchMode.PACKAGE, Data.SearchMode.FILE, Data.SearchMode.TASK };
+    }
+
+    private Gtk.Widget make_probe_status () {
+        var box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8) {
+            halign = Gtk.Align.CENTER
+        };
+        box.append (new Gtk.Spinner () { spinning = true, valign = Gtk.Align.CENTER });
+        var l = new Gtk.Label (_("Looking in other search sections…")) {
+            valign = Gtk.Align.CENTER
+        };
+        l.add_css_class ("dim-label");
+        box.append (l);
+        return box;
+    }
+
     construct {
         try {
             var src = GLib.SettingsSchemaSource.get_default ();
@@ -390,13 +421,11 @@ public class SearchPage : Adw.NavigationPage {
         clear_suggestions ();
         if (term.length == 0) return;
 
-        Data.SearchMode[] modes = {
-            Data.SearchMode.PACKAGE, Data.SearchMode.BINARY, Data.SearchMode.FILE,
-            Data.SearchMode.MAINTAINER, Data.SearchMode.TASK
-        };
+        var status = make_probe_status ();
+        suggestions_box.append (status);
 
         var api = new Data.AltRepoClient ();
-        foreach (var m in modes) {
+        foreach (var m in probe_order (term)) {
             if (m == original_mode) continue;
             if (cancel.is_cancelled () || my_seq != query_seq) return;
             if (!is_reasonable_term (term, m)) continue;
@@ -405,6 +434,8 @@ public class SearchPage : Adw.NavigationPage {
             if (cancel.is_cancelled () || my_seq != query_seq) return;
             if (count > 0) add_suggestion_button (m, count);
         }
+
+        if (status.parent == suggestions_box) suggestions_box.remove (status);
     }
 
     private async int probe_mode (Data.AltRepoClient api, Data.SearchMode mode,
