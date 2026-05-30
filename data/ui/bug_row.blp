@@ -4,23 +4,26 @@ using Adw 1;
 template $BugRow : Adw.ActionRow {
   activatable: true;
   title-lines: 1;
-  subtitle-lines: 2;
+  subtitle-lines: 1;
 
   [suffix]
-  Gtk.Label status_badge {
+  Gtk.Box {
+    spacing: 6;
     valign: center;
-    visible: false;
-    ellipsize: end;
 
-    styles [
-      "dim-label",
-      "caption",
-    ]
-  }
+    Gtk.Label status_badge {
+      visible: false;
+      ellipsize: end;
+      max-width-chars: 16;
 
-  [suffix]
-  Gtk.Image {
-    icon-name: "adw-external-link-symbolic";
-    valign: center;
+      styles [
+        "dim-label",
+        "caption",
+      ]
+    }
+
+    Gtk.Image {
+      icon-name: "adw-external-link-symbolic";
+    }
   }
 }
