@@ -359,6 +359,87 @@ public class AltRepoClient : GLib.Object {
         return groups;
     }
 
+    private const int FUZZY_MIN_TERM   = 5;
+    private const int FUZZY_MIN_PROBE  = 4;
+    private const int FUZZY_ENOUGH     = 3;
+
+    private static int candidate_cmp (Candidate a, Candidate b) {
+        if (a.score > b.score) return -1;
+        if (a.score < b.score) return 1;
+        int la = a.sg.name.length;
+        int lb = b.sg.name.length;
+        if (la != lb) return (la < lb) ? -1 : 1;
+        return strcmp (a.sg.name, b.sg.name);
+    }
+
+    public async Gee.ArrayList<SourceGroup> search_source_fuzzy (
+        string branch, string term, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var term_raw = term.strip ();
+        var key = "fuzz|%s|%s".printf (branch, term_raw);
+        var cached = cache_get (key);
+        if (cached != null && cached.obj is Gee.ArrayList)
+            return (Gee.ArrayList<SourceGroup>) cached.obj;
+
+        var term_n = norm (term_raw);
+        var groups = new Gee.ArrayList<SourceGroup> ();
+        if (term_n.length < FUZZY_MIN_TERM) { cache_put_obj (key, groups); return groups; }
+
+        int rlen = term_raw.char_count ();
+        string prefix = term_raw.substring (0, term_raw.index_of_nth_char (rlen - 1));
+        string suffix = term_raw.substring (term_raw.index_of_nth_char (1));
+        string[] probes = { prefix, suffix };
+
+        int maxd = (term_n.length <= 5) ? 1 : 2;
+        var cand = new Gee.ArrayList<Candidate> ();
+        var seen = new Gee.HashSet<string> ();
+
+        foreach (var probe in probes) {
+            if (cancellable != null && cancellable.is_cancelled ()) break;
+            if (probe.char_count () < FUZZY_MIN_PROBE) continue;
+            if (cand.size >= FUZZY_ENOUGH) break;
+
+            yield throttle ();
+            AltRepo.SiteFingPackages resp;
+            try {
+                resp = yield cli.get_site_find_packages_async (
+                    { probe }, branch, null, Priority.DEFAULT, null
+                );
+            } catch (Error e) {
+                if (is_no_data_error (e)) continue;
+                throw e;
+            }
+
+            foreach (var pkg in resp.packages) {
+                if (pkg.by_binary) continue;
+                if (seen.contains (pkg.name)) continue;
+
+                AltRepo.SitePackageVersionsElement? best = null;
+                foreach (var v in pkg.versions) {
+                    if (v.branch == branch && !v.deleted) { best = v; break; }
+                }
+                if (best == null) continue;
+
+                var name_n = norm (pkg.name);
+                int dist = lev (name_n, term_n);
+                if (dist == 0 || dist > maxd) continue;
+
+                seen.add (pkg.name);
+                var g = new SourceGroup (pkg.name);
+                g.version = best.version;
+                g.release = best.release;
+                cand.add (new Candidate (score_name (name_n, term_n), g));
+            }
+        }
+
+        cand.sort (candidate_cmp);
+        int cap = (cand.size < SEARCH_RESULT_LIMIT) ? cand.size : SEARCH_RESULT_LIMIT;
+        for (int i = 0; i < cap; i++) groups.add (cand[i].sg);
+
+        cache_put_obj (key, groups);
+        return groups;
+    }
+
     public async PackageDetails get_source_details (
         string branch, string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 12:50+0000\n"
+"POT-Creation-Date: 2026-05-30 13:34+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -604,39 +604,44 @@ msgstr ""
 msgid "Search history cleared"
 msgstr ""
 
-#: src/views/search_page.vala:322
+#: src/views/search_page.vala:333
+#, c-format
+msgid "No exact match — similar packages in %s"
+msgstr ""
+
+#: src/views/search_page.vala:335
 #, c-format
 msgid "More than %d found in repository %s"
 msgstr ""
 
-#: src/views/search_page.vala:324 src/views/search_page.vala:343
+#: src/views/search_page.vala:337 src/views/search_page.vala:356
 #, c-format
 msgid "Found %d in repository %s"
 msgstr ""
 
-#: src/views/search_page.vala:372
+#: src/views/search_page.vala:385
 #, c-format
 msgid "Task #%lld"
 msgstr ""
 
-#: src/views/search_page.vala:422
+#: src/views/search_page.vala:435
 msgid "No recent searches yet"
 msgstr ""
 
-#: src/views/search_page.vala:472
+#: src/views/search_page.vala:485
 msgid "Looking in other search sections…"
 msgstr ""
 
-#: src/views/search_page.vala:492
+#: src/views/search_page.vala:505
 msgid "Looking in other repositories…"
 msgstr ""
 
-#: src/views/search_page.vala:540
+#: src/views/search_page.vala:553
 #, c-format
 msgid "Search as %s (%d)"
 msgstr ""
 
-#: src/views/search_page.vala:553
+#: src/views/search_page.vala:566
 #, c-format
 msgid "Search in %s (%d)"
 msgstr ""

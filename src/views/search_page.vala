@@ -272,6 +272,16 @@ public class SearchPage : Adw.NavigationPage {
                 }
             }
 
+            if (mode == Data.SearchMode.PACKAGE) {
+                var fuzzy = yield api.search_source_fuzzy (branches[0], term, cancellable);
+                if (my_seq != query_seq) return;
+                if (fuzzy.size > 0) {
+                    result_branch = branches[0];
+                    apply_results (fuzzy, branches[0], term);
+                    return;
+                }
+            }
+
             result_branch = branches[0];
             apply_results (new Gee.ArrayList<Data.SourceGroup> (), branches[0], term);
         } catch (Error e) {
