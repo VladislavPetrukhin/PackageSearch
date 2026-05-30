@@ -42,9 +42,6 @@ public class PackageSearchApp : Adw.Application {
 }
 .tinted-status image {
   color: @accent_color;
-  background-color: alpha(@accent_color, 0.12);
-  border-radius: 64px;
-  padding: 16px;
 }
 """);
             Gtk.StyleContext.add_provider_for_display (
