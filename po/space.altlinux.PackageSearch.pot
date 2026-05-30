@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 12:36+0000\n"
+"POT-Creation-Date: 2026-05-30 12:43+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -563,10 +563,6 @@ msgstr ""
 msgid "%d packages by %s"
 msgstr ""
 
-#: src/views/search_page.vala:112
-msgid "Looking in other search sections…"
-msgstr ""
-
 #: src/views/search_page.vala:185
 msgid "Search history cleared"
 msgstr ""
@@ -590,9 +586,22 @@ msgstr ""
 msgid "No recent searches yet"
 msgstr ""
 
-#: src/views/search_page.vala:515
+#: src/views/search_page.vala:470
+msgid "Looking in other search sections…"
+msgstr ""
+
+#: src/views/search_page.vala:490
+msgid "Looking in other repositories…"
+msgstr ""
+
+#: src/views/search_page.vala:538
 #, c-format
 msgid "Search as %s (%d)"
+msgstr ""
+
+#: src/views/search_page.vala:551
+#, c-format
+msgid "Search in %s (%d)"
 msgstr ""
 
 #: src/window.vala:94

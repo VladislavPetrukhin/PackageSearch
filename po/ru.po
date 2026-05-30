@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 12:36+0000\n"
+"POT-Creation-Date: 2026-05-30 12:43+0000\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -559,10 +559,6 @@ msgstr "У этого сопровождающего нет пакетов в %s
 msgid "%d packages by %s"
 msgstr "Пакетов: %d (сопровождающий %s)"
 
-#: src/views/search_page.vala:112
-msgid "Looking in other search sections…"
-msgstr "Ищу в других разделах поиска…"
-
 #: src/views/search_page.vala:185
 msgid "Search history cleared"
 msgstr "История поиска очищена"
@@ -586,10 +582,23 @@ msgstr "Задание #%lld"
 msgid "No recent searches yet"
 msgstr "Пока нет недавних запросов"
 
-#: src/views/search_page.vala:515
+#: src/views/search_page.vala:470
+msgid "Looking in other search sections…"
+msgstr "Ищу в других разделах поиска…"
+
+#: src/views/search_page.vala:490
+msgid "Looking in other repositories…"
+msgstr "Ищу в других репозиториях…"
+
+#: src/views/search_page.vala:538
 #, c-format
 msgid "Search as %s (%d)"
 msgstr "Искать как «%s» (%d)"
+
+#: src/views/search_page.vala:551
+#, c-format
+msgid "Search in %s (%d)"
+msgstr "Искать в %s (%d)"
 
 #: src/window.vala:94
 msgid ""

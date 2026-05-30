@@ -104,12 +104,12 @@ public class SearchPage : Adw.NavigationPage {
         return f;
     }
 
-    private Gtk.Widget make_probe_status () {
+    private Gtk.Widget make_probe_status (string text) {
         var box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8) {
             halign = Gtk.Align.CENTER
         };
         box.append (new Gtk.Spinner () { spinning = true, valign = Gtk.Align.CENTER });
-        var l = new Gtk.Label (_("Looking in other search sections…")) {
+        var l = new Gtk.Label (text) {
             valign = Gtk.Align.CENTER
         };
         l.add_css_class ("dim-label");
@@ -467,10 +467,11 @@ public class SearchPage : Adw.NavigationPage {
         clear_suggestions ();
         if (term.length == 0) return;
 
-        var status = make_probe_status ();
+        var status = make_probe_status (_("Looking in other search sections…"));
         suggestions_box.append (status);
 
         var api = new Data.AltRepoClient ();
+        int found_modes = 0;
         foreach (var m in probe_order (term)) {
             if (m == original_mode) continue;
             if (cancel.is_cancelled () || my_seq != query_seq) return;
@@ -478,10 +479,32 @@ public class SearchPage : Adw.NavigationPage {
 
             int count = yield probe_mode (api, m, term, branch, cancel);
             if (cancel.is_cancelled () || my_seq != query_seq) return;
-            if (count > 0) add_suggestion_button (m, count);
+            if (count > 0) { add_suggestion_button (m, count); found_modes++; }
         }
 
         if (status.parent == suggestions_box) suggestions_box.remove (status);
+
+        if (found_modes > 0 || current_repo == "all" || original_mode == Data.SearchMode.TASK)
+            return;
+
+        var repo_status = make_probe_status (_("Looking in other repositories…"));
+        suggestions_box.append (repo_status);
+
+        foreach (var repo in REPOS) {
+            if (repo == current_repo) continue;
+            if (cancel.is_cancelled () || my_seq != query_seq) return;
+
+            Gee.ArrayList<Data.SourceGroup> r;
+            try {
+                r = yield search_one (api, original_mode, repo, term, cancel);
+            } catch (Error e) {
+                continue;
+            }
+            if (cancel.is_cancelled () || my_seq != query_seq) return;
+            if (r.size > 0) add_repo_suggestion_button (repo, r.size);
+        }
+
+        if (repo_status.parent == suggestions_box) suggestions_box.remove (repo_status);
     }
 
     private async int probe_mode (Data.AltRepoClient api, Data.SearchMode mode,
@@ -519,6 +542,21 @@ public class SearchPage : Adw.NavigationPage {
         var captured = mode;
         btn.clicked.connect (() => {
             mode_dropdown.selected = (uint) captured;
+        });
+        suggestions_box.append (btn);
+    }
+
+    private void add_repo_suggestion_button (string repo, int count) {
+        var btn = new Gtk.Button () {
+            label = _("Search in %s (%d)").printf (repo, count),
+            halign = Gtk.Align.CENTER
+        };
+        btn.add_css_class ("pill");
+        var captured = repo;
+        btn.clicked.connect (() => {
+            for (uint i = 0; i < REPOS.length; i++) {
+                if (REPOS[i] == captured) { repo_dropdown.selected = i + 1; break; }
+            }
         });
         suggestions_box.append (btn);
     }
