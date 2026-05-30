@@ -31,10 +31,20 @@ public class PackageSearchApp : Adw.Application {
   background-color: @card_bg_color;
   border: 1px solid alpha(@card_fg_color, 0.08);
   box-shadow: 0 1px 3px @card_shadow_color;
-  transition: box-shadow 150ms ease;
+  transition: box-shadow 150ms ease, border-color 150ms ease;
 }
 .cards-list > row:hover {
   box-shadow: 0 2px 8px @card_shadow_color;
+  border-color: alpha(@accent_color, 0.55);
+}
+.cards-list > row:active {
+  box-shadow: 0 1px 1px @card_shadow_color;
+}
+.tinted-status image {
+  color: @accent_color;
+  background-color: alpha(@accent_color, 0.12);
+  border-radius: 64px;
+  padding: 16px;
 }
 """);
             Gtk.StyleContext.add_provider_for_display (

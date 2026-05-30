@@ -49,6 +49,7 @@ template $SearchPage : Adw.NavigationPage {
             icon-name: "system-search-symbolic";
             title: _("Search packages");
             description: _("Start typing a source package name, then pick it from the results.");
+            styles ["tinted-status"]
           };
         }
 
@@ -106,6 +107,7 @@ template $SearchPage : Adw.NavigationPage {
             icon-name: "edit-find-replace-symbolic";
             title: _("No results");
             description: _("Try refining your query or choose another search mode.");
+            styles ["tinted-status"]
 
             child: Gtk.Box suggestions_box {
               orientation: vertical;

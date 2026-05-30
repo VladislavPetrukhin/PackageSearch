@@ -51,7 +51,7 @@ public class MaintainerPage : Adw.NavigationPage {
         list = new Gtk.ListBox () {
             selection_mode = Gtk.SelectionMode.NONE, valign = Gtk.Align.START
         };
-        list.add_css_class ("boxed-list");
+        list.add_css_class ("cards-list");
 
         var box = new Gtk.Box (Gtk.Orientation.VERTICAL, 12);
         box.append (header);
