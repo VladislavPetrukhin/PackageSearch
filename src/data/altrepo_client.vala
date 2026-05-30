@@ -9,6 +9,8 @@ public class AltRepoClient : GLib.Object {
 
     private const string RAW_API_BASE = "https://rdb.altlinux.org/api";
 
+    public const int SEARCH_RESULT_LIMIT = 100;
+
     private const string[] ALLOWED_BRANCHES = {
         "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2"
     };
@@ -350,7 +352,7 @@ public class AltRepoClient : GLib.Object {
             return strcmp (a.sg.name, b.sg.name);
         });
 
-        int cap = (candidates.size < 100) ? candidates.size : 100;
+        int cap = (candidates.size < SEARCH_RESULT_LIMIT) ? candidates.size : SEARCH_RESULT_LIMIT;
         for (int i = 0; i < cap; i++) groups.add (candidates[i].sg);
 
         cache_put_obj (key, groups);

@@ -14,6 +14,12 @@ template $SearchPage : Adw.NavigationPage {
         tooltip-text: _("Search mode");
       }
 
+      [start]
+      Gtk.DropDown repo_dropdown {
+        valign: center;
+        tooltip-text: _("Repository");
+      }
+
       title-widget: Gtk.SearchEntry search_entry {
         placeholder-text: _("Type a package name…");
         activates-default: true;

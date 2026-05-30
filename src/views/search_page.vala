@@ -11,6 +11,7 @@ public class SearchPage : Adw.NavigationPage {
     [GtkChild] private unowned Gtk.Label        results_header;
 
     [GtkChild] private unowned Gtk.DropDown    mode_dropdown;
+    [GtkChild] private unowned Gtk.DropDown    repo_dropdown;
     [GtkChild] private unowned Gtk.SearchEntry search_entry;
 
     [GtkChild] private unowned Gtk.Button    retry_btn;
@@ -24,7 +25,9 @@ public class SearchPage : Adw.NavigationPage {
 
     private uint   debounce_id    = 0;
     private string current_query  = "";
-    private const string current_branch = "sisyphus";
+    private const string[] REPOS  = { "sisyphus", "p11", "p10", "p9", "c10f2", "c9f2" };
+    private string current_repo   = "all";
+    private string result_branch  = "sisyphus";
     private Data.SearchMode current_mode = Data.SearchMode.PACKAGE;
 
     private const uint DEBOUNCE_MS = 250;
@@ -84,6 +87,23 @@ public class SearchPage : Adw.NavigationPage {
                  Data.SearchMode.PACKAGE, Data.SearchMode.FILE, Data.SearchMode.TASK };
     }
 
+    private static string repo_short (string r) {
+        return (r == "sisyphus") ? "sis" : r;
+    }
+
+    private Gtk.SignalListItemFactory make_repo_factory (bool abbrev) {
+        var f = new Gtk.SignalListItemFactory ();
+        f.setup.connect ((o) => {
+            ((Gtk.ListItem) o).child = new Gtk.Label ("") { xalign = 0 };
+        });
+        f.bind.connect ((o) => {
+            var li = (Gtk.ListItem) o;
+            var s = ((Gtk.StringObject) li.item).string;
+            ((Gtk.Label) li.child).label = abbrev ? repo_short (s) : s;
+        });
+        return f;
+    }
+
     private Gtk.Widget make_probe_status () {
         var box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8) {
             halign = Gtk.Align.CENTER
@@ -119,6 +139,20 @@ public class SearchPage : Adw.NavigationPage {
             trigger_search_now ();
         });
 
+        var repo_model = new Gtk.StringList (null);
+        repo_model.append ("all");
+        foreach (var r in REPOS) repo_model.append (r);
+        repo_dropdown.model = repo_model;
+        repo_dropdown.factory = make_repo_factory (true);
+        repo_dropdown.list_factory = make_repo_factory (false);
+        repo_dropdown.selected = 0;
+        repo_dropdown.notify["selected"].connect (() => {
+            var sel = repo_dropdown.selected;
+            current_repo = (sel == 0) ? "all" : REPOS[sel - 1];
+            reset_search ();
+            trigger_search_now ();
+        });
+
         search_entry.search_changed.connect (() => {
             set_query ((search_entry.text ?? "").strip ());
             trigger_search_debounced ();
@@ -132,7 +166,7 @@ public class SearchPage : Adw.NavigationPage {
             var sg = row.get_data<Data.SourceGroup> ("sg");
             if (sg != null) {
                 if (is_nonempty (sg.name)) save_to_history (sg.name);
-                open_details (sg, current_branch);
+                open_details (sg, result_branch);
             }
         });
 
@@ -200,9 +234,8 @@ public class SearchPage : Adw.NavigationPage {
     private void show_error ()   { content_stack.set_visible_child_name ("error"); }
 
     private async void do_search (GLib.Cancellable? cancellable, uint64 my_seq) {
-        var term   = Data.AltRepoClient.normalize_layout (current_query);
-        var branch = current_branch;
-        var mode   = current_mode;
+        var term = Data.AltRepoClient.normalize_layout (current_query);
+        var mode = current_mode;
 
         if (term.length == 0 || !is_reasonable_term (term, mode)) {
             clear_results ();
@@ -212,42 +245,33 @@ public class SearchPage : Adw.NavigationPage {
 
         show_loading ();
 
+        string[] branches;
+        if (current_repo == "all") branches = REPOS;
+        else branches = { current_repo };
+
         var api = new Data.AltRepoClient ();
         try {
-            switch (mode) {
-            case Data.SearchMode.PACKAGE:
-                var r = yield api.search_source (branch, term, cancellable);
+            if (mode == Data.SearchMode.TASK) {
+                string? tb = (current_repo == "all") ? null : current_repo;
+                var r = yield api.search_tasks (term, tb, cancellable);
                 if (my_seq != query_seq) return;
-                apply_results (r, branch, term);
-                break;
-
-            case Data.SearchMode.BINARY:
-                var src_name = yield api.find_source_by_binary (branch, term, cancellable);
-                if (my_seq != query_seq) return;
-                var one = new Gee.ArrayList<Data.SourceGroup> ();
-                if (src_name != null && src_name.length > 0)
-                    one.add (new Data.SourceGroup (src_name));
-                apply_results (one, branch, term);
-                break;
-
-            case Data.SearchMode.FILE:
-                var r = yield api.search_by_file (branch, term, cancellable);
-                if (my_seq != query_seq) return;
-                apply_results (r, branch, term);
-                break;
-
-            case Data.SearchMode.MAINTAINER:
-                var r = yield api.search_by_maintainer (branch, term, cancellable);
-                if (my_seq != query_seq) return;
-                apply_results (r, branch, term);
-                break;
-
-            case Data.SearchMode.TASK:
-                var r = yield api.search_tasks (term, branch, cancellable);
-                if (my_seq != query_seq) return;
-                apply_task_results (r, branch, term);
-                break;
+                result_branch = (current_repo == "all") ? REPOS[0] : current_repo;
+                apply_task_results (r, result_branch, term);
+                return;
             }
+
+            foreach (var b in branches) {
+                var r = yield search_one (api, mode, b, term, cancellable);
+                if (my_seq != query_seq) return;
+                if (r.size > 0) {
+                    result_branch = b;
+                    apply_results (r, b, term);
+                    return;
+                }
+            }
+
+            result_branch = branches[0];
+            apply_results (new Gee.ArrayList<Data.SourceGroup> (), branches[0], term);
         } catch (Error e) {
             if ((cancellable != null && cancellable.is_cancelled ()) || my_seq != query_seq)
                 return;
@@ -256,6 +280,25 @@ public class SearchPage : Adw.NavigationPage {
             show_error ();
         } finally {
             if (cancellable == in_flight) in_flight = null;
+        }
+    }
+
+    private async Gee.ArrayList<Data.SourceGroup> search_one (
+        Data.AltRepoClient api, Data.SearchMode mode, string branch,
+        string term, GLib.Cancellable? cancellable
+    ) throws GLib.Error {
+        switch (mode) {
+        case Data.SearchMode.BINARY:
+            var s = yield api.find_source_by_binary (branch, term, cancellable);
+            var one = new Gee.ArrayList<Data.SourceGroup> ();
+            if (s != null && s.length > 0) one.add (new Data.SourceGroup (s));
+            return one;
+        case Data.SearchMode.FILE:
+            return yield api.search_by_file (branch, term, cancellable);
+        case Data.SearchMode.MAINTAINER:
+            return yield api.search_by_maintainer (branch, term, cancellable);
+        default:
+            return yield api.search_source (branch, term, cancellable);
         }
     }
 
@@ -273,7 +316,10 @@ public class SearchPage : Adw.NavigationPage {
             show_empty ();
             run_suggestions.begin (term, current_mode, branch, query_seq);
         } else {
-            results_header.label = _("Found %d in repository %s").printf (n, branch);
+            if (current_mode == Data.SearchMode.PACKAGE && n >= Data.AltRepoClient.SEARCH_RESULT_LIMIT)
+                results_header.label = _("More than %d found in repository %s").printf (n, branch);
+            else
+                results_header.label = _("Found %d in repository %s").printf (n, branch);
             show_results ();
         }
     }
