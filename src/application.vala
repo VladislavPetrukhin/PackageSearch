@@ -74,7 +74,7 @@ public class PackageSearchApp : Adw.Application {
             _("Dependencies"); _("Security"); _("Versions across branches");
             _("Downloads"); _("Spec file"); _("Changelog"); _("Loading data…");
             _("Package"); _("Binary"); _("File"); _("Maintainer"); _("Task");
-            _("Type a binary package name…"); _("Type a file path…");
+            _("Type a binary package name…"); _("Type a file name or path…");
             _("Type a maintainer nickname…"); _("Type a package name or task ID…");
         }
     }

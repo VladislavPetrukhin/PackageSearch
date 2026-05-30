@@ -11,9 +11,11 @@ public enum SearchMode {
 }
 
 public class SourceGroup : GLib.Object {
-    public string  name    { get; construct set; }
-    public string? version { get; set; }
-    public string? release { get; set; }
+    public string  name     { get; construct set; }
+    public string? version  { get; set; }
+    public string? release  { get; set; }
+    public string? subtitle { get; set; }
+    public string? bin_name { get; set; }
 
     public SourceGroup (string name) {
         Object (name: name);
@@ -27,6 +29,7 @@ public class TaskResult : GLib.Object {
     public string  repo     { get; set; default = ""; }
     public string  changed  { get; set; default = ""; }
     public string  packages { get; set; default = ""; }
+    public string  message  { get; set; default = ""; }
 }
 
 public class BinaryPackage : GLib.Object {

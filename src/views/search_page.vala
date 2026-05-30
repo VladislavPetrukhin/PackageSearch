@@ -42,7 +42,7 @@ public class SearchPage : Adw.NavigationPage {
     private const string[] MODE_PLACEHOLDERS = {
         "Type a package name…",
         "Type a binary package name…",
-        "Type a file path…",
+        "Type a file name or path…",
         "Type a maintainer nickname…",
         "Type a package name or task ID…"
     };
@@ -166,7 +166,10 @@ public class SearchPage : Adw.NavigationPage {
 
         results_list.row_activated.connect ((row) => {
             var sg = row.get_data<Data.SourceGroup> ("sg");
-            if (sg != null) {
+            if (sg == null) return;
+            if (sg.bin_name != null) {
+                resolve_and_open.begin (sg, result_branch);
+            } else {
                 if (is_nonempty (sg.name)) save_to_history (sg.name);
                 open_details (sg, result_branch);
             }
@@ -371,22 +374,44 @@ public class SearchPage : Adw.NavigationPage {
             title = sg.name ?? "",
             activatable = true
         };
+        if (is_nonempty (sg.subtitle)) {
+            row.subtitle = sg.subtitle;
+            row.subtitle_lines = 1;
+        }
         if (vr != "") row.add_suffix (trailing_label (vr));
         row.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
         row.set_data ("sg", sg);
         return row;
     }
 
+    private async void resolve_and_open (Data.SourceGroup sg, string branch) {
+        var api = new Data.AltRepoClient ();
+        string name = sg.bin_name;
+        try {
+            var src = yield api.find_source_by_binary (branch, sg.bin_name, null);
+            if (src != null && src.length > 0) name = src;
+        } catch (Error e) {
+            warning ("[SearchPage] resolve_and_open: %s", e.message);
+        }
+        if (is_nonempty (name)) save_to_history (name);
+        open_details (new Data.SourceGroup (name), branch);
+    }
+
     private Adw.ActionRow make_task_row (Data.TaskResult t) {
-        var row = new Adw.ActionRow () {
-            title = _("Task #%lld").printf (t.task_id)
-        };
+        string title = _("Task #%lld").printf (t.task_id);
+        if (is_nonempty (t.state)) title += " · " + t.state;
+
+        var row = new Adw.ActionRow () { title = title };
+
         string sub = "";
-        if (is_nonempty (t.state))   sub = t.state;
-        if (is_nonempty (t.owner))   sub = (sub == "") ? t.owner : sub + " · " + t.owner;
+        if (is_nonempty (t.owner))   sub = t.owner;
         if (is_nonempty (t.repo))    sub = (sub == "") ? t.repo  : sub + " · " + t.repo;
         if (is_nonempty (t.changed)) sub = (sub == "") ? t.changed : sub + " · " + t.changed;
-        if (sub != "") row.subtitle = sub;
+        if (is_nonempty (t.message)) sub = (sub == "") ? t.message : sub + " — " + t.message;
+        if (sub != "") {
+            row.subtitle = sub;
+            row.subtitle_lines = 2;
+        }
         if (is_nonempty (t.packages)) {
             var l = new Gtk.Label (t.packages) { valign = Gtk.Align.CENTER, ellipsize = Pango.EllipsizeMode.END, max_width_chars = 24 };
             l.add_css_class ("dim-label");

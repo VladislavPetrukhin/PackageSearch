@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 13:34+0000\n"
+"POT-Creation-Date: 2026-05-30 13:50+0000\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -165,8 +165,8 @@ msgid "Type a binary package name…"
 msgstr "Введите имя бинарного пакета…"
 
 #: src/application.vala:77
-msgid "Type a file path…"
-msgstr "Введите путь к файлу…"
+msgid "Type a file name or path…"
+msgstr "Введите имя файла или путь…"
 
 #: src/application.vala:78
 msgid "Type a maintainer nickname…"
@@ -596,7 +596,7 @@ msgstr "Пакетов: %d (сопровождающий %s)"
 msgid "All"
 msgstr "Все"
 
-#: src/views/search_page.vala:187
+#: src/views/search_page.vala:190
 msgid "Search history cleared"
 msgstr "История поиска очищена"
 
@@ -610,29 +610,29 @@ msgstr "Более %d в репозитории %s"
 msgid "Found %d in repository %s"
 msgstr "Найдено %d в репозитории %s"
 
-#: src/views/search_page.vala:385
+#: src/views/search_page.vala:401
 #, c-format
 msgid "Task #%lld"
 msgstr "Задание #%lld"
 
-#: src/views/search_page.vala:435
+#: src/views/search_page.vala:457
 msgid "No recent searches yet"
 msgstr "Пока нет недавних запросов"
 
-#: src/views/search_page.vala:485
+#: src/views/search_page.vala:507
 msgid "Looking in other search sections…"
 msgstr "Ищу в других разделах поиска…"
 
-#: src/views/search_page.vala:505
+#: src/views/search_page.vala:527
 msgid "Looking in other repositories…"
 msgstr "Ищу в других репозиториях…"
 
-#: src/views/search_page.vala:553
+#: src/views/search_page.vala:575
 #, c-format
 msgid "Search as %s (%d)"
 msgstr "Искать как «%s» (%d)"
 
-#: src/views/search_page.vala:566
+#: src/views/search_page.vala:588
 #, c-format
 msgid "Search in %s (%d)"
 msgstr "Искать в %s (%d)"

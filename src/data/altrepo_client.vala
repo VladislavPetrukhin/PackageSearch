@@ -60,6 +60,13 @@ public class AltRepoClient : GLib.Object {
         }
     }
 
+    private static bool is_all_digits (string s) {
+        if (s.length == 0) return false;
+        for (int i = 0; i < s.length; i++)
+            if (s[i] < '0' || s[i] > '9') return false;
+        return true;
+    }
+
     public static bool is_valid_package_name (string? s) {
         if (s == null) return false;
         var t = s.strip ();
@@ -486,34 +493,70 @@ public class AltRepoClient : GLib.Object {
         return details;
     }
 
+    private const int FILE_SEARCH_LIMIT = 60;
+    private const int FILE_PATHS_MAX    = 40;
+
     public async Gee.ArrayList<SourceGroup> search_by_file (
         string branch, string file_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
-        var key = "file|%s|%s".printf (branch, file_name.strip ());
+        var term = file_name.strip ();
+        var key = "file|%s|%s".printf (branch, term);
         var cached = cache_get (key);
         if (cached != null && cached.obj is Gee.ArrayList)
             return (Gee.ArrayList<SourceGroup>) cached.obj;
 
-        yield throttle ();
         var groups = new Gee.ArrayList<SourceGroup> ();
-        AltRepo.FilePackagesByFile resp;
+
+        yield throttle ();
+        AltRepo.Files fres;
         try {
-            resp = yield cli.get_file_packages_by_file_async (
-                branch, file_name, Priority.DEFAULT, null
+            fres = yield cli.get_file_search_async (
+                branch, term, FILE_SEARCH_LIMIT, Priority.DEFAULT, null
             );
         } catch (Error e) {
             if (is_no_data_error (e)) { cache_put_obj (key, groups); return groups; }
             throw e;
         }
-        var seen = new Gee.HashSet<string> ();
-        foreach (var pkg in resp.packages) {
-            if (pkg.name == null || seen.contains (pkg.name)) continue;
-            seen.add (pkg.name);
-            var g = new SourceGroup (pkg.name);
-            g.version = pkg.version;
-            g.release = pkg.release;
+
+        var paths = new Gee.ArrayList<string> ();
+        var pseen = new Gee.HashSet<string> ();
+        foreach (var f in fres.files) {
+            if (f.file_name == null || f.file_name.length == 0) continue;
+            if (pseen.contains (f.file_name)) continue;
+            pseen.add (f.file_name);
+            paths.add (f.file_name);
+            if (paths.size >= FILE_PATHS_MAX) break;
+        }
+        if (paths.size == 0) { cache_put_obj (key, groups); return groups; }
+
+        yield throttle ();
+        var payload = new AltRepo.PackagesByFileNamesJson ();
+        payload.branch = branch;
+        payload.arch   = "x86_64";
+        payload.files  = paths;
+
+        AltRepo.PackageByFileName pres;
+        try {
+            pres = yield cli.post_package_packages_by_file_names_async (
+                payload, Priority.DEFAULT, null
+            );
+        } catch (Error e) {
+            if (is_no_data_error (e)) { cache_put_obj (key, groups); return groups; }
+            throw e;
+        }
+
+        var nseen = new Gee.HashSet<string> ();
+        foreach (var p in pres.packages) {
+            if (p.name == null || p.name.length == 0 || nseen.contains (p.name)) continue;
+            nseen.add (p.name);
+            var g = new SourceGroup (p.name);
+            g.version  = p.version;
+            g.release  = p.release;
+            g.bin_name = p.name;
+            if (p.files != null && p.files.size > 0) g.subtitle = p.files[0];
             groups.add (g);
         }
+        groups.sort ((a, b) => strcmp (a.name, b.name));
         cache_put_obj (key, groups);
         return groups;
     }
@@ -572,10 +615,11 @@ public class AltRepoClient : GLib.Object {
 
         yield throttle ();
         var results = new Gee.ArrayList<TaskResult> ();
+        bool by_package = !is_all_digits (term.strip ());
         AltRepo.TasksList resp;
         try {
             resp = yield cli.get_task_progress_find_tasks_async (
-                { term }, null, branch, null, 50, true,
+                { term }, null, branch, null, 50, by_package,
                 Priority.DEFAULT, null
             );
         } catch (Error e) {
@@ -589,6 +633,7 @@ public class AltRepoClient : GLib.Object {
             tr.owner   = t.task_owner ?? "";
             tr.repo    = t.task_repo ?? "";
             tr.changed = t.task_changed ?? "";
+            tr.message = t.task_message ?? "";
             var pkg_names = new Gee.ArrayList<string> ();
             foreach (var st in t.subtasks) {
                 if (st.subtask_srpm_name != null && st.subtask_srpm_name.length > 0)
