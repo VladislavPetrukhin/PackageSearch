@@ -18,6 +18,7 @@ public class DetailsPage : Adw.NavigationPage {
     [GtkChild] private unowned Adw.Banner         banner;
     [GtkChild] private unowned Gtk.Revealer       loading_revealer;
 
+    [GtkChild] private unowned Adw.PreferencesGroup hero_group;
     [GtkChild] private unowned Adw.PreferencesGroup info_group;
     [GtkChild] private unowned Adw.PreferencesGroup bins_group;
     [GtkChild] private unowned Adw.PreferencesGroup deps_group;
@@ -111,6 +112,70 @@ public class DetailsPage : Adw.NavigationPage {
                 title = title,
                 subtitle = GLib.Markup.escape_text (value, -1)
             });
+    }
+
+    private static string category_icon (string? grp) {
+        var g = (grp ?? "").down ();
+        if (g.contains ("librar"))                                 return "application-x-addon-symbolic";
+        if (g.has_prefix ("develop"))                              return "applications-engineering-symbolic";
+        if (g.has_prefix ("graphic"))                              return "applications-graphics-symbolic";
+        if (g.has_prefix ("network") || g.contains ("internet"))   return "applications-internet-symbolic";
+        if (g.has_prefix ("game"))                                 return "applications-games-symbolic";
+        if (g.has_prefix ("sound") || g.contains ("video") || g.contains ("multimedia"))
+                                                                   return "applications-multimedia-symbolic";
+        if (g.has_prefix ("editor") || g.has_prefix ("text"))      return "text-editor-symbolic";
+        if (g.contains ("font"))                                   return "font-x-generic-symbolic";
+        if (g.has_prefix ("scien") || g.contains ("engineering"))  return "applications-science-symbolic";
+        if (g.has_prefix ("databas"))                              return "drive-harddisk-symbolic";
+        if (g.has_prefix ("office") || g.contains ("publish"))     return "x-office-document-symbolic";
+        if (g.has_prefix ("system"))                               return "applications-system-symbolic";
+        return "package-x-generic-symbolic";
+    }
+
+    private Gtk.Widget build_hero (string name, string? summary, string? grp) {
+        var box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 18) {
+            margin_top = 6,
+            margin_bottom = 6
+        };
+
+        box.append (new Gtk.Image.from_icon_name (category_icon (grp)) {
+            pixel_size = 48,
+            valign = Gtk.Align.CENTER
+        });
+
+        var col = new Gtk.Box (Gtk.Orientation.VERTICAL, 3) {
+            valign = Gtk.Align.CENTER,
+            hexpand = true
+        };
+
+        var name_l = new Gtk.Label (name) {
+            xalign = 0,
+            ellipsize = Pango.EllipsizeMode.END
+        };
+        name_l.add_css_class ("title-2");
+        col.append (name_l);
+
+        if (is_nonempty (summary)) {
+            var sum_l = new Gtk.Label (summary) {
+                xalign = 0,
+                wrap = true,
+                wrap_mode = Pango.WrapMode.WORD_CHAR
+            };
+            col.append (sum_l);
+        }
+
+        if (is_nonempty (grp)) {
+            var grp_l = new Gtk.Label (grp) {
+                xalign = 0,
+                ellipsize = Pango.EllipsizeMode.END
+            };
+            grp_l.add_css_class ("caption");
+            grp_l.add_css_class ("dim-label");
+            col.append (grp_l);
+        }
+
+        box.append (col);
+        return box;
     }
 
     private static void mark_installed (Gtk.Button btn) {
@@ -340,9 +405,9 @@ public class DetailsPage : Adw.NavigationPage {
             header_title.set_title (group.name);
             header_title.set_subtitle ((vr != "" ? vr + " · " : "") + branch);
 
+            hero_group.add (build_hero (group.name, d.summary, d.group));
+
             clear_group (info_group);
-            if (is_nonempty (d.summary))
-                info_group.set_description (GLib.Markup.escape_text (d.summary, -1));
 
             add_info_row_if_nonempty (_("Version"),    d.version);
             add_info_row_if_nonempty (_("Release"),    d.release);
@@ -357,7 +422,6 @@ public class DetailsPage : Adw.NavigationPage {
                 row_m.activated.connect (() => win.show_maintainer (nick, branch));
                 info_group.add (row_m);
             }
-            add_info_row_if_nonempty (_("Group"),      d.group);
             add_info_row_if_nonempty (_("License"),    d.license);
 
             if (is_nonempty (d.homepage)) {
