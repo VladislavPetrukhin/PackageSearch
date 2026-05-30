@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 12:43+0000\n"
+"POT-Creation-Date: 2026-05-30 12:50+0000\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -139,6 +139,43 @@ msgstr "О программе PackageSearch"
 msgid "Versions across branches"
 msgstr "Версии по веткам"
 
+#: src/application.vala:76
+msgid "Package"
+msgstr "Пакет"
+
+#: src/application.vala:76
+msgid "Binary"
+msgstr "Бинарный пакет"
+
+#: src/application.vala:76
+msgid "File"
+msgstr "Файл"
+
+#: src/application.vala:76 src/views/details_page.vala:425
+#: src/views/details_page.vala:981
+msgid "Maintainer"
+msgstr "Сопровождающий"
+
+#: src/application.vala:76
+msgid "Task"
+msgstr "Задание"
+
+#: src/application.vala:77
+msgid "Type a binary package name…"
+msgstr "Введите имя бинарного пакета…"
+
+#: src/application.vala:77
+msgid "Type a file path…"
+msgstr "Введите путь к файлу…"
+
+#: src/application.vala:78
+msgid "Type a maintainer nickname…"
+msgstr "Введите ник сопровождающего…"
+
+#: src/application.vala:78
+msgid "Type a package name or task ID…"
+msgstr "Введите имя пакета или номер задания…"
+
 #: src/business/package_manager.vala:216
 msgid "Package lists are out of date, refreshing…"
 msgstr "Списки пакетов устарели, обновляем…"
@@ -257,10 +294,6 @@ msgstr "Версия"
 #: src/views/details_page.vala:421
 msgid "Release"
 msgstr "Релиз"
-
-#: src/views/details_page.vala:425 src/views/details_page.vala:981
-msgid "Maintainer"
-msgstr "Сопровождающий"
 
 #: src/views/details_page.vala:433 src/views/details_page.vala:982
 msgid "License"
@@ -559,43 +592,47 @@ msgstr "У этого сопровождающего нет пакетов в %s
 msgid "%d packages by %s"
 msgstr "Пакетов: %d (сопровождающий %s)"
 
-#: src/views/search_page.vala:185
+#: src/views/search_page.vala:91
+msgid "All"
+msgstr "Все"
+
+#: src/views/search_page.vala:187
 msgid "Search history cleared"
 msgstr "История поиска очищена"
 
-#: src/views/search_page.vala:320
+#: src/views/search_page.vala:322
 #, c-format
 msgid "More than %d found in repository %s"
 msgstr "Более %d в репозитории %s"
 
-#: src/views/search_page.vala:322 src/views/search_page.vala:341
+#: src/views/search_page.vala:324 src/views/search_page.vala:343
 #, c-format
 msgid "Found %d in repository %s"
 msgstr "Найдено %d в репозитории %s"
 
-#: src/views/search_page.vala:370
+#: src/views/search_page.vala:372
 #, c-format
 msgid "Task #%lld"
 msgstr "Задание #%lld"
 
-#: src/views/search_page.vala:420
+#: src/views/search_page.vala:422
 msgid "No recent searches yet"
 msgstr "Пока нет недавних запросов"
 
-#: src/views/search_page.vala:470
+#: src/views/search_page.vala:472
 msgid "Looking in other search sections…"
 msgstr "Ищу в других разделах поиска…"
 
-#: src/views/search_page.vala:490
+#: src/views/search_page.vala:492
 msgid "Looking in other repositories…"
 msgstr "Ищу в других репозиториях…"
 
-#: src/views/search_page.vala:538
+#: src/views/search_page.vala:540
 #, c-format
 msgid "Search as %s (%d)"
 msgstr "Искать как «%s» (%d)"
 
-#: src/views/search_page.vala:551
+#: src/views/search_page.vala:553
 #, c-format
 msgid "Search in %s (%d)"
 msgstr "Искать в %s (%d)"

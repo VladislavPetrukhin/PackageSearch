@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 12:43+0000\n"
+"POT-Creation-Date: 2026-05-30 12:50+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -145,6 +145,43 @@ msgstr ""
 msgid "Versions across branches"
 msgstr ""
 
+#: src/application.vala:76
+msgid "Package"
+msgstr ""
+
+#: src/application.vala:76
+msgid "Binary"
+msgstr ""
+
+#: src/application.vala:76
+msgid "File"
+msgstr ""
+
+#: src/application.vala:76 src/views/details_page.vala:425
+#: src/views/details_page.vala:981
+msgid "Maintainer"
+msgstr ""
+
+#: src/application.vala:76
+msgid "Task"
+msgstr ""
+
+#: src/application.vala:77
+msgid "Type a binary package name…"
+msgstr ""
+
+#: src/application.vala:77
+msgid "Type a file path…"
+msgstr ""
+
+#: src/application.vala:78
+msgid "Type a maintainer nickname…"
+msgstr ""
+
+#: src/application.vala:78
+msgid "Type a package name or task ID…"
+msgstr ""
+
 #: src/business/package_manager.vala:216
 msgid "Package lists are out of date, refreshing…"
 msgstr ""
@@ -262,10 +299,6 @@ msgstr ""
 
 #: src/views/details_page.vala:421
 msgid "Release"
-msgstr ""
-
-#: src/views/details_page.vala:425 src/views/details_page.vala:981
-msgid "Maintainer"
 msgstr ""
 
 #: src/views/details_page.vala:433 src/views/details_page.vala:982
@@ -563,43 +596,47 @@ msgstr ""
 msgid "%d packages by %s"
 msgstr ""
 
-#: src/views/search_page.vala:185
+#: src/views/search_page.vala:91
+msgid "All"
+msgstr ""
+
+#: src/views/search_page.vala:187
 msgid "Search history cleared"
 msgstr ""
 
-#: src/views/search_page.vala:320
+#: src/views/search_page.vala:322
 #, c-format
 msgid "More than %d found in repository %s"
 msgstr ""
 
-#: src/views/search_page.vala:322 src/views/search_page.vala:341
+#: src/views/search_page.vala:324 src/views/search_page.vala:343
 #, c-format
 msgid "Found %d in repository %s"
 msgstr ""
 
-#: src/views/search_page.vala:370
+#: src/views/search_page.vala:372
 #, c-format
 msgid "Task #%lld"
 msgstr ""
 
-#: src/views/search_page.vala:420
+#: src/views/search_page.vala:422
 msgid "No recent searches yet"
 msgstr ""
 
-#: src/views/search_page.vala:470
+#: src/views/search_page.vala:472
 msgid "Looking in other search sections…"
 msgstr ""
 
-#: src/views/search_page.vala:490
+#: src/views/search_page.vala:492
 msgid "Looking in other repositories…"
 msgstr ""
 
-#: src/views/search_page.vala:538
+#: src/views/search_page.vala:540
 #, c-format
 msgid "Search as %s (%d)"
 msgstr ""
 
-#: src/views/search_page.vala:551
+#: src/views/search_page.vala:553
 #, c-format
 msgid "Search in %s (%d)"
 msgstr ""
