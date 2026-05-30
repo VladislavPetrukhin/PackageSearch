@@ -16,7 +16,8 @@ public class MainWindow : Adw.ApplicationWindow {
         { "focus-search",  on_action_focus_search  },
         { "refresh",       on_action_refresh       },
         { "back",          on_action_back          },
-        { "clear-history", on_action_clear_history }
+        { "clear-history", on_action_clear_history },
+        { "shortcuts",     on_action_shortcuts     }
     };
 
     public MainWindow (Adw.Application app) {
@@ -58,6 +59,17 @@ public class MainWindow : Adw.ApplicationWindow {
         search_page.clear_history ();
     }
 
+    private void on_action_shortcuts () {
+        var builder = new Gtk.Builder.from_resource (
+            "/space/altlinux/PackageSearch/ui/shortcuts.ui"
+        );
+        var win = builder.get_object ("shortcuts_window") as Gtk.ShortcutsWindow;
+        if (win == null) return;
+        win.set_transient_for (this);
+        win.set_modal (true);
+        win.present ();
+    }
+
     private void install_accels () {
         var app = this.application as Gtk.Application;
         if (app == null) return;
@@ -66,6 +78,7 @@ public class MainWindow : Adw.ApplicationWindow {
         app.set_accels_for_action ("win.refresh",      new string[] { "F5", "<Primary>r" });
         app.set_accels_for_action ("win.back",         new string[] { "<Primary>w" });
         app.set_accels_for_action ("win.quit",         new string[] { "<Primary>q" });
+        app.set_accels_for_action ("win.shortcuts",    new string[] { "<Primary>question" });
     }
 
     public void show_details (Data.SourceGroup group, string branch) {

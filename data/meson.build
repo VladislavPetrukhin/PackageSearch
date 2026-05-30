@@ -54,6 +54,14 @@ ui_task = custom_target(
   build_by_default: true
 )
 
+ui_shortcuts = custom_target(
+  'shortcuts.ui',
+  input: files('ui/shortcuts.blp'),
+  output: 'shortcuts.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
+)
+
 gresource_xml = configure_file(
   input: files('resources.gresource.xml.in'),
   output: 'resources.gresource.xml',
@@ -64,7 +72,7 @@ resources = gnome.compile_resources(
   'packagesearch-resources',
   gresource_xml,
   source_dir: [meson.current_build_dir(), meson.current_source_dir()],
-  dependencies: [ui_main, ui_search, ui_details, ui_maintainer, ui_graph, ui_task],
+  dependencies: [ui_main, ui_search, ui_details, ui_maintainer, ui_graph, ui_task, ui_shortcuts],
   c_name: 'packagesearch'
 )
 

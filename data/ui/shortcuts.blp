@@ -1,0 +1,39 @@
+using Gtk 4.0;
+
+ShortcutsWindow shortcuts_window {
+  modal: true;
+
+  ShortcutsSection {
+    section-name: "shortcuts";
+    max-height: 10;
+
+    ShortcutsGroup {
+      title: _("General");
+
+      ShortcutsShortcut {
+        title: _("Focus search");
+        accelerator: "<Primary>f";
+      }
+
+      ShortcutsShortcut {
+        title: _("Refresh results");
+        accelerator: "F5 <Primary>r";
+      }
+
+      ShortcutsShortcut {
+        title: _("Go back");
+        accelerator: "<Primary>w";
+      }
+
+      ShortcutsShortcut {
+        title: _("Keyboard shortcuts");
+        accelerator: "<Primary>question";
+      }
+
+      ShortcutsShortcut {
+        title: _("Quit");
+        accelerator: "<Primary>q";
+      }
+    }
+  }
+}

@@ -7,6 +7,7 @@
     <file>maintainer_page.ui</file>
     <file>dependency_graph_page.ui</file>
     <file>task_details_page.ui</file>
+    <file>shortcuts.ui</file>
     <file>style.css</file>
   </gresource>
 
