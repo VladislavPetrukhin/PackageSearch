@@ -32,6 +32,35 @@ public class TaskResult : GLib.Object {
     public string  message  { get; set; default = ""; }
 }
 
+public class TaskSubtask : GLib.Object {
+    public int64   id      { get; set; default = 0; }
+    public string  name    { get; set; default = ""; }
+    public string  evr     { get; set; default = ""; }
+    public string  kind    { get; set; default = ""; }
+    public string  pkg_from { get; set; default = ""; }
+}
+
+public class TaskDetails : GLib.Object {
+    public int64   task_id   { get; set; default = 0; }
+    public string  state     { get; set; default = ""; }
+    public string  owner     { get; set; default = ""; }
+    public string  repo      { get; set; default = ""; }
+    public string  changed   { get; set; default = ""; }
+    public string  message   { get; set; default = ""; }
+    public string  stage     { get; set; default = ""; }
+    public int64   try_num   { get; set; default = 0; }
+    public int64   iteration { get; set; default = 0; }
+    public bool    testonly  { get; set; default = false; }
+
+    public Gee.ArrayList<TaskSubtask> subtasks { get; construct set; }
+    public Gee.ArrayList<int64?>      dependencies { get; construct set; }
+
+    public TaskDetails () {
+        subtasks     = new Gee.ArrayList<TaskSubtask> ();
+        dependencies = new Gee.ArrayList<int64?> ();
+    }
+}
+
 public class BinaryPackage : GLib.Object {
     public string  name     { get; set; }
     public string? version  { get; set; }

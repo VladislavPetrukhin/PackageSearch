@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 13:50+0000\n"
+"POT-Creation-Date: 2026-05-30 14:01+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -90,6 +90,7 @@ msgid "Search mode"
 msgstr ""
 
 #: data/ui/search_page.blp:20 src/application.vala:66
+#: src/views/task_details_page.vala:61
 msgid "Repository"
 msgstr ""
 
@@ -141,6 +142,22 @@ msgstr ""
 msgid "About PackageSearch"
 msgstr ""
 
+#: data/ui/task_details_page.blp:33 src/application.vala:76
+msgid "Task"
+msgstr ""
+
+#: data/ui/task_details_page.blp:37
+msgid "Packages"
+msgstr ""
+
+#: data/ui/task_details_page.blp:41
+msgid "Depends on tasks"
+msgstr ""
+
+#: data/ui/task_details_page.blp:51
+msgid "Task not found"
+msgstr ""
+
 #: src/application.vala:74
 msgid "Versions across branches"
 msgstr ""
@@ -160,10 +177,6 @@ msgstr ""
 #: src/application.vala:76 src/views/details_page.vala:425
 #: src/views/details_page.vala:981
 msgid "Maintainer"
-msgstr ""
-
-#: src/application.vala:76
-msgid "Task"
 msgstr ""
 
 #: src/application.vala:77
@@ -596,57 +609,95 @@ msgstr ""
 msgid "%d packages by %s"
 msgstr ""
 
-#: src/views/search_page.vala:91
+#: src/views/search_page.vala:92
 msgid "All"
 msgstr ""
 
-#: src/views/search_page.vala:190
+#: src/views/search_page.vala:191
 msgid "Search history cleared"
 msgstr ""
 
-#: src/views/search_page.vala:335
+#: src/views/search_page.vala:336
 #, c-format
 msgid "More than %d found in repository %s"
 msgstr ""
 
-#: src/views/search_page.vala:337 src/views/search_page.vala:356
+#: src/views/search_page.vala:338 src/views/search_page.vala:357
 #, c-format
 msgid "Found %d in repository %s"
 msgstr ""
 
-#: src/views/search_page.vala:401
+#: src/views/search_page.vala:402 src/views/task_details_page.vala:26
+#: src/views/task_details_page.vala:150
 #, c-format
 msgid "Task #%lld"
 msgstr ""
 
-#: src/views/search_page.vala:457
+#: src/views/search_page.vala:465
 msgid "No recent searches yet"
 msgstr ""
 
-#: src/views/search_page.vala:507
+#: src/views/search_page.vala:515
 msgid "Looking in other search sections…"
 msgstr ""
 
-#: src/views/search_page.vala:527
+#: src/views/search_page.vala:535
 msgid "Looking in other repositories…"
 msgstr ""
 
-#: src/views/search_page.vala:575
+#: src/views/search_page.vala:583
 #, c-format
 msgid "Search as %s (%d)"
 msgstr ""
 
-#: src/views/search_page.vala:588
+#: src/views/search_page.vala:596
 #, c-format
 msgid "Search in %s (%d)"
 msgstr ""
 
-#: src/window.vala:94
+#: src/views/task_details_page.vala:30
+#, c-format
+msgid "Could not load task #%lld."
+msgstr ""
+
+#: src/views/task_details_page.vala:59
+msgid "State"
+msgstr ""
+
+#: src/views/task_details_page.vala:60
+msgid "Owner"
+msgstr ""
+
+#: src/views/task_details_page.vala:62
+msgid "Changed"
+msgstr ""
+
+#: src/views/task_details_page.vala:64
+msgid "Try / iteration"
+msgstr ""
+
+#: src/views/task_details_page.vala:66
+msgid "Test only"
+msgstr ""
+
+#: src/views/task_details_page.vala:66
+msgid "Yes"
+msgstr ""
+
+#: src/views/task_details_page.vala:101
+msgid "Message"
+msgstr ""
+
+#: src/views/task_details_page.vala:111
+msgid "Open on rdb.altlinux.org"
+msgstr ""
+
+#: src/window.vala:99
 msgid ""
 "Search and inspect source packages across the ALT Linux Sisyphus, p11, p10, "
 "p9, c10f2 and c9f2 repositories."
 msgstr ""
 
-#: src/window.vala:98
+#: src/window.vala:103
 msgid "translator-credits"
 msgstr ""

@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 13:50+0000\n"
+"POT-Creation-Date: 2026-05-30 14:01+0000\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -84,6 +84,7 @@ msgid "Search mode"
 msgstr "Раздел поиска"
 
 #: data/ui/search_page.blp:20 src/application.vala:66
+#: src/views/task_details_page.vala:61
 msgid "Repository"
 msgstr "Репозиторий"
 
@@ -135,6 +136,22 @@ msgstr "Очистить историю поиска"
 msgid "About PackageSearch"
 msgstr "О программе PackageSearch"
 
+#: data/ui/task_details_page.blp:33 src/application.vala:76
+msgid "Task"
+msgstr "Задание"
+
+#: data/ui/task_details_page.blp:37
+msgid "Packages"
+msgstr "Пакеты"
+
+#: data/ui/task_details_page.blp:41
+msgid "Depends on tasks"
+msgstr "Зависит от заданий"
+
+#: data/ui/task_details_page.blp:51
+msgid "Task not found"
+msgstr "Задание не найдено"
+
 #: src/application.vala:74
 msgid "Versions across branches"
 msgstr "Версии по веткам"
@@ -155,10 +172,6 @@ msgstr "Файл"
 #: src/views/details_page.vala:981
 msgid "Maintainer"
 msgstr "Сопровождающий"
-
-#: src/application.vala:76
-msgid "Task"
-msgstr "Задание"
 
 #: src/application.vala:77
 msgid "Type a binary package name…"
@@ -592,52 +605,90 @@ msgstr "У этого сопровождающего нет пакетов в %s
 msgid "%d packages by %s"
 msgstr "Пакетов: %d (сопровождающий %s)"
 
-#: src/views/search_page.vala:91
+#: src/views/search_page.vala:92
 msgid "All"
 msgstr "Все"
 
-#: src/views/search_page.vala:190
+#: src/views/search_page.vala:191
 msgid "Search history cleared"
 msgstr "История поиска очищена"
 
-#: src/views/search_page.vala:335
+#: src/views/search_page.vala:336
 #, c-format
 msgid "More than %d found in repository %s"
 msgstr "Более %d в репозитории %s"
 
-#: src/views/search_page.vala:337 src/views/search_page.vala:356
+#: src/views/search_page.vala:338 src/views/search_page.vala:357
 #, c-format
 msgid "Found %d in repository %s"
 msgstr "Найдено %d в репозитории %s"
 
-#: src/views/search_page.vala:401
+#: src/views/search_page.vala:402 src/views/task_details_page.vala:26
+#: src/views/task_details_page.vala:150
 #, c-format
 msgid "Task #%lld"
 msgstr "Задание #%lld"
 
-#: src/views/search_page.vala:457
+#: src/views/search_page.vala:465
 msgid "No recent searches yet"
 msgstr "Пока нет недавних запросов"
 
-#: src/views/search_page.vala:507
+#: src/views/search_page.vala:515
 msgid "Looking in other search sections…"
 msgstr "Ищу в других разделах поиска…"
 
-#: src/views/search_page.vala:527
+#: src/views/search_page.vala:535
 msgid "Looking in other repositories…"
 msgstr "Ищу в других репозиториях…"
 
-#: src/views/search_page.vala:575
+#: src/views/search_page.vala:583
 #, c-format
 msgid "Search as %s (%d)"
 msgstr "Искать как «%s» (%d)"
 
-#: src/views/search_page.vala:588
+#: src/views/search_page.vala:596
 #, c-format
 msgid "Search in %s (%d)"
 msgstr "Искать в %s (%d)"
 
-#: src/window.vala:94
+#: src/views/task_details_page.vala:30
+#, c-format
+msgid "Could not load task #%lld."
+msgstr "Не удалось загрузить задание #%lld."
+
+#: src/views/task_details_page.vala:59
+msgid "State"
+msgstr "Состояние"
+
+#: src/views/task_details_page.vala:60
+msgid "Owner"
+msgstr "Владелец"
+
+#: src/views/task_details_page.vala:62
+msgid "Changed"
+msgstr "Изменено"
+
+#: src/views/task_details_page.vala:64
+msgid "Try / iteration"
+msgstr "Попытка / итерация"
+
+#: src/views/task_details_page.vala:66
+msgid "Test only"
+msgstr "Только проверка"
+
+#: src/views/task_details_page.vala:66
+msgid "Yes"
+msgstr "Да"
+
+#: src/views/task_details_page.vala:101
+msgid "Message"
+msgstr "Сообщение"
+
+#: src/views/task_details_page.vala:111
+msgid "Open on rdb.altlinux.org"
+msgstr "Открыть на rdb.altlinux.org"
+
+#: src/window.vala:99
 msgid ""
 "Search and inspect source packages across the ALT Linux Sisyphus, p11, p10, "
 "p9, c10f2 and c9f2 repositories."
@@ -645,6 +696,6 @@ msgstr ""
 "Поиск и просмотр исходных пакетов в репозиториях ALT Linux Sisyphus, p11, "
 "p10, p9, c10f2 и c9f2."
 
-#: src/window.vala:98
+#: src/window.vala:103
 msgid "translator-credits"
 msgstr "Владислав Петрухин"

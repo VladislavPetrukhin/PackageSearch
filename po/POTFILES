@@ -5,10 +5,12 @@ data/ui/details_page.blp
 data/ui/main_window.blp
 data/ui/maintainer_page.blp
 data/ui/search_page.blp
+data/ui/task_details_page.blp
 src/application.vala
 src/business/package_manager.vala
 src/views/details_page.vala
 src/views/dependency_graph_page.vala
 src/views/maintainer_page.vala
 src/views/search_page.vala
+src/views/task_details_page.vala
 src/window.vala

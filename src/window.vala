@@ -26,6 +26,7 @@ public class MainWindow : Adw.ApplicationWindow {
 
         search_page = new SearchPage ();
         search_page.open_details.connect ((g, b) => show_details (g, b));
+        search_page.open_task.connect ((id, b) => show_task_details (id, b));
         nav_view.add (search_page);
 
         install_accels ();
@@ -61,7 +62,7 @@ public class MainWindow : Adw.ApplicationWindow {
         var app = this.application as Gtk.Application;
         if (app == null) return;
 
-        app.set_accels_for_action ("win.focus-search", new string[] { "<Primary>f", "slash" });
+        app.set_accels_for_action ("win.focus-search", new string[] { "<Primary>f" });
         app.set_accels_for_action ("win.refresh",      new string[] { "F5", "<Primary>r" });
         app.set_accels_for_action ("win.back",         new string[] { "<Primary>w" });
         app.set_accels_for_action ("win.quit",         new string[] { "<Primary>q" });
@@ -73,6 +74,10 @@ public class MainWindow : Adw.ApplicationWindow {
         var details = new DetailsPage (group, branch, this);
         current_details = details;
         nav_view.push (details);
+    }
+
+    public void show_task_details (int64 task_id, string branch) {
+        nav_view.push (new TaskDetailsPage (this, task_id, branch));
     }
 
     public void show_maintainer (string nick, string branch) {

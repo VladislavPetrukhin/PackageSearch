@@ -1,0 +1,56 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $TaskDetailsPage : Adw.NavigationPage {
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      title-widget: Adw.WindowTitle title_widget {};
+    }
+
+    content: Adw.ViewStack stack {
+      vexpand: true;
+
+      Adw.ViewStackPage {
+        name: "loading";
+        child: Gtk.Spinner {
+          spinning: true;
+          width-request: 42;
+          height-request: 42;
+          halign: center;
+          valign: center;
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "content";
+        child: Gtk.ScrolledWindow {
+          hscrollbar-policy: never;
+          vexpand: true;
+
+          child: Adw.PreferencesPage {
+            Adw.PreferencesGroup info_group {
+              title: _("Task");
+            }
+
+            Adw.PreferencesGroup subtasks_group {
+              title: _("Packages");
+            }
+
+            Adw.PreferencesGroup deps_group {
+              title: _("Depends on tasks");
+            }
+          };
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "error";
+        child: Adw.StatusPage error_status {
+          icon-name: "dialog-warning-symbolic";
+          title: _("Task not found");
+        };
+      }
+    };
+  };
+}

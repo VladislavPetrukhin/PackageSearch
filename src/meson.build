@@ -5,6 +5,7 @@ src = files(
   'views/details_page.vala',
   'views/maintainer_page.vala',
   'views/dependency_graph_page.vala',
+  'views/task_details_page.vala',
   'data/models.vala',
   'data/altrepo_client.vala',
   'business/version_compare.vala',

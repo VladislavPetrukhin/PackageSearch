@@ -48,6 +48,7 @@ public class SearchPage : Adw.NavigationPage {
     };
 
     public signal void open_details (Data.SourceGroup group, string branch);
+    public signal void open_task (int64 task_id, string branch);
 
     private static bool is_nonempty (string? s) {
         return s != null && s.strip ().length > 0;
@@ -401,7 +402,7 @@ public class SearchPage : Adw.NavigationPage {
         string title = _("Task #%lld").printf (t.task_id);
         if (is_nonempty (t.state)) title += " · " + t.state;
 
-        var row = new Adw.ActionRow () { title = title };
+        var row = new Adw.ActionRow () { title = title, activatable = true };
 
         string sub = "";
         if (is_nonempty (t.owner))   sub = t.owner;
@@ -417,6 +418,13 @@ public class SearchPage : Adw.NavigationPage {
             l.add_css_class ("dim-label");
             row.add_suffix (l);
         }
+        row.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
+
+        int64  captured_id = t.task_id;
+        string captured_branch = is_nonempty (t.repo) ? t.repo : result_branch;
+        row.activated.connect (() => {
+            open_task (captured_id, captured_branch);
+        });
         return row;
     }
 
