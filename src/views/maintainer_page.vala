@@ -3,14 +3,18 @@ using Adw;
 using GLib;
 using Intl;
 
+[GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/maintainer_page.ui")]
 public class MaintainerPage : Adw.NavigationPage {
     private MainWindow win;
     private string nick;
     private string branch;
 
-    private Adw.ViewStack stack;
-    private Gtk.ListBox   list;
-    private Gtk.Label     header;
+    [GtkChild] private unowned Adw.WindowTitle title_widget;
+    [GtkChild] private unowned Adw.ViewStack   stack;
+    [GtkChild] private unowned Gtk.Label       header;
+    [GtkChild] private unowned Gtk.ListBox     list;
+    [GtkChild] private unowned Adw.StatusPage  empty_status;
+
     private GLib.Cancellable cancel = new GLib.Cancellable ();
 
     public MaintainerPage (MainWindow win, string nick, string branch) {
@@ -19,8 +23,10 @@ public class MaintainerPage : Adw.NavigationPage {
         this.branch = branch;
 
         this.title = nick;
+        title_widget.title = nick;
+        title_widget.subtitle = branch;
+        empty_status.description = _("This maintainer has no packages in %s.").printf (branch);
 
-        build_ui ();
         this.hidden.connect (() => {
             if (!cancel.is_cancelled ()) cancel.cancel ();
         });
@@ -29,59 +35,6 @@ public class MaintainerPage : Adw.NavigationPage {
 
     private static bool is_nonempty (string? s) {
         return s != null && s.strip ().length > 0;
-    }
-
-    private void build_ui () {
-        var header_bar = new Adw.HeaderBar ();
-        header_bar.set_title_widget (new Adw.WindowTitle (nick, branch));
-
-        stack = new Adw.ViewStack () { vexpand = true };
-
-        var spinner = new Gtk.Spinner () {
-            spinning = true, width_request = 42, height_request = 42,
-            halign = Gtk.Align.CENTER, valign = Gtk.Align.CENTER
-        };
-        stack.add_named (spinner, "loading");
-
-        header = new Gtk.Label ("") {
-            xalign = 0.0f, halign = Gtk.Align.START, margin_start = 4
-        };
-        header.add_css_class ("dim-label");
-
-        list = new Gtk.ListBox () {
-            selection_mode = Gtk.SelectionMode.NONE, valign = Gtk.Align.START
-        };
-        list.add_css_class ("cards-list");
-
-        var box = new Gtk.Box (Gtk.Orientation.VERTICAL, 12);
-        box.append (header);
-        box.append (list);
-
-        var clamp = new Adw.Clamp () {
-            maximum_size = 800,
-            margin_start = 12, margin_end = 12, margin_top = 12, margin_bottom = 12
-        };
-        clamp.set_child (box);
-
-        var sw = new Gtk.ScrolledWindow () {
-            hscrollbar_policy = Gtk.PolicyType.NEVER, vexpand = true
-        };
-        sw.set_child (clamp);
-        stack.add_named (sw, "results");
-
-        var empty = new Adw.StatusPage () {
-            icon_name = "system-users-symbolic",
-            title = _("No packages"),
-            description = _("This maintainer has no packages in %s.").printf (branch)
-        };
-        stack.add_named (empty, "empty");
-
-        stack.set_visible_child_name ("loading");
-
-        var tv = new Adw.ToolbarView ();
-        tv.add_top_bar (header_bar);
-        tv.set_content (stack);
-        this.set_child (tv);
     }
 
     private async void load () {

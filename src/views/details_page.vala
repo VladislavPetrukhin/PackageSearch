@@ -199,21 +199,24 @@ public class DetailsPage : Adw.NavigationPage {
         load_details.begin ();
     }
 
-    private void show_text_dialog (string head, string body) {
+    private Adw.Dialog new_dialog (string title, string subtitle, int width, int height,
+                                   Gtk.Widget content, out Adw.HeaderBar header) {
         var dlg = new Adw.Dialog ();
-        dlg.set_content_width (820);
-        dlg.set_content_height (600);
+        if (width > 0)  dlg.set_content_width (width);
+        if (height > 0) dlg.set_content_height (height);
+        dlg.set_title (title);
 
-        var hb = new Adw.HeaderBar () { show_end_title_buttons = true };
-        hb.set_title_widget (new Adw.WindowTitle (head, ""));
+        header = new Adw.HeaderBar () { show_end_title_buttons = true };
+        header.set_title_widget (new Adw.WindowTitle (title, subtitle));
 
-        var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
-            tooltip_text = _("Copy"), valign = Gtk.Align.CENTER
-        };
-        copy_btn.add_css_class ("flat");
-        copy_btn.clicked.connect (() => copy_to_clipboard (body ?? ""));
-        hb.pack_end (copy_btn);
+        var tb = new Adw.ToolbarView ();
+        tb.add_top_bar (header);
+        tb.set_content (content);
+        dlg.set_child (tb);
+        return dlg;
+    }
 
+    private void show_text_dialog (string head, string body) {
         var tv = new Gtk.TextView () {
             editable = false, cursor_visible = false, monospace = true,
             wrap_mode = Gtk.WrapMode.WORD_CHAR,
@@ -224,11 +227,16 @@ public class DetailsPage : Adw.NavigationPage {
         var sw = new Gtk.ScrolledWindow () { vexpand = true };
         sw.set_child (tv);
 
-        var tb = new Adw.ToolbarView ();
-        tb.add_top_bar (hb);
-        tb.set_content (sw);
+        Adw.HeaderBar hb;
+        var dlg = new_dialog (head, "", 820, 600, sw, out hb);
 
-        dlg.set_child (tb);
+        var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
+            tooltip_text = _("Copy"), valign = Gtk.Align.CENTER
+        };
+        copy_btn.add_css_class ("flat");
+        copy_btn.clicked.connect (() => copy_to_clipboard (body ?? ""));
+        hb.pack_end (copy_btn);
+
         dlg.present (this.get_root () as Gtk.Window);
     }
 
@@ -949,19 +957,9 @@ public class DetailsPage : Adw.NavigationPage {
         try { spec_b = yield api.get_specfile (branch_b, group.name); }
         catch (Error e) { warning ("[DetailsPage] compare spec %s failed: %s", branch_b, e.message); }
 
-        var dlg = new Adw.Dialog ();
-        dlg.set_content_width (820);
-        dlg.set_content_height (640);
-        dlg.set_title (_("Compare %s vs %s").printf (branch_a, branch_b));
-
-        var hb = new Adw.HeaderBar () { show_end_title_buttons = true };
-        hb.set_title_widget (new Adw.WindowTitle (
-            _("Compare %s vs %s").printf (branch_a, branch_b), group.name));
-
         var only_diff = new Gtk.ToggleButton () {
             label = _("Only differences"), active = true, valign = Gtk.Align.CENTER
         };
-        hb.pack_start (only_diff);
 
         var equal_widgets = new Gee.ArrayList<Gtk.Widget> ();
 
@@ -1066,10 +1064,10 @@ public class DetailsPage : Adw.NavigationPage {
         });
         foreach (var w in equal_widgets) w.visible = false;
 
-        var tb = new Adw.ToolbarView ();
-        tb.add_top_bar (hb);
-        tb.set_content (page);
-        dlg.set_child (tb);
+        Adw.HeaderBar hb;
+        var dlg = new_dialog (_("Compare %s vs %s").printf (branch_a, branch_b),
+                              group.name, 820, 640, page, out hb);
+        hb.pack_start (only_diff);
         dlg.present (this.get_root () as Gtk.Window);
     }
 

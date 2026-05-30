@@ -1,0 +1,68 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $MaintainerPage : Adw.NavigationPage {
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      title-widget: Adw.WindowTitle title_widget {};
+    }
+
+    content: Adw.ViewStack stack {
+      vexpand: true;
+
+      Adw.ViewStackPage {
+        name: "loading";
+        child: Gtk.Spinner {
+          spinning: true;
+          width-request: 42;
+          height-request: 42;
+          halign: center;
+          valign: center;
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "results";
+        child: Gtk.ScrolledWindow {
+          hscrollbar-policy: never;
+          vexpand: true;
+
+          child: Adw.Clamp {
+            maximum-size: 800;
+            margin-start: 12;
+            margin-end: 12;
+            margin-top: 12;
+            margin-bottom: 12;
+
+            child: Gtk.Box {
+              orientation: vertical;
+              spacing: 12;
+
+              Gtk.Label header {
+                xalign: 0.0;
+                halign: start;
+                margin-start: 4;
+                styles ["dim-label"]
+              }
+
+              Gtk.ListBox list {
+                selection-mode: none;
+                valign: start;
+                styles ["cards-list"]
+              }
+            };
+          };
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "empty";
+        child: Adw.StatusPage empty_status {
+          icon-name: "system-users-symbolic";
+          title: _("No packages");
+        };
+      }
+    };
+  };
+}

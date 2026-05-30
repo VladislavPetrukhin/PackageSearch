@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 11:25+0000\n"
+"POT-Creation-Date: 2026-05-30 12:14+0000\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -11,12 +11,28 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#: data/ui/dependency_graph_page.blp:15
+msgid "Requires"
+msgstr "Требует"
+
+#: data/ui/dependency_graph_page.blp:20
+msgid "Depended on by"
+msgstr "Зависят от него"
+
+#: data/ui/dependency_graph_page.blp:40
+msgid "Fit"
+msgstr "Уместить"
+
+#: data/ui/dependency_graph_page.blp:72
+msgid "No dependency data"
+msgstr "Нет данных о зависимостях"
+
 #: data/ui/details_page.blp:5 data/ui/details_page.blp:12
-#: src/application.vala:67
+#: src/application.vala:73
 msgid "Details"
 msgstr "Подробности"
 
-#: data/ui/details_page.blp:41 src/application.vala:67
+#: data/ui/details_page.blp:41 src/application.vala:73
 msgid "Information"
 msgstr "Информация"
 
@@ -24,98 +40,102 @@ msgstr "Информация"
 msgid "Repositories"
 msgstr "Репозитории"
 
-#: data/ui/details_page.blp:49 src/application.vala:67
+#: data/ui/details_page.blp:49 src/application.vala:73
 #: src/views/details_page.vala:1006
 msgid "Binary packages"
 msgstr "Бинарные пакеты"
 
-#: data/ui/details_page.blp:53 src/application.vala:68
+#: data/ui/details_page.blp:53 src/application.vala:74
 msgid "Dependencies"
 msgstr "Зависимости"
 
-#: data/ui/details_page.blp:57 src/application.vala:68
+#: data/ui/details_page.blp:57 src/application.vala:74
 msgid "Security"
 msgstr "Безопасность"
 
-#: data/ui/details_page.blp:61 src/application.vala:69
+#: data/ui/details_page.blp:61 src/application.vala:75
 msgid "Downloads"
 msgstr "Скачивание"
 
-#: data/ui/details_page.blp:65 src/application.vala:69
+#: data/ui/details_page.blp:65 src/application.vala:75
 #: src/views/details_page.vala:1039 src/views/details_page.vala:1050
 #: src/views/details_page.vala:1199
 msgid "Spec file"
 msgstr "Spec-файл"
 
-#: data/ui/details_page.blp:69 src/application.vala:69
+#: data/ui/details_page.blp:69 src/application.vala:75
 msgid "Changelog"
 msgstr "История изменений"
 
-#: data/ui/details_page.blp:95 src/application.vala:69
+#: data/ui/details_page.blp:95 src/application.vala:75
 msgid "Loading data…"
 msgstr "Загрузка данных…"
 
-#: data/ui/search_page.blp:5 src/application.vala:61
+#: data/ui/maintainer_page.blp:63
+msgid "No packages"
+msgstr "Нет пакетов"
+
+#: data/ui/search_page.blp:5 src/application.vala:67
 msgid "Search"
 msgstr "Поиск"
 
-#: data/ui/search_page.blp:14 src/application.vala:60
+#: data/ui/search_page.blp:14 src/application.vala:66
 msgid "Search mode"
 msgstr "Раздел поиска"
 
-#: data/ui/search_page.blp:18 src/application.vala:60
+#: data/ui/search_page.blp:18 src/application.vala:66
 msgid "Type a package name…"
 msgstr "Введите имя пакета…"
 
-#: data/ui/search_page.blp:28 src/application.vala:65
+#: data/ui/search_page.blp:28 src/application.vala:71
 msgid "Main menu"
 msgstr "Главное меню"
 
-#: data/ui/search_page.blp:37 src/application.vala:65
+#: data/ui/search_page.blp:37 src/application.vala:71
 msgid "Recent searches"
 msgstr "Недавние запросы"
 
-#: data/ui/search_page.blp:50 src/application.vala:61
+#: data/ui/search_page.blp:50 src/application.vala:67
 msgid "Search packages"
 msgstr "Поиск пакетов"
 
-#: data/ui/search_page.blp:51 src/application.vala:62
+#: data/ui/search_page.blp:51 src/application.vala:68
 msgid "Start typing a source package name, then pick it from the results."
 msgstr "Начните вводить имя исходного пакета и выберите его из результатов."
 
-#: data/ui/search_page.blp:107 src/application.vala:63
+#: data/ui/search_page.blp:108 src/application.vala:69
 msgid "No results"
 msgstr "Нет результатов"
 
-#: data/ui/search_page.blp:108 src/application.vala:63
+#: data/ui/search_page.blp:109 src/application.vala:69
 msgid "Try refining your query or choose another search mode."
 msgstr "Уточните запрос или выберите другой раздел поиска."
 
-#: data/ui/search_page.blp:122 src/application.vala:64
+#: data/ui/search_page.blp:124 src/application.vala:70
 msgid "Connection error"
 msgstr "Ошибка соединения"
 
-#: data/ui/search_page.blp:123 src/application.vala:64
+#: data/ui/search_page.blp:125 src/application.vala:70
 msgid "Failed to fetch data. Check your connection and try again."
 msgstr "Не удалось получить данные. Проверьте соединение и повторите попытку."
 
-#: data/ui/search_page.blp:126 src/application.vala:65
+#: data/ui/search_page.blp:128 src/application.vala:71
 msgid "Retry"
 msgstr "Повторить"
 
-#: data/ui/search_page.blp:140 src/application.vala:66
+#: data/ui/search_page.blp:142 src/application.vala:72
 msgid "Clear search history"
 msgstr "Очистить историю поиска"
 
-#: data/ui/search_page.blp:145 src/application.vala:66
+#: data/ui/search_page.blp:147 src/application.vala:72
 msgid "About PackageSearch"
 msgstr "О программе PackageSearch"
 
-#: src/application.vala:60
+#: src/application.vala:66
 msgid "Repository"
 msgstr "Репозиторий"
 
-#: src/application.vala:68
+#: src/application.vala:74
 msgid "Versions across branches"
 msgstr "Версии по веткам"
 
@@ -292,8 +312,8 @@ msgstr "Изменений не найдено"
 msgid "Changelog unavailable"
 msgstr "История изменений недоступна"
 
-#: src/views/details_page.vala:625 src/views/dependency_graph_page.vala:71
-#: src/views/dependency_graph_page.vala:86
+#: src/views/details_page.vala:625 src/views/dependency_graph_page.vala:77
+#: src/views/dependency_graph_page.vala:91
 msgid "Dependency graph"
 msgstr "Граф зависимостей"
 
@@ -519,42 +539,22 @@ msgstr "Открыть"
 msgid "Spec file unavailable"
 msgstr "Spec-файл недоступен"
 
-#: src/views/dependency_graph_page.vala:88
-msgid "Requires"
-msgstr "Требует"
-
-#: src/views/dependency_graph_page.vala:89
-msgid "Depended on by"
-msgstr "Зависят от него"
-
-#: src/views/dependency_graph_page.vala:103
-msgid "Fit"
-msgstr "Уместить"
-
-#: src/views/dependency_graph_page.vala:154
-msgid "No dependency data"
-msgstr "Нет данных о зависимостях"
-
-#: src/views/dependency_graph_page.vala:155
+#: src/views/dependency_graph_page.vala:93
 #, c-format
 msgid "Could not build a graph for %s."
 msgstr "Не удалось построить граф для %s."
 
-#: src/views/dependency_graph_page.vala:381
+#: src/views/dependency_graph_page.vala:345
 #, c-format
 msgid "show %d more"
 msgstr "показать ещё %d"
 
-#: src/views/maintainer_page.vala:74
-msgid "No packages"
-msgstr "Нет пакетов"
-
-#: src/views/maintainer_page.vala:75
+#: src/views/maintainer_page.vala:28
 #, c-format
 msgid "This maintainer has no packages in %s."
 msgstr "У этого сопровождающего нет пакетов в %s."
 
-#: src/views/maintainer_page.vala:96
+#: src/views/maintainer_page.vala:49
 #, c-format
 msgid "%d packages by %s"
 msgstr "Пакетов: %d (сопровождающий %s)"

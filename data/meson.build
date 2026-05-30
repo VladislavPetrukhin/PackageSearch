@@ -30,6 +30,22 @@ ui_details = custom_target(
   build_by_default: true
 )
 
+ui_maintainer = custom_target(
+  'maintainer_page.ui',
+  input: files('ui/maintainer_page.blp'),
+  output: 'maintainer_page.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
+)
+
+ui_graph = custom_target(
+  'dependency_graph_page.ui',
+  input: files('ui/dependency_graph_page.blp'),
+  output: 'dependency_graph_page.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
+)
+
 gresource_xml = configure_file(
   input: files('resources.gresource.xml.in'),
   output: 'resources.gresource.xml',
@@ -39,8 +55,8 @@ gresource_xml = configure_file(
 resources = gnome.compile_resources(
   'packagesearch-resources',
   gresource_xml,
-  source_dir: meson.current_build_dir(),
-  dependencies: [ui_main, ui_search, ui_details],
+  source_dir: [meson.current_build_dir(), meson.current_source_dir()],
+  dependencies: [ui_main, ui_search, ui_details, ui_maintainer, ui_graph],
   c_name: 'packagesearch'
 )
 

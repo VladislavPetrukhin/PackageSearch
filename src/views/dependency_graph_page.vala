@@ -3,6 +3,7 @@ using Adw;
 using GLib;
 using Intl;
 
+[GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/dependency_graph_page.ui")]
 public class DependencyGraphPage : Adw.NavigationPage {
 
     private enum Mode { BUILD, REVERSE }
@@ -46,10 +47,15 @@ public class DependencyGraphPage : Adw.NavigationPage {
     private Gee.ArrayList<GNode>           nodes   = new Gee.ArrayList<GNode> ();
     private Gee.HashMap<string, GNode>     present = new Gee.HashMap<string, GNode> ();
 
-    private Adw.ViewStack    stack;
-    private Gtk.DrawingArea  canvas;
-    private Gtk.ToggleButton mode_build;
-    private Gtk.ToggleButton mode_reverse;
+    [GtkChild] private unowned Adw.WindowTitle  title_widget;
+    [GtkChild] private unowned Adw.ViewStack    stack;
+    [GtkChild] private unowned Gtk.DrawingArea  canvas;
+    [GtkChild] private unowned Gtk.ToggleButton mode_build;
+    [GtkChild] private unowned Gtk.ToggleButton mode_reverse;
+    [GtkChild] private unowned Gtk.Button       zoom_out;
+    [GtkChild] private unowned Gtk.Button       zoom_in;
+    [GtkChild] private unowned Gtk.Button       fit_btn;
+    [GtkChild] private unowned Adw.StatusPage   empty_status;
 
     private double scale    = 1.0;
     private double offset_x = 0.0;
@@ -70,7 +76,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         this.branch    = branch;
         this.title     = _("Dependency graph");
 
-        build_ui ();
+        wire_ui ();
         this.hidden.connect (() => {
             if (!cancel.is_cancelled ()) cancel.cancel ();
         });
@@ -81,50 +87,22 @@ public class DependencyGraphPage : Adw.NavigationPage {
         return s != null && s.strip ().length > 0;
     }
 
-    private void build_ui () {
-        var header_bar = new Adw.HeaderBar ();
-        header_bar.set_title_widget (new Adw.WindowTitle (_("Dependency graph"), root_name + " · " + branch));
+    private void wire_ui () {
+        title_widget.title = _("Dependency graph");
+        title_widget.subtitle = root_name + " · " + branch;
+        empty_status.description = _("Could not build a graph for %s.").printf (root_name);
 
-        mode_build = new Gtk.ToggleButton.with_label (_("Requires")) { active = true };
-        mode_reverse = new Gtk.ToggleButton.with_label (_("Depended on by"));
-        mode_reverse.set_group (mode_build);
         mode_build.toggled.connect (() => {
             if (mode_build.active && mode != Mode.BUILD) { mode = Mode.BUILD; reset_and_load (); }
         });
         mode_reverse.toggled.connect (() => {
             if (mode_reverse.active && mode != Mode.REVERSE) { mode = Mode.REVERSE; reset_and_load (); }
         });
-        var modes = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
-        modes.add_css_class ("linked");
-        modes.append (mode_build);
-        modes.append (mode_reverse);
-        header_bar.pack_start (modes);
 
-        var fit_btn = new Gtk.Button.with_label (_("Fit"));
-        fit_btn.add_css_class ("flat");
         fit_btn.clicked.connect (() => { fit_to_content (); });
-
-        var zoom_out = new Gtk.Button () { icon_name = "zoom-out-symbolic" };
-        var zoom_in  = new Gtk.Button () { icon_name = "zoom-in-symbolic" };
         zoom_out.clicked.connect (() => zoom_by (1.0 / 1.2));
         zoom_in.clicked.connect (() => zoom_by (1.2));
-        var zoom_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
-        zoom_box.add_css_class ("linked");
-        zoom_box.append (zoom_out);
-        zoom_box.append (zoom_in);
 
-        header_bar.pack_end (zoom_box);
-        header_bar.pack_end (fit_btn);
-
-        stack = new Adw.ViewStack () { vexpand = true, hexpand = true };
-
-        var spinner = new Gtk.Spinner () {
-            spinning = true, width_request = 42, height_request = 42,
-            halign = Gtk.Align.CENTER, valign = Gtk.Align.CENTER
-        };
-        stack.add_named (spinner, "loading");
-
-        canvas = new Gtk.DrawingArea () { hexpand = true, vexpand = true };
         canvas.set_draw_func (draw);
 
         var click = new Gtk.GestureClick ();
@@ -147,21 +125,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         });
         canvas.add_controller (scroll);
 
-        stack.add_named (canvas, "graph");
-
-        var empty = new Adw.StatusPage () {
-            icon_name = "application-x-addon-symbolic",
-            title = _("No dependency data"),
-            description = _("Could not build a graph for %s.").printf (root_name)
-        };
-        stack.add_named (empty, "empty");
-
         stack.set_visible_child_name ("loading");
-
-        var tv = new Adw.ToolbarView ();
-        tv.add_top_bar (header_bar);
-        tv.set_content (stack);
-        this.set_child (tv);
     }
 
     private void zoom_by (double factor) {

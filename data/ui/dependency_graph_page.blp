@@ -1,0 +1,77 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $DependencyGraphPage : Adw.NavigationPage {
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      title-widget: Adw.WindowTitle title_widget {};
+
+      [start]
+      Gtk.Box {
+        styles ["linked"]
+
+        Gtk.ToggleButton mode_build {
+          label: _("Requires");
+          active: true;
+        }
+
+        Gtk.ToggleButton mode_reverse {
+          label: _("Depended on by");
+          group: mode_build;
+        }
+      }
+
+      [end]
+      Gtk.Box {
+        styles ["linked"]
+
+        Gtk.Button zoom_out {
+          icon-name: "zoom-out-symbolic";
+        }
+
+        Gtk.Button zoom_in {
+          icon-name: "zoom-in-symbolic";
+        }
+      }
+
+      [end]
+      Gtk.Button fit_btn {
+        label: _("Fit");
+        styles ["flat"]
+      }
+    }
+
+    content: Adw.ViewStack stack {
+      vexpand: true;
+      hexpand: true;
+
+      Adw.ViewStackPage {
+        name: "loading";
+        child: Gtk.Spinner {
+          spinning: true;
+          width-request: 42;
+          height-request: 42;
+          halign: center;
+          valign: center;
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "graph";
+        child: Gtk.DrawingArea canvas {
+          hexpand: true;
+          vexpand: true;
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "empty";
+        child: Adw.StatusPage empty_status {
+          icon-name: "application-x-addon-symbolic";
+          title: _("No dependency data");
+        };
+      }
+    };
+  };
+}
