@@ -69,7 +69,7 @@ public class PackageSearchApp : Adw.Application {
             _("No results"); _("Try refining your query or choose another search mode.");
             _("Connection error"); _("Failed to fetch data. Check your connection and try again.");
             _("Retry"); _("Recent searches"); _("Main menu");
-            _("Clear search history"); _("Keyboard Shortcuts"); _("About PackageSearch");
+            _("Clear search history"); _("Keyboard Shortcuts"); _("About");
             _("Details"); _("Information"); _("Binary packages");
             _("Dependencies"); _("Security"); _("Versions across branches");
             _("Downloads"); _("Spec file"); _("Changelog"); _("Loading data…");

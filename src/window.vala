@@ -109,7 +109,7 @@ public class MainWindow : Adw.ApplicationWindow {
         about.set_version ("0.1");
         about.set_issue_url ("https://altlinux.space/vladislavpetrukhin/PackageSearch/-/issues");
         about.set_license_type (Gtk.License.GPL_3_0);
-        about.set_comments (_("Search and inspect source packages across the ALT Linux Sisyphus, p11, p10, p9, c10f2 and c9f2 repositories."));
+        about.set_comments (_("PackageSearch is an app for searching, browsing and installing packages from the ALT Linux repositories (Sisyphus, p11, p10, p9, c10f2, c9f2).\n\nSearch by source or binary package name, by file or path, by maintainer, and by task ID. Inspect metadata, RPM packages, dependencies as a graph, changelog, spec files, versions across branches, and known bugs.\n\nYou can also install and update packages."));
         about.set_website ("https://altlinux.space/vladislavpetrukhin/PackageSearch");
         about.set_copyright ("© 2025 Vladislav Petrukhin");
         about.set_developers (new string[] { "Vladislav Petrukhin" });
