@@ -87,8 +87,10 @@ public class SearchPage : Adw.NavigationPage {
                  Data.SearchMode.PACKAGE, Data.SearchMode.FILE, Data.SearchMode.TASK };
     }
 
-    private static string repo_short (string r) {
-        return (r == "sisyphus") ? "sis" : r;
+    private static string repo_display (string r, bool abbrev) {
+        if (r == "all") return _("All");
+        if (abbrev && r == "sisyphus") return "sis";
+        return r;
     }
 
     private Gtk.SignalListItemFactory make_repo_factory (bool abbrev) {
@@ -99,7 +101,7 @@ public class SearchPage : Adw.NavigationPage {
         f.bind.connect ((o) => {
             var li = (Gtk.ListItem) o;
             var s = ((Gtk.StringObject) li.item).string;
-            ((Gtk.Label) li.child).label = abbrev ? repo_short (s) : s;
+            ((Gtk.Label) li.child).label = repo_display (s, abbrev);
         });
         return f;
     }
