@@ -760,44 +760,17 @@ public class DetailsPage : Adw.NavigationPage {
             var erratas = yield api.get_errata_for_package (branch, group.name);
             if (cancel.is_cancelled ()) return;
             exp.remove (placeholder);
-            if (erratas == null || erratas.size == 0) {
-                exp.add_row (new Adw.ActionRow () { title = _("No security advisories") });
-            } else {
-                exp.set_subtitle (_("%d advisories").printf (erratas.size));
+            int shown = 0;
+            if (erratas != null) {
                 foreach (var er in erratas) {
-                    var row = new Adw.ActionRow () { title = er.id };
-
-                    string sub = "";
-                    if (is_nonempty (er.errata_type)) sub = er.errata_type;
-                    if (is_nonempty (er.pkg_version)) {
-                        string vr = er.pkg_version;
-                        if (is_nonempty (er.pkg_release)) vr += "-" + er.pkg_release;
-                        sub = (sub == "") ? vr : sub + " · " + vr;
-                    }
-                    if (is_nonempty (er.created))
-                        sub = (sub == "") ? er.created : sub + " · " + er.created;
-                    if (sub != "") row.subtitle = GLib.Markup.escape_text (sub, -1);
-
-                    string refs = "";
-                    foreach (var r in er.references)
-                        refs = (refs == "") ? r.id : refs + ", " + r.id;
-                    if (refs != "") row.add_suffix (dim_label (refs));
-
-                    string? open_url = null;
-                    foreach (var r in er.references) {
-                        string lc = (r.ref_type ?? "").down ();
-                        if (lc == "cve") { open_url = "https://nvd.nist.gov/vuln/detail/" + r.id; break; }
-                        if (lc == "bdu") { open_url = "https://bdu.fstec.ru/vul/" + r.id; break; }
-                        if (lc == "bug") { open_url = "https://bugzilla.altlinux.org/" + r.id; break; }
-                    }
-                    if (open_url != null) {
-                        row.activatable = true;
-                        string captured = open_url;
-                        row.activated.connect (() => open_uri (captured));
-                    }
-                    exp.add_row (row);
+                    var row = make_errata_row (er);
+                    if (row != null) { exp.add_row (row); shown++; }
                 }
             }
+            if (shown == 0)
+                exp.add_row (new Adw.ActionRow () { title = _("No security advisories") });
+            else
+                exp.set_subtitle (_("%d advisories").printf (shown));
         } catch (Error e) {
             warning ("[DetailsPage] errata failed: %s", e.message);
             exp.remove (placeholder);
@@ -806,6 +779,83 @@ public class DetailsPage : Adw.NavigationPage {
                 subtitle = GLib.Markup.escape_text (e.message, -1)
             });
         }
+    }
+
+    private static string date_only (string? iso) {
+        if (iso == null) return "";
+        int t = iso.index_of ("T");
+        return (t > 0) ? iso.substring (0, t) : iso;
+    }
+
+    private static bool is_vuln_ref (Data.ErrataRef r) {
+        if (!is_nonempty (r.id)) return false;
+        if ((r.ref_type ?? "").down () == "bug") return false;
+        string idu = r.id.up ();
+        if (idu.has_prefix ("CVE") || idu.has_prefix ("BDU") || idu.has_prefix ("GHSA"))
+            return true;
+        return (r.ref_type ?? "").down () == "vuln";
+    }
+
+    private Gtk.Widget? make_errata_row (Data.ErrataInfo er) {
+        var seen  = new Gee.HashSet<string> ();
+        var vulns = new Gee.ArrayList<Data.ErrataRef> ();
+        foreach (var r in er.references) {
+            if (!is_vuln_ref (r) || seen.contains (r.id)) continue;
+            seen.add (r.id);
+            vulns.add (r);
+        }
+        if (vulns.size == 0) return null;
+
+        int cve = 0, bdu = 0;
+        foreach (var r in vulns) {
+            string idu = r.id.up ();
+            if (idu.has_prefix ("CVE")) cve++;
+            else if (idu.has_prefix ("BDU")) bdu++;
+        }
+
+        string ver = "";
+        if (is_nonempty (er.pkg_version)) {
+            ver = er.pkg_version;
+            if (is_nonempty (er.pkg_release)) ver += "-" + er.pkg_release;
+        }
+        string title = (ver != "") ? ver : er.id;
+
+        string sub = date_only (er.created);
+        string counts = "";
+        if (cve > 0) counts = _("%d CVE").printf (cve);
+        if (bdu > 0) counts = (counts == "") ? _("%d BDU").printf (bdu)
+                                             : counts + " · " + _("%d BDU").printf (bdu);
+        if (counts != "") sub = (sub == "") ? counts : sub + " · " + counts;
+
+        var row = new Adw.ExpanderRow () { title = GLib.Markup.escape_text (title, -1) };
+        if (sub != "") row.subtitle = GLib.Markup.escape_text (sub, -1);
+
+        foreach (var r in vulns)
+            row.add_row (make_reference_row (r));
+
+        return row;
+    }
+
+    private Adw.ActionRow make_reference_row (Data.ErrataRef r) {
+        string idu = r.id.up ();
+        string? url = null;
+        if (idu.has_prefix ("CVE")) {
+            url = "https://nvd.nist.gov/vuln/detail/" + r.id;
+        } else if (idu.has_prefix ("BDU")) {
+            string num = r.id.replace ("BDU:", "").replace ("BDU-", "").strip ();
+            url = "https://bdu.fstec.ru/vul/" + num;
+        } else if (idu.has_prefix ("GHSA")) {
+            url = "https://github.com/advisories/" + r.id;
+        }
+
+        var row = new Adw.ActionRow () { title = GLib.Markup.escape_text (r.id, -1) };
+        if (url != null) {
+            row.activatable = true;
+            row.add_suffix (new Gtk.Image.from_icon_name ("adw-external-link-symbolic"));
+            string captured = url;
+            row.activated.connect (() => open_uri (captured));
+        }
+        return row;
     }
 
     private async void fill_bugs (Adw.ExpanderRow exp, Adw.ActionRow placeholder) {

@@ -51,6 +51,17 @@ public class AltRepoClient : GLib.Object {
         return m.get_string ();
     }
 
+    private static string? jval_str (Json.Object? obj, string key) {
+        if (obj == null || !obj.has_member (key)) return null;
+        var m = obj.get_member (key);
+        if (m == null || m.get_node_type () != Json.NodeType.VALUE) return null;
+        var t = m.get_value_type ();
+        if (t == typeof (string)) return m.get_string ();
+        if (t == typeof (int64))  return m.get_int ().to_string ();
+        if (t == typeof (double)) return ((int64) m.get_double ()).to_string ();
+        return null;
+    }
+
     private class Candidate : GLib.Object {
         public double score;
         public SourceGroup sg;
@@ -89,7 +100,6 @@ public class AltRepoClient : GLib.Object {
             || m.contains ("no data found in db")
             || m.contains ("no information found")
             || m.contains ("no errata data found")
-            || m.contains ("node isn't array")
             || m.contains ("nothing found")
             || m.contains ("not found in database")
             || m.contains ("no packages found")
@@ -912,32 +922,39 @@ public class AltRepoClient : GLib.Object {
     public async Gee.ArrayList<BugItem> get_bugs_by_package (
         string src_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
-        yield throttle ();
         var out_list = new Gee.ArrayList<BugItem> ();
-        Gee.List<AltRepo.BugzillaInfo>? resp_list = null;
-        try {
-            resp_list = yield cli.get_bug_bugzilla_by_package_async (
-                src_name, "source", Priority.DEFAULT, null
-            );
-        } catch (Error e) {
-            if (is_no_data_error (e)) return out_list;
-            throw e;
-        }
-        if (resp_list == null) return out_list;
-        foreach (var resp in resp_list) {
-            foreach (var b in resp.bugs) {
-                var item = new BugItem ();
-                item.id           = b.id ?? "";
-                item.status       = b.status;
-                item.resolution   = b.resolution;
-                item.severity     = b.severity;
-                item.component    = b.component;
-                item.summary      = b.summary;
-                item.assignee     = b.assignee;
-                item.reporter     = b.reporter;
-                item.last_changed = b.last_changed;
-                out_list.add (item);
-            }
+        var url = "%s/bug/bugzilla_by_package?package_name=%s&package_type=source".printf (
+            RAW_API_BASE,
+            GLib.Uri.escape_string (src_name, null, false)
+        );
+
+        var root = yield http_get_json (url, cancellable);
+        if (root == null || root.get_node_type () != Json.NodeType.OBJECT) return out_list;
+
+        var obj = root.get_object ();
+        if (!obj.has_member ("bugs")) return out_list;
+
+        var bugs_node = obj.get_member ("bugs");
+        if (bugs_node == null || bugs_node.get_node_type () != Json.NodeType.ARRAY) return out_list;
+
+        var arr = bugs_node.get_array ();
+        for (uint i = 0; i < arr.get_length (); i++) {
+            var e = arr.get_element (i);
+            if (e.get_node_type () != Json.NodeType.OBJECT) continue;
+            var bo = e.get_object ();
+
+            var item = new BugItem ();
+            item.id           = jval_str (bo, "id") ?? "";
+            if (item.id.length == 0) continue;
+            item.status       = jstr (bo, "status");
+            item.resolution   = jstr (bo, "resolution");
+            item.severity     = jstr (bo, "severity");
+            item.component    = jstr (bo, "component");
+            item.summary      = jstr (bo, "summary");
+            item.assignee     = jstr (bo, "assignee");
+            item.reporter     = jstr (bo, "reporter");
+            item.last_changed = jstr (bo, "last_changed");
+            out_list.add (item);
         }
         return out_list;
     }

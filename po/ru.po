@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 14:06+0000\n"
+"POT-Creation-Date: 2026-05-30 17:09+0000\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -41,7 +41,7 @@ msgid "Repositories"
 msgstr "Репозитории"
 
 #: data/ui/details_page.blp:49 src/application.vala:73
-#: src/views/details_page.vala:1004
+#: src/views/details_page.vala:1054
 msgid "Binary packages"
 msgstr "Бинарные пакеты"
 
@@ -58,8 +58,8 @@ msgid "Downloads"
 msgstr "Скачивание"
 
 #: data/ui/details_page.blp:65 src/application.vala:75
-#: src/views/details_page.vala:1037 src/views/details_page.vala:1048
-#: src/views/details_page.vala:1197
+#: src/views/details_page.vala:1087 src/views/details_page.vala:1098
+#: src/views/details_page.vala:1247
 msgid "Spec file"
 msgstr "Spec-файл"
 
@@ -197,7 +197,7 @@ msgid "File"
 msgstr "Файл"
 
 #: src/application.vala:76 src/views/details_page.vala:425
-#: src/views/details_page.vala:981
+#: src/views/details_page.vala:1031
 msgid "Maintainer"
 msgstr "Сопровождающий"
 
@@ -328,7 +328,7 @@ msgstr "Обновление %s…"
 msgid "Installing %s…"
 msgstr "Установка %s…"
 
-#: src/views/details_page.vala:420 src/views/details_page.vala:972
+#: src/views/details_page.vala:420 src/views/details_page.vala:1022
 msgid "Version"
 msgstr "Версия"
 
@@ -336,7 +336,7 @@ msgstr "Версия"
 msgid "Release"
 msgstr "Релиз"
 
-#: src/views/details_page.vala:433 src/views/details_page.vala:982
+#: src/views/details_page.vala:433 src/views/details_page.vala:1032
 msgid "License"
 msgstr "Лицензия"
 
@@ -352,8 +352,8 @@ msgstr "Описание"
 msgid "Failed to load package details"
 msgstr "Не удалось загрузить сведения о пакете"
 
-#: src/views/details_page.vala:472 src/views/details_page.vala:935
-#: src/views/details_page.vala:1211
+#: src/views/details_page.vala:472 src/views/details_page.vala:985
+#: src/views/details_page.vala:1261
 msgid "Loading…"
 msgstr "Загрузка…"
 
@@ -423,8 +423,8 @@ msgid "No dependencies found"
 msgstr "Зависимости не найдены"
 
 #: src/views/details_page.vala:686 src/views/details_page.vala:714
-#: src/views/details_page.vala:1011 src/views/details_page.vala:1019
-#: src/views/details_page.vala:1027
+#: src/views/details_page.vala:1061 src/views/details_page.vala:1069
+#: src/views/details_page.vala:1077
 #, c-format
 msgid "%d packages"
 msgstr "Пакетов: %d"
@@ -449,167 +449,177 @@ msgstr "Бюллетени безопасности"
 msgid "Bugzilla"
 msgstr "Bugzilla"
 
-#: src/views/details_page.vala:764
+#: src/views/details_page.vala:771
 msgid "No security advisories"
 msgstr "Нет бюллетеней безопасности"
 
-#: src/views/details_page.vala:766
+#: src/views/details_page.vala:773
 #, c-format
 msgid "%d advisories"
 msgstr "Бюллетеней: %d"
 
-#: src/views/details_page.vala:805
+#: src/views/details_page.vala:778
 msgid "Advisories unavailable"
 msgstr "Бюллетени недоступны"
 
-#: src/views/details_page.vala:818
+#: src/views/details_page.vala:825
+#, c-format
+msgid "%d CVE"
+msgstr "%d CVE"
+
+#: src/views/details_page.vala:826 src/views/details_page.vala:827
+#, c-format
+msgid "%d BDU"
+msgstr "%d BDU"
+
+#: src/views/details_page.vala:868
 msgid "No bugs found"
 msgstr "Ошибки не найдены"
 
-#: src/views/details_page.vala:820
+#: src/views/details_page.vala:870
 #, c-format
 msgid "%d bug(s) found"
 msgstr "Найдено ошибок: %d"
 
-#: src/views/details_page.vala:843
+#: src/views/details_page.vala:893
 msgid "Bugzilla unavailable"
 msgstr "Bugzilla недоступна"
 
-#: src/views/details_page.vala:854 src/views/details_page.vala:946
-#: src/views/details_page.vala:950
+#: src/views/details_page.vala:904 src/views/details_page.vala:996
+#: src/views/details_page.vala:1000
 msgid "Compare selected"
 msgstr "Сравнить выбранные"
 
-#: src/views/details_page.vala:867
+#: src/views/details_page.vala:917
 msgid "Open a repository to view the package there, or tick two to compare"
 msgstr ""
 "Откройте репозиторий, чтобы посмотреть пакет в нём, или отметьте два для "
 "сравнения"
 
-#: src/views/details_page.vala:872
+#: src/views/details_page.vala:922
 msgid "No versions found"
 msgstr "Версии не найдены"
 
-#: src/views/details_page.vala:881
+#: src/views/details_page.vala:931
 msgid "current"
 msgstr "текущая"
 
-#: src/views/details_page.vala:889
+#: src/views/details_page.vala:939
 msgid "Only two branches can be compared at a time"
 msgstr "Одновременно можно сравнить только две ветки"
 
-#: src/views/details_page.vala:921
+#: src/views/details_page.vala:971
 msgid "Versions unavailable"
 msgstr "Версии недоступны"
 
-#: src/views/details_page.vala:945
+#: src/views/details_page.vala:995
 #, c-format
 msgid "Compare failed: %s"
 msgstr "Не удалось сравнить: %s"
 
-#: src/views/details_page.vala:961
+#: src/views/details_page.vala:1011
 msgid "Only differences"
 msgstr "Только различия"
 
-#: src/views/details_page.vala:968
+#: src/views/details_page.vala:1018
 msgid "Metadata"
 msgstr "Метаданные"
 
-#: src/views/details_page.vala:975 src/views/details_page.vala:976
+#: src/views/details_page.vala:1025 src/views/details_page.vala:1026
 #, c-format
 msgid "%s is newer"
 msgstr "%s новее"
 
-#: src/views/details_page.vala:977
+#: src/views/details_page.vala:1027
 msgid "Same version"
 msgstr "Одинаковая версия"
 
-#: src/views/details_page.vala:983
+#: src/views/details_page.vala:1033
 msgid "Group"
 msgstr "Группа"
 
-#: src/views/details_page.vala:984
+#: src/views/details_page.vala:1034
 msgid "Summary"
 msgstr "Краткое описание"
 
-#: src/views/details_page.vala:1005
+#: src/views/details_page.vala:1055
 #, c-format
 msgid "%d common · %d only in %s · %d only in %s"
 msgstr "%d общих · %d только в %s · %d только в %s"
 
-#: src/views/details_page.vala:1010 src/views/details_page.vala:1018
+#: src/views/details_page.vala:1060 src/views/details_page.vala:1068
 #, c-format
 msgid "Only in %s"
 msgstr "Только в %s"
 
-#: src/views/details_page.vala:1026
+#: src/views/details_page.vala:1076
 msgid "In both branches"
 msgstr "В обеих ветках"
 
-#: src/views/details_page.vala:1034
+#: src/views/details_page.vala:1084
 msgid "No binary packages reported"
 msgstr "Бинарные пакеты не указаны"
 
-#: src/views/details_page.vala:1041 src/views/details_page.vala:1219
+#: src/views/details_page.vala:1091 src/views/details_page.vala:1269
 msgid "Spec file not available"
 msgstr "Spec-файл недоступен"
 
-#: src/views/details_page.vala:1043
+#: src/views/details_page.vala:1093
 msgid "Spec files are identical"
 msgstr "Spec-файлы идентичны"
 
-#: src/views/details_page.vala:1046
+#: src/views/details_page.vala:1096
 #, c-format
 msgid "Spec diff: %s ↔ %s"
 msgstr "Различия spec: %s ↔ %s"
 
-#: src/views/details_page.vala:1049
+#: src/views/details_page.vala:1099
 #, c-format
 msgid "Differences between %s and %s"
 msgstr "Различия между %s и %s"
 
-#: src/views/details_page.vala:1052
+#: src/views/details_page.vala:1102
 msgid "Show diff"
 msgstr "Показать различия"
 
-#: src/views/details_page.vala:1068
+#: src/views/details_page.vala:1118
 #, c-format
 msgid "Compare %s vs %s"
 msgstr "Сравнение %s и %s"
 
-#: src/views/details_page.vala:1108
+#: src/views/details_page.vala:1158
 msgid "Source (.src.rpm)"
 msgstr "Исходный код (.src.rpm)"
 
-#: src/views/details_page.vala:1119
+#: src/views/details_page.vala:1169
 msgid "Binaries (.rpm)"
 msgstr "Бинарные пакеты (.rpm)"
 
-#: src/views/details_page.vala:1138
+#: src/views/details_page.vala:1188
 msgid "No source downloads"
 msgstr "Нет исходных файлов для скачивания"
 
-#: src/views/details_page.vala:1146
+#: src/views/details_page.vala:1196
 msgid "Source downloads unavailable"
 msgstr "Исходные файлы недоступны"
 
-#: src/views/details_page.vala:1159
+#: src/views/details_page.vala:1209
 msgid "No binary downloads"
 msgstr "Нет бинарных файлов для скачивания"
 
-#: src/views/details_page.vala:1167
+#: src/views/details_page.vala:1217
 msgid "Binary downloads unavailable"
 msgstr "Бинарные файлы недоступны"
 
-#: src/views/details_page.vala:1185
+#: src/views/details_page.vala:1235
 msgid "Copy download URL"
 msgstr "Копировать ссылку"
 
-#: src/views/details_page.vala:1198
+#: src/views/details_page.vala:1248
 msgid "Open"
 msgstr "Открыть"
 
-#: src/views/details_page.vala:1228
+#: src/views/details_page.vala:1278
 msgid "Spec file unavailable"
 msgstr "Spec-файл недоступен"
 

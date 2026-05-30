@@ -1,8 +1,6 @@
 project('PackageSearch', 'vala',
   version: '0.1.0',
   meson_version: '>= 0.61',
-  # Все C-исходники в проекте сгенерированы valac'ом — править их нельзя,
-  # поэтому отключаем C-предупреждения, чтобы они не засоряли вывод сборки.
   default_options: ['warning_level=0'],
 )
 
