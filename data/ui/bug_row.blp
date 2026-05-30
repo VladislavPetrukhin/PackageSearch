@@ -1,0 +1,26 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $BugRow : Adw.ActionRow {
+  activatable: true;
+  title-lines: 1;
+  subtitle-lines: 2;
+
+  [suffix]
+  Gtk.Label status_badge {
+    valign: center;
+    visible: false;
+    ellipsize: end;
+
+    styles [
+      "dim-label",
+      "caption",
+    ]
+  }
+
+  [suffix]
+  Gtk.Image {
+    icon-name: "adw-external-link-symbolic";
+    valign: center;
+  }
+}

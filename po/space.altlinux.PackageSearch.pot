@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 17:09+0000\n"
+"POT-Creation-Date: 2026-05-30 17:29+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,10 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: data/ui/bug_filter_row.blp:5
+msgid "Status"
+msgstr ""
 
 #: data/ui/dependency_graph_page.blp:15
 msgid "Requires"
@@ -90,7 +94,7 @@ msgid "Search mode"
 msgstr ""
 
 #: data/ui/search_page.blp:20 src/application.vala:66
-#: src/views/task_details_page.vala:61
+#: src/views/task_details_page.vala:66
 msgid "Repository"
 msgstr ""
 
@@ -478,13 +482,17 @@ msgstr ""
 msgid "%d BDU"
 msgstr ""
 
-#: src/views/details_page.vala:868
+#: src/views/details_page.vala:856
 msgid "No bugs found"
 msgstr ""
 
-#: src/views/details_page.vala:870
+#: src/views/details_page.vala:859
 #, c-format
 msgid "%d bug(s) found"
+msgstr ""
+
+#: src/views/details_page.vala:874
+msgid "All statuses"
 msgstr ""
 
 #: src/views/details_page.vala:893
@@ -666,7 +674,7 @@ msgid "Found %d in repository %s"
 msgstr ""
 
 #: src/views/search_page.vala:402 src/views/task_details_page.vala:26
-#: src/views/task_details_page.vala:150
+#: src/views/task_details_page.vala:153
 #, c-format
 msgid "Task #%lld"
 msgstr ""
@@ -698,35 +706,35 @@ msgstr ""
 msgid "Could not load task #%lld."
 msgstr ""
 
-#: src/views/task_details_page.vala:59
+#: src/views/task_details_page.vala:64
 msgid "State"
 msgstr ""
 
-#: src/views/task_details_page.vala:60
+#: src/views/task_details_page.vala:65
 msgid "Owner"
 msgstr ""
 
-#: src/views/task_details_page.vala:62
+#: src/views/task_details_page.vala:67
 msgid "Changed"
 msgstr ""
 
-#: src/views/task_details_page.vala:64
+#: src/views/task_details_page.vala:69
 msgid "Try / iteration"
 msgstr ""
 
-#: src/views/task_details_page.vala:66
+#: src/views/task_details_page.vala:71
 msgid "Test only"
 msgstr ""
 
-#: src/views/task_details_page.vala:66
+#: src/views/task_details_page.vala:71
 msgid "Yes"
 msgstr ""
 
-#: src/views/task_details_page.vala:101
+#: src/views/task_details_page.vala:106
 msgid "Message"
 msgstr ""
 
-#: src/views/task_details_page.vala:111
+#: src/views/task_details_page.vala:116
 msgid "Open on rdb.altlinux.org"
 msgstr ""
 

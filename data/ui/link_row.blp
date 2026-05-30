@@ -1,0 +1,13 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $LinkRow : Adw.ActionRow {
+  title-lines: 1;
+
+  [suffix]
+  Gtk.Image arrow {
+    icon-name: "adw-external-link-symbolic";
+    valign: center;
+    visible: false;
+  }
+}

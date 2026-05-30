@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-30 17:09+0000\n"
+"POT-Creation-Date: 2026-05-30 17:29+0000\n"
 "PO-Revision-Date: 2025-01-01 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
@@ -10,6 +10,10 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: data/ui/bug_filter_row.blp:5
+msgid "Status"
+msgstr "Состояние"
 
 #: data/ui/dependency_graph_page.blp:15
 msgid "Requires"
@@ -84,7 +88,7 @@ msgid "Search mode"
 msgstr "Раздел поиска"
 
 #: data/ui/search_page.blp:20 src/application.vala:66
-#: src/views/task_details_page.vala:61
+#: src/views/task_details_page.vala:66
 msgid "Repository"
 msgstr "Репозиторий"
 
@@ -472,14 +476,18 @@ msgstr "%d CVE"
 msgid "%d BDU"
 msgstr "%d BDU"
 
-#: src/views/details_page.vala:868
+#: src/views/details_page.vala:856
 msgid "No bugs found"
 msgstr "Ошибки не найдены"
 
-#: src/views/details_page.vala:870
+#: src/views/details_page.vala:859
 #, c-format
 msgid "%d bug(s) found"
 msgstr "Найдено ошибок: %d"
+
+#: src/views/details_page.vala:874
+msgid "All statuses"
+msgstr "Все состояния"
 
 #: src/views/details_page.vala:893
 msgid "Bugzilla unavailable"
@@ -662,7 +670,7 @@ msgid "Found %d in repository %s"
 msgstr "Найдено %d в репозитории %s"
 
 #: src/views/search_page.vala:402 src/views/task_details_page.vala:26
-#: src/views/task_details_page.vala:150
+#: src/views/task_details_page.vala:153
 #, c-format
 msgid "Task #%lld"
 msgstr "Задание #%lld"
@@ -694,35 +702,35 @@ msgstr "Искать в %s (%d)"
 msgid "Could not load task #%lld."
 msgstr "Не удалось загрузить задание #%lld."
 
-#: src/views/task_details_page.vala:59
+#: src/views/task_details_page.vala:64
 msgid "State"
 msgstr "Состояние"
 
-#: src/views/task_details_page.vala:60
+#: src/views/task_details_page.vala:65
 msgid "Owner"
 msgstr "Владелец"
 
-#: src/views/task_details_page.vala:62
+#: src/views/task_details_page.vala:67
 msgid "Changed"
 msgstr "Изменено"
 
-#: src/views/task_details_page.vala:64
+#: src/views/task_details_page.vala:69
 msgid "Try / iteration"
 msgstr "Попытка / итерация"
 
-#: src/views/task_details_page.vala:66
+#: src/views/task_details_page.vala:71
 msgid "Test only"
 msgstr "Только проверка"
 
-#: src/views/task_details_page.vala:66
+#: src/views/task_details_page.vala:71
 msgid "Yes"
 msgstr "Да"
 
-#: src/views/task_details_page.vala:101
+#: src/views/task_details_page.vala:106
 msgid "Message"
 msgstr "Сообщение"
 
-#: src/views/task_details_page.vala:111
+#: src/views/task_details_page.vala:116
 msgid "Open on rdb.altlinux.org"
 msgstr "Открыть на rdb.altlinux.org"
 

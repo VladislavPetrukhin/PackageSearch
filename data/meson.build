@@ -62,6 +62,38 @@ ui_shortcuts = custom_target(
   build_by_default: true
 )
 
+ui_bug_row = custom_target(
+  'bug_row.ui',
+  input: files('ui/bug_row.blp'),
+  output: 'bug_row.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
+)
+
+ui_bug_filter_row = custom_target(
+  'bug_filter_row.ui',
+  input: files('ui/bug_filter_row.blp'),
+  output: 'bug_filter_row.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
+)
+
+ui_errata_row = custom_target(
+  'errata_row.ui',
+  input: files('ui/errata_row.blp'),
+  output: 'errata_row.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
+)
+
+ui_link_row = custom_target(
+  'link_row.ui',
+  input: files('ui/link_row.blp'),
+  output: 'link_row.ui',
+  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+  build_by_default: true
+)
+
 gresource_xml = configure_file(
   input: files('resources.gresource.xml.in'),
   output: 'resources.gresource.xml',
@@ -72,7 +104,7 @@ resources = gnome.compile_resources(
   'packagesearch-resources',
   gresource_xml,
   source_dir: [meson.current_build_dir(), meson.current_source_dir()],
-  dependencies: [ui_main, ui_search, ui_details, ui_maintainer, ui_graph, ui_task, ui_shortcuts],
+  dependencies: [ui_main, ui_search, ui_details, ui_maintainer, ui_graph, ui_task, ui_shortcuts, ui_bug_row, ui_bug_filter_row, ui_errata_row, ui_link_row],
   c_name: 'packagesearch'
 )
 

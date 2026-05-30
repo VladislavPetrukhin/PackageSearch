@@ -39,6 +39,11 @@ public class TaskDetailsPage : Adw.NavigationPage {
         return s != null && s.strip ().length > 0;
     }
 
+    private static void open_uri (string url) {
+        try { AppInfo.launch_default_for_uri (url, null); }
+        catch (Error e) { warning ("open url failed: %s", e.message); }
+    }
+
     private async void load () {
         var api = new Data.AltRepoClient ();
         try {
@@ -113,9 +118,7 @@ public class TaskDetailsPage : Adw.NavigationPage {
         };
         row.add_suffix (new Gtk.Image.from_icon_name ("adw-external-link-symbolic"));
         string uri = "https://rdb.altlinux.org/tasks/%lld/".printf (task_id);
-        row.activated.connect (() => {
-            new Gtk.UriLauncher (uri).launch.begin (win, null);
-        });
+        row.activated.connect (() => open_uri (uri));
         info_group.add (row);
     }
 

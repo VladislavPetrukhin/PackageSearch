@@ -827,35 +827,23 @@ public class DetailsPage : Adw.NavigationPage {
                                              : counts + " · " + _("%d BDU").printf (bdu);
         if (counts != "") sub = (sub == "") ? counts : sub + " · " + counts;
 
-        var row = new Adw.ExpanderRow () { title = GLib.Markup.escape_text (title, -1) };
-        if (sub != "") row.subtitle = GLib.Markup.escape_text (sub, -1);
-
+        var row = new ErrataRow (title, sub);
         foreach (var r in vulns)
-            row.add_row (make_reference_row (r));
+            row.add_row (new LinkRow (r.id, reference_url (r)));
 
         return row;
     }
 
-    private Adw.ActionRow make_reference_row (Data.ErrataRef r) {
+    private static string? reference_url (Data.ErrataRef r) {
         string idu = r.id.up ();
-        string? url = null;
-        if (idu.has_prefix ("CVE")) {
-            url = "https://nvd.nist.gov/vuln/detail/" + r.id;
-        } else if (idu.has_prefix ("BDU")) {
-            string num = r.id.replace ("BDU:", "").replace ("BDU-", "").strip ();
-            url = "https://bdu.fstec.ru/vul/" + num;
-        } else if (idu.has_prefix ("GHSA")) {
-            url = "https://github.com/advisories/" + r.id;
-        }
-
-        var row = new Adw.ActionRow () { title = GLib.Markup.escape_text (r.id, -1) };
-        if (url != null) {
-            row.activatable = true;
-            row.add_suffix (new Gtk.Image.from_icon_name ("adw-external-link-symbolic"));
-            string captured = url;
-            row.activated.connect (() => open_uri (captured));
-        }
-        return row;
+        if (idu.has_prefix ("CVE"))
+            return "https://nvd.nist.gov/vuln/detail/" + r.id;
+        if (idu.has_prefix ("BDU"))
+            return "https://bdu.fstec.ru/vul/"
+                + r.id.replace ("BDU:", "").replace ("BDU-", "").strip ();
+        if (idu.has_prefix ("GHSA"))
+            return "https://github.com/advisories/" + r.id;
+        return null;
     }
 
     private async void fill_bugs (Adw.ExpanderRow exp, Adw.ActionRow placeholder) {
@@ -866,26 +854,38 @@ public class DetailsPage : Adw.NavigationPage {
             exp.remove (placeholder);
             if (bugs == null || bugs.size == 0) {
                 exp.add_row (new Adw.ActionRow () { title = _("No bugs found") });
-            } else {
-                exp.set_subtitle (_("%d bug(s) found").printf (bugs.size));
-                foreach (var b in bugs) {
-                    var row = new Adw.ActionRow () {
-                        title = "#" + b.id,
-                        subtitle = GLib.Markup.escape_text (b.summary ?? "", -1),
-                        activatable = true
-                    };
-                    row.set_subtitle_lines (2);
-
-                    string st = "";
-                    if (is_nonempty (b.severity)) st = b.severity;
-                    if (is_nonempty (b.status)) st = (st == "") ? b.status : st + " · " + b.status;
-                    if (st != "") row.add_suffix (dim_label (st));
-
-                    string captured_id = b.id;
-                    row.activated.connect (() => open_uri ("https://bugzilla.altlinux.org/" + captured_id));
-                    exp.add_row (row);
-                }
+                return;
             }
+            exp.set_subtitle (_("%d bug(s) found").printf (bugs.size));
+
+            var statuses = new Gee.ArrayList<string> ();
+            foreach (var b in bugs) {
+                var s = (b.status ?? "").strip ();
+                if (s != "" && !statuses.contains (s)) statuses.add (s);
+            }
+            statuses.sort ((a, b) => strcmp (a, b));
+
+            var rows = new Gee.ArrayList<BugRow> ();
+            foreach (var b in bugs)
+                rows.add (new BugRow (b));
+
+            if (statuses.size > 1) {
+                var options = new string[statuses.size + 1];
+                options[0] = _("All statuses");
+                for (int i = 0; i < statuses.size; i++)
+                    options[i + 1] = statuses[i];
+
+                var filter = new BugFilterRow (options);
+                filter.status_changed.connect ((sel) => {
+                    string? want = (sel == 0) ? null : statuses[(int) sel - 1];
+                    foreach (var row in rows)
+                        row.visible = (want == null) || (row.status_value == want);
+                });
+                exp.add_row (filter);
+            }
+
+            foreach (var row in rows)
+                exp.add_row (row);
         } catch (Error e) {
             warning ("[DetailsPage] bugs failed: %s", e.message);
             exp.remove (placeholder);

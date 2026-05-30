@@ -1,0 +1,17 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $BugFilterRow : Adw.ActionRow {
+  title: _("Status");
+  activatable-widget: status_dropdown;
+
+  [prefix]
+  Gtk.Image {
+    icon-name: "funnel-symbolic";
+  }
+
+  [suffix]
+  Gtk.DropDown status_dropdown {
+    valign: center;
+  }
+}

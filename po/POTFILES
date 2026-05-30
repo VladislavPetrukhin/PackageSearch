@@ -1,5 +1,6 @@
 # List of source files containing translatable strings.
 # Please keep this file sorted alphabetically.
+data/ui/bug_filter_row.blp
 data/ui/dependency_graph_page.blp
 data/ui/details_page.blp
 data/ui/main_window.blp
