@@ -44,6 +44,20 @@ template $SearchPage : Adw.NavigationPage {
       }
     }
 
+    [top]
+    Gtk.SearchBar find_bar {
+      show-close-button: true;
+
+      child: Adw.Clamp {
+        maximum-size: 800;
+
+        child: Gtk.SearchEntry find_entry {
+          placeholder-text: _("Filter results…");
+          hexpand: true;
+        };
+      };
+    }
+
     content: Adw.ToastOverlay toast_overlay {
       child: Adw.ViewStack content_stack {
         vexpand: true;

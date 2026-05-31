@@ -9,6 +9,7 @@ public class MainWindow : Adw.ApplicationWindow {
 
     private SearchPage   search_page;
     private DetailsPage? current_details = null;
+    private ulong        initial_focus_handler = 0;
 
     private const GLib.ActionEntry[] WIN_ACTIONS = {
         { "about",         on_action_about         },
@@ -32,9 +33,9 @@ public class MainWindow : Adw.ApplicationWindow {
 
         install_accels ();
 
-        Idle.add (() => {
+        initial_focus_handler = this.map.connect (() => {
             search_page.focus_search_entry ();
-            return Source.REMOVE;
+            this.disconnect (initial_focus_handler);
         });
     }
 
@@ -42,8 +43,8 @@ public class MainWindow : Adw.ApplicationWindow {
     private void on_action_quit ()     { quit_app (); }
 
     private void on_action_focus_search () {
-        if (nav_view.visible_page == search_page)
-            search_page.focus_search_entry ();
+        var f = nav_view.visible_page as Ui.Findable;
+        if (f != null) f.begin_find ();
     }
 
     private void on_action_refresh () {

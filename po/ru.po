@@ -144,6 +144,19 @@ msgstr "Горячие клавиши"
 msgid "About"
 msgstr "О программе"
 
+#: data/ui/details_page.blp:35 data/ui/maintainer_page.blp:18
+#: data/ui/task_details_page.blp:18
+msgid "Find on this page…"
+msgstr "Поиск по странице…"
+
+#: data/ui/shortcuts.blp:19
+msgid "Find on the current page"
+msgstr "Поиск по текущей странице"
+
+#: data/ui/search_page.blp:48
+msgid "Filter results…"
+msgstr "Фильтр результатов…"
+
 #: data/ui/shortcuts.blp:11
 msgid "General"
 msgstr "Основные"

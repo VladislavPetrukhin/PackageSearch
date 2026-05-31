@@ -25,6 +25,20 @@ template $DetailsPage : Adw.NavigationPage {
         revealed: false;
       }
 
+      [top]
+      Gtk.SearchBar find_bar {
+        show-close-button: true;
+
+        child: Adw.Clamp {
+          maximum-size: 800;
+
+          child: Gtk.SearchEntry find_entry {
+            placeholder-text: _("Find on this page…");
+            hexpand: true;
+          };
+        };
+      }
+
       content: Gtk.Overlay {
         hexpand: true;
         vexpand: true;

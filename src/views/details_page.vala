@@ -5,7 +5,7 @@ using Gdk;
 using Intl;
 
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/details_page.ui")]
-public class DetailsPage : Adw.NavigationPage {
+public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private Data.SourceGroup group;
     private string branch;
     private MainWindow win;
@@ -17,6 +17,8 @@ public class DetailsPage : Adw.NavigationPage {
     [GtkChild] private unowned Gtk.Box            header_actions;
     [GtkChild] private unowned Adw.Banner         banner;
     [GtkChild] private unowned Gtk.Revealer       loading_revealer;
+    [GtkChild] private unowned Gtk.SearchBar      find_bar;
+    [GtkChild] private unowned Gtk.SearchEntry    find_entry;
 
     [GtkChild] private unowned Adw.PreferencesGroup hero_group;
     [GtkChild] private unowned Adw.PreferencesGroup info_group;
@@ -196,7 +198,30 @@ public class DetailsPage : Adw.NavigationPage {
 
         loading_revealer.reveal_child = true;
 
+        find_bar.connect_entry (find_entry);
+        find_bar.set_key_capture_widget (this);
+        find_entry.search_changed.connect (() => run_find (find_entry.text));
+        find_bar.notify["search-mode-enabled"].connect (() => {
+            if (!find_bar.search_mode_enabled) run_find ("");
+        });
+
         load_details.begin ();
+    }
+
+    public void begin_find () {
+        find_bar.search_mode_enabled = true;
+        find_entry.grab_focus ();
+    }
+
+    private void run_find (string q) {
+        Ui.filter_group (info_group, q);
+        Ui.filter_group (versions_group, q);
+        Ui.filter_group (bins_group, q);
+        Ui.filter_group (deps_group, q);
+        Ui.filter_group (security_group, q);
+        Ui.filter_group (downloads_group, q);
+        Ui.filter_group (spec_group, q);
+        Ui.filter_group (changelog_group, q);
     }
 
     private Adw.Dialog new_dialog (string title, string subtitle, int width, int height,

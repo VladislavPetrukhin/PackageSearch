@@ -4,7 +4,7 @@ using GLib;
 using Intl;
 
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/maintainer_page.ui")]
-public class MaintainerPage : Adw.NavigationPage {
+public class MaintainerPage : Adw.NavigationPage, Ui.Findable {
     private MainWindow win;
     private string nick;
     private string branch;
@@ -14,6 +14,8 @@ public class MaintainerPage : Adw.NavigationPage {
     [GtkChild] private unowned Gtk.Label       header;
     [GtkChild] private unowned Gtk.ListBox     list;
     [GtkChild] private unowned Adw.StatusPage  empty_status;
+    [GtkChild] private unowned Gtk.SearchBar   find_bar;
+    [GtkChild] private unowned Gtk.SearchEntry find_entry;
 
     private GLib.Cancellable cancel = new GLib.Cancellable ();
 
@@ -27,10 +29,22 @@ public class MaintainerPage : Adw.NavigationPage {
         title_widget.subtitle = branch;
         empty_status.description = _("This maintainer has no packages in %s.").printf (branch);
 
+        find_bar.connect_entry (find_entry);
+        find_bar.set_key_capture_widget (this);
+        find_entry.search_changed.connect (() => Ui.filter_listbox (list, find_entry.text));
+        find_bar.notify["search-mode-enabled"].connect (() => {
+            if (!find_bar.search_mode_enabled) Ui.filter_listbox (list, "");
+        });
+
         this.hidden.connect (() => {
             if (!cancel.is_cancelled ()) cancel.cancel ();
         });
         load.begin ();
+    }
+
+    public void begin_find () {
+        find_bar.search_mode_enabled = true;
+        find_entry.grab_focus ();
     }
 
     private static bool is_nonempty (string? s) {

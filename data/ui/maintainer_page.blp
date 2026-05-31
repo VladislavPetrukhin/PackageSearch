@@ -8,6 +8,20 @@ template $MaintainerPage : Adw.NavigationPage {
       title-widget: Adw.WindowTitle title_widget {};
     }
 
+    [top]
+    Gtk.SearchBar find_bar {
+      show-close-button: true;
+
+      child: Adw.Clamp {
+        maximum-size: 800;
+
+        child: Gtk.SearchEntry find_entry {
+          placeholder-text: _("Find on this page…");
+          hexpand: true;
+        };
+      };
+    }
+
     content: Adw.ViewStack stack {
       vexpand: true;
 

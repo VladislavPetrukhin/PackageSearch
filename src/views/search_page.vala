@@ -4,11 +4,13 @@ using GLib;
 using Intl;
 
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/search_page.ui")]
-public class SearchPage : Adw.NavigationPage {
+public class SearchPage : Adw.NavigationPage, Ui.Findable {
     [GtkChild] private unowned Adw.ToastOverlay toast_overlay;
     [GtkChild] private unowned Adw.ViewStack    content_stack;
     [GtkChild] private unowned Gtk.ListBox      results_list;
     [GtkChild] private unowned Gtk.Label        results_header;
+    [GtkChild] private unowned Gtk.SearchBar    find_bar;
+    [GtkChild] private unowned Gtk.SearchEntry  find_entry;
 
     [GtkChild] private unowned Gtk.DropDown    mode_dropdown;
     [GtkChild] private unowned Gtk.DropDown    repo_dropdown;
@@ -178,11 +180,30 @@ public class SearchPage : Adw.NavigationPage {
 
         retry_btn.clicked.connect (() => trigger_search_now ());
 
+        find_bar.connect_entry (find_entry);
+        find_entry.search_changed.connect (() => Ui.filter_listbox (results_list, find_entry.text));
+        find_bar.notify["search-mode-enabled"].connect (() => {
+            if (!find_bar.search_mode_enabled) Ui.filter_listbox (results_list, "");
+        });
+
         show_idle ();
     }
 
     public void focus_search_entry () {
         search_entry.grab_focus ();
+    }
+
+    public void begin_find () {
+        if (content_stack.get_visible_child_name () == "results") {
+            find_bar.search_mode_enabled = true;
+            find_entry.grab_focus ();
+        } else {
+            focus_search_entry ();
+        }
+    }
+
+    private void close_find () {
+        if (find_bar.search_mode_enabled) find_bar.search_mode_enabled = false;
     }
 
     public void clear_history () {
@@ -233,11 +254,11 @@ public class SearchPage : Adw.NavigationPage {
             results_list.remove (c);
     }
 
-    private void show_idle ()    { content_stack.set_visible_child_name ("idle"); }
-    private void show_loading () { content_stack.set_visible_child_name ("loading"); }
+    private void show_idle ()    { close_find (); content_stack.set_visible_child_name ("idle"); }
+    private void show_loading () { close_find (); content_stack.set_visible_child_name ("loading"); }
     private void show_results () { content_stack.set_visible_child_name ("results"); }
-    private void show_empty ()   { content_stack.set_visible_child_name ("empty"); }
-    private void show_error ()   { content_stack.set_visible_child_name ("error"); }
+    private void show_empty ()   { close_find (); content_stack.set_visible_child_name ("empty"); }
+    private void show_error ()   { close_find (); content_stack.set_visible_child_name ("error"); }
 
     private async void do_search (GLib.Cancellable? cancellable, uint64 my_seq) {
         var term = Data.SearchText.normalize_layout (current_query);
@@ -337,7 +358,13 @@ public class SearchPage : Adw.NavigationPage {
             else
                 results_header.label = _("Found %d in repository %s").printf (n, branch);
             show_results ();
+            reapply_find ();
         }
+    }
+
+    private void reapply_find () {
+        if (find_bar.search_mode_enabled && find_entry.text.strip () != "")
+            Ui.filter_listbox (results_list, find_entry.text);
     }
 
     private void apply_task_results (Gee.ArrayList<Data.TaskResult>? results, string branch, string term) {
@@ -356,6 +383,7 @@ public class SearchPage : Adw.NavigationPage {
         } else {
             results_header.label = _("Found %d in repository %s").printf (n, branch);
             show_results ();
+            reapply_find ();
         }
     }
 

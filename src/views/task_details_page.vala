@@ -4,7 +4,7 @@ using GLib;
 using Intl;
 
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/task_details_page.ui")]
-public class TaskDetailsPage : Adw.NavigationPage {
+public class TaskDetailsPage : Adw.NavigationPage, Ui.Findable {
     private MainWindow win;
     private int64  task_id;
     private string branch;
@@ -15,6 +15,8 @@ public class TaskDetailsPage : Adw.NavigationPage {
     [GtkChild] private unowned Adw.PreferencesGroup  subtasks_group;
     [GtkChild] private unowned Adw.PreferencesGroup  deps_group;
     [GtkChild] private unowned Adw.StatusPage        error_status;
+    [GtkChild] private unowned Gtk.SearchBar         find_bar;
+    [GtkChild] private unowned Gtk.SearchEntry       find_entry;
 
     private GLib.Cancellable cancel = new GLib.Cancellable ();
 
@@ -29,10 +31,28 @@ public class TaskDetailsPage : Adw.NavigationPage {
         title_widget.subtitle = branch;
         error_status.description = _("Could not load task #%lld.").printf (task_id);
 
+        find_bar.connect_entry (find_entry);
+        find_bar.set_key_capture_widget (this);
+        find_entry.search_changed.connect (() => run_find (find_entry.text));
+        find_bar.notify["search-mode-enabled"].connect (() => {
+            if (!find_bar.search_mode_enabled) run_find ("");
+        });
+
         this.hidden.connect (() => {
             if (!cancel.is_cancelled ()) cancel.cancel ();
         });
         load.begin ();
+    }
+
+    public void begin_find () {
+        find_bar.search_mode_enabled = true;
+        find_entry.grab_focus ();
+    }
+
+    private void run_find (string q) {
+        Ui.filter_group (info_group, q);
+        Ui.filter_group (subtasks_group, q);
+        Ui.filter_group (deps_group, q);
     }
 
     private static bool is_nonempty (string? s) {
