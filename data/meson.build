@@ -80,6 +80,7 @@ endif
 
 metainfo_conf = configuration_data()
 metainfo_conf.set('APP_ID', app_id)
+metainfo_conf.set('VERSION', meson.project_version())
 
 configured_metainfo = configure_file(
   input: files('app.metainfo.xml.in.in'),

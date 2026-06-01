@@ -6,9 +6,9 @@
   <project_license>GPL-3.0-or-later</project_license>
 
   <name>PackageSearch</name>
-  <summary>Search ALT Linux packages (Sisyphus &amp; p11)</summary>
+  <summary>GTK4/Libadwaita app to search and install packages from ALT Linux repositories</summary>
   <description>
-    <p>Graphical search for source packages in ALT Linux Sisyphus and p11 repositories with detailed metadata and changelog.</p>
+    <p>PackageSearch is a GTK4/Libadwaita desktop application for ALT Linux that lets you search, inspect and install packages across the Sisyphus, p11, p10, p9, c10f2 and c9f2 repositories.</p>
   </description>
 
   <developer id="altlinux.space">
@@ -26,9 +26,9 @@
   </provides>
 
   <releases>
-    <release version="@VERSION@" date="2025-09-03">
+    <release version="@VERSION@" date="2026-06-01">
       <description>
-        <p>Initial release.</p>
+        <p>New release @VERSION@.</p>
       </description>
     </release>
   </releases>

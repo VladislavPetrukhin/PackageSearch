@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Version=@VERSION@
+Version=1.0
 Name=PackageSearch
 Comment=Search for packages in ALT Linux repositories
 Exec=packagesearch
