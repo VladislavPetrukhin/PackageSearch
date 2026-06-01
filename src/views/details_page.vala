@@ -17,6 +17,9 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     [GtkChild] private unowned Gtk.Box            header_actions;
     [GtkChild] private unowned Adw.Banner         banner;
     [GtkChild] private unowned Gtk.Revealer       loading_revealer;
+    [GtkChild] private unowned Gtk.Revealer       error_revealer;
+    [GtkChild] private unowned Adw.StatusPage     error_status;
+    [GtkChild] private unowned Gtk.ScrolledWindow content_scroll;
     [GtkChild] private unowned Gtk.SearchBar      find_bar;
     [GtkChild] private unowned Gtk.SearchEntry    find_entry;
 
@@ -481,7 +484,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         } catch (Error e) {
             loading_revealer.reveal_child = false;
             warning ("[DetailsPage] load failed: %s", e.message);
-            toast (_("Failed to load package details"));
+            show_load_error (e);
+            return;
         }
 
         if (cancel.is_cancelled ()) return;
@@ -491,6 +495,21 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         load_security ();
         load_downloads ();
         load_specfile ();
+    }
+
+    private void show_load_error (Error e) {
+        if (e.message != null && e.message.contains ("No data found")) {
+            error_status.title = _("Package not found");
+            error_status.description =
+                _("%s is not available in %s. It may have been removed from the repository.")
+                .printf (group.name, branch);
+        } else {
+            error_status.title = _("Failed to load");
+            error_status.description =
+                _("Could not load package details. Check your connection and try again.");
+        }
+        content_scroll.visible = false;
+        error_revealer.reveal_child = true;
     }
 
     private Adw.ActionRow loading_row () {

@@ -43,7 +43,7 @@ template $DetailsPage : Adw.NavigationPage {
         hexpand: true;
         vexpand: true;
 
-        child: Gtk.ScrolledWindow {
+        child: Gtk.ScrolledWindow content_scroll {
           hscrollbar-policy: never;
           vexpand: true;
 
@@ -84,6 +84,19 @@ template $DetailsPage : Adw.NavigationPage {
             }
           };
         };
+
+        [overlay]
+        Gtk.Revealer error_revealer {
+          transition-type: crossfade;
+          reveal-child: false;
+
+          child: Adw.StatusPage error_status {
+            icon-name: "package-x-generic-symbolic";
+            title: _("Package unavailable");
+            vexpand: true;
+            hexpand: true;
+          };
+        }
 
         [overlay]
         Gtk.Revealer loading_revealer {

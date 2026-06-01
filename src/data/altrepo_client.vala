@@ -521,6 +521,31 @@ public class AltRepoClient : GLib.Object {
         return d;
     }
 
+    public async bool is_source_deleted (
+        string branch, string name, GLib.Cancellable? cancellable = null
+    ) throws GLib.Error {
+        var key = "del|%s|%s".printf (branch, name.strip ());
+        var cached = cache_get (key);
+        if (cached != null && cached.has_str) return cached.str == "1";
+
+        yield throttle ();
+        try {
+            var resp = yield cli.get_site_deleted_package_info_async (
+                branch, name, "source", null, Priority.DEFAULT, cancellable
+            );
+            bool deleted = resp != null && resp.package != null && resp.package.length > 0;
+            cache_put_str (key, deleted ? "1" : "0");
+            return deleted;
+        } catch (Error e) {
+            string m = (e.message ?? "").down ();
+            if (Validation.is_no_data_error (e) || m.contains ("no information about deleting")) {
+                cache_put_str (key, "0");
+                return false;
+            }
+            throw e;
+        }
+    }
+
     public async string? find_source_by_binary (
         string branch, string binary_name, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {

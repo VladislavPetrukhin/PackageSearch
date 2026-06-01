@@ -24,3 +24,12 @@
 .tinted-status image {
   color: @accent_color;
 }
+
+.cards-list > row.removed-row {
+  border-color: alpha(@error_color, 0.55);
+}
+
+.cards-list > row.removed-row .title,
+.cards-list > row.removed-row .subtitle {
+  color: @error_color;
+}
