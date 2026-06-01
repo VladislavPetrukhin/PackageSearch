@@ -12,7 +12,9 @@ public class DependencyApi : RepoApiBase {
         var seen = new Gee.HashSet<string> ();
         try {
             yield throttle ();
-            var h = cli.get_site_pkghash_by_name (branch, src_name, null);
+            var h = yield cli.get_site_pkghash_by_name_async (
+                branch, src_name, Priority.DEFAULT, null
+            );
             var pkghash = int64.parse (h.pkghash);
             yield throttle ();
             var resp = yield cli.get_dependencies_source_package_dependencies_pkghash_async (
@@ -75,7 +77,7 @@ public class DependencyApi : RepoApiBase {
                 if (el.name != null && el.name.length > 0) { bin = el.name; break; }
             }
             if (bin == null) return null;
-            var src = yield new SearchApi ().find_source_by_binary (branch, bin);
+            var src = yield new SearchApi ().find_source_by_binary (branch, bin, null);
             return (src != null) ? src : bin;
         } catch (Error e) {
             if (Validation.is_no_data_error (e)) return null;

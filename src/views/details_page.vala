@@ -157,7 +157,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private async void load_details () {
         try {
             var api = new Data.PackageApi ();
-            var d = yield api.get_source_details (branch, group.name);
+            var d = yield api.get_source_details (branch, group.name, cancel);
 
             var vr = (d.version ?? "");
             if (Ui.is_nonempty (d.release))
@@ -207,6 +207,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
             yield load_versions ();
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             loading_revealer.reveal_child = false;
             warning ("[DetailsPage] load failed: %s", e.message);
             show_load_error (e);
@@ -364,7 +365,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         var api = new Data.PackageApi ();
         clear_group (changelog_group);
         try {
-            var log = yield api.get_changelog (branch, group.name, 50);
+            var log = yield api.get_changelog (branch, group.name, 50, cancel);
             bool any = false;
             foreach (var it in log.changelog) {
                 any = true;
@@ -394,6 +395,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             if (!any)
                 changelog_group.add (new Adw.ActionRow () { title = _("No changes found") });
         } catch (Error ce) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] changelog failed: %s", ce.message);
             changelog_group.add (new Adw.ActionRow () {
                 title = _("Changelog unavailable"),
@@ -439,7 +441,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private async void fill_build_depends (LazyExpanderRow exp) {
         var api = new Data.DependencyApi ();
         try {
-            var builds = yield api.get_direct_build_depends (branch, group.name);
+            var builds = yield api.get_direct_build_depends (branch, group.name, cancel);
             if (cancel.is_cancelled ()) return;
             exp.clear_placeholder ();
             if (builds == null || builds.size == 0) {
@@ -455,6 +457,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 }
             }
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] build deps failed: %s", e.message);
             exp.show_message (_("Build dependencies unavailable"), e.message);
         }
@@ -463,7 +466,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private async void fill_reverse_depends (LazyExpanderRow exp) {
         var api = new Data.DependencyApi ();
         try {
-            var revs = yield api.get_reverse_depends (branch, group.name, "both");
+            var revs = yield api.get_reverse_depends (branch, group.name, "both", cancel);
             if (cancel.is_cancelled ()) return;
             exp.clear_placeholder ();
             if (revs == null || revs.size == 0) {
@@ -478,6 +481,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 }
             }
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] reverse deps failed: %s", e.message);
             exp.show_message (_("Reverse dependencies unavailable"), e.message);
         }
@@ -498,7 +502,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private async void fill_errata (LazyExpanderRow exp) {
         var api = new Data.SecurityApi ();
         try {
-            var erratas = yield api.get_errata_for_package (branch, group.name);
+            var erratas = yield api.get_errata_for_package (branch, group.name, cancel);
             if (cancel.is_cancelled ()) return;
             exp.clear_placeholder ();
             int shown = 0;
@@ -513,6 +517,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             else
                 exp.set_subtitle (_("%d advisories").printf (shown));
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] errata failed: %s", e.message);
             exp.show_message (_("Advisories unavailable"), e.message);
         }
@@ -580,7 +585,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private async void fill_bugs (LazyExpanderRow exp) {
         var api = new Data.SecurityApi ();
         try {
-            var bugs = yield api.get_bugs_by_package (group.name);
+            var bugs = yield api.get_bugs_by_package (group.name, cancel);
             if (cancel.is_cancelled ()) return;
             exp.clear_placeholder ();
             if (bugs == null || bugs.size == 0) {
@@ -618,6 +623,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             foreach (var row in rows)
                 exp.add_row (row);
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] bugs failed: %s", e.message);
             exp.show_message (_("Bugzilla unavailable"), e.message);
         }
@@ -644,7 +650,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         versions_group.set_description (_("Open a repository to view the package there, or tick two to compare"));
 
         try {
-            var vs = yield api.get_package_versions_all (group.name);
+            var vs = yield api.get_package_versions_all (group.name, cancel);
             if (vs == null || vs.size == 0) {
                 versions_group.add (new Adw.ActionRow () { title = _("No versions found") });
                 return;
@@ -693,6 +699,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 versions_group.add (row);
             }
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] versions failed: %s", e.message);
             versions_group.add (new Adw.ActionRow () {
                 title = _("Versions unavailable"),
@@ -709,9 +716,10 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         Data.PackageDetails? a = null;
         Data.PackageDetails? b = null;
         try {
-            a = yield api.get_source_details (branch_a, group.name);
-            b = yield api.get_source_details (branch_b, group.name);
+            a = yield api.get_source_details (branch_a, group.name, cancel);
+            b = yield api.get_source_details (branch_b, group.name, cancel);
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] compare failed: %s", e.message);
             toast (_("Compare failed: %s").printf (e.message));
             compare_btn.label = _("Compare selected");
@@ -723,9 +731,9 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
         Data.SpecFileInfo? spec_a = null;
         Data.SpecFileInfo? spec_b = null;
-        try { spec_a = yield api.get_specfile (branch_a, group.name); }
+        try { spec_a = yield api.get_specfile (branch_a, group.name, cancel); }
         catch (Error e) { warning ("[DetailsPage] compare spec %s failed: %s", branch_a, e.message); }
-        try { spec_b = yield api.get_specfile (branch_b, group.name); }
+        try { spec_b = yield api.get_specfile (branch_b, group.name, cancel); }
         catch (Error e) { warning ("[DetailsPage] compare spec %s failed: %s", branch_b, e.message); }
 
         new VersionCompareDialog (group.name, branch_a, branch_b, a, b, spec_a, spec_b).present (this);
@@ -746,7 +754,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private async void fill_src_downloads (LazyExpanderRow exp) {
         var api = new Data.DownloadApi ();
         try {
-            var src_links = yield api.get_source_downloads (branch, group.name);
+            var src_links = yield api.get_source_downloads (branch, group.name, cancel);
             if (cancel.is_cancelled ()) return;
             exp.clear_placeholder ();
             if (src_links == null || src_links.size == 0) {
@@ -755,6 +763,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 foreach (var d in src_links) add_download_row (exp, d);
             }
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] src downloads failed: %s", e.message);
             exp.show_message (_("Source downloads unavailable"), e.message);
         }
@@ -763,7 +772,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private async void fill_bin_downloads (LazyExpanderRow exp) {
         var api = new Data.DownloadApi ();
         try {
-            var bin_links = yield api.get_binary_downloads (branch, group.name);
+            var bin_links = yield api.get_binary_downloads (branch, group.name, cancel);
             if (cancel.is_cancelled ()) return;
             exp.clear_placeholder ();
             if (bin_links == null || bin_links.size == 0) {
@@ -772,6 +781,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 foreach (var d in bin_links) add_download_row (exp, d);
             }
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] bin downloads failed: %s", e.message);
             exp.show_message (_("Binary downloads unavailable"), e.message);
         }
@@ -819,7 +829,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
         var api = new Data.PackageApi ();
         try {
-            var spec = yield api.get_specfile (branch, group.name);
+            var spec = yield api.get_specfile (branch, group.name, cancel);
             btn.label = orig;
             btn.sensitive = true;
             if (spec == null || !Ui.is_nonempty (spec.content)) {
@@ -829,6 +839,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             string fname = Ui.is_nonempty (spec.name) ? spec.name : group.name + ".spec";
             show_text_dialog (fname, spec.content);
         } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] specfile failed: %s", e.message);
             btn.label = orig;
             btn.sensitive = true;

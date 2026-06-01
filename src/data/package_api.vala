@@ -11,7 +11,9 @@ public class PackageApi : RepoApiBase {
         yield throttle ();
         var details = new PackageDetails ();
 
-        var h = cli.get_site_pkghash_by_name (branch, src_name, null);
+        var h = yield cli.get_site_pkghash_by_name_async (
+            branch, src_name, Priority.DEFAULT, null
+        );
         var pkghash = int64.parse (h.pkghash);
 
         yield throttle ();
@@ -55,7 +57,9 @@ public class PackageApi : RepoApiBase {
         string branch, string src_name, int64 last = 50, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
         yield throttle ();
-        var h = cli.get_site_pkghash_by_name (branch, src_name, null);
+        var h = yield cli.get_site_pkghash_by_name_async (
+            branch, src_name, Priority.DEFAULT, null
+        );
         var pkghash = int64.parse (h.pkghash);
         yield throttle ();
         return yield cli.get_site_package_changelog_pkghash_async (

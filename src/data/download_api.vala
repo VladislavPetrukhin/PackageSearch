@@ -10,7 +10,9 @@ public class DownloadApi : RepoApiBase {
     ) throws GLib.Error {
         yield throttle ();
         var out_list = new Gee.ArrayList<DownloadLink> ();
-        var h = cli.get_site_pkghash_by_name (branch, src_name, null);
+        var h = yield cli.get_site_pkghash_by_name_async (
+            branch, src_name, Priority.DEFAULT, null
+        );
         var pkghash = int64.parse (h.pkghash);
         yield throttle ();
         var resp = yield cli.get_site_package_downloads_src_pkghash_async (
@@ -35,7 +37,9 @@ public class DownloadApi : RepoApiBase {
     ) throws GLib.Error {
         yield throttle ();
         var out_list = new Gee.ArrayList<DownloadLink> ();
-        var h = cli.get_site_pkghash_by_name (branch, src_name, null);
+        var h = yield cli.get_site_pkghash_by_name_async (
+            branch, src_name, Priority.DEFAULT, null
+        );
         var pkghash = int64.parse (h.pkghash);
         yield throttle ();
         var resp = yield cli.get_site_package_downloads_pkghash_async (
