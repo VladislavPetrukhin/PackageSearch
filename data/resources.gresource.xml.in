@@ -17,6 +17,9 @@
     <file>text_dialog.ui</file>
     <file>version_compare_dialog.ui</file>
     <file>package_hero.ui</file>
+    <file>source_result_row.ui</file>
+    <file>task_result_row.ui</file>
+    <file>history_popover.ui</file>
     <file>style.css</file>
   </gresource>
 

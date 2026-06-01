@@ -1,0 +1,23 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $TaskResultRow : Adw.ActionRow {
+  activatable: true;
+  title-lines: 1;
+  subtitle-lines: 2;
+
+  [suffix]
+  Gtk.Label packages_label {
+    visible: false;
+    valign: center;
+    ellipsize: end;
+    max-width-chars: 24;
+
+    styles ["dim-label"]
+  }
+
+  [suffix]
+  Gtk.Image {
+    icon-name: "go-next-symbolic";
+  }
+}

@@ -1,0 +1,31 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $HistoryPopover : Gtk.Popover {
+  width-request: 260;
+
+  child: Gtk.Box {
+    orientation: vertical;
+    spacing: 6;
+    margin-top: 6;
+    margin-bottom: 6;
+    margin-start: 6;
+    margin-end: 6;
+
+    Gtk.Label empty_label {
+      label: _("No recent searches yet");
+      halign: center;
+      margin-top: 6;
+      margin-bottom: 6;
+
+      styles ["dim-label"]
+    }
+
+    Gtk.ListBox list {
+      visible: false;
+      selection-mode: none;
+
+      styles ["boxed-list"]
+    }
+  };
+}

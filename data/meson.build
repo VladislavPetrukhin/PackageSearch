@@ -23,6 +23,9 @@ blueprints = [
   'text_dialog',
   'version_compare_dialog',
   'package_hero',
+  'source_result_row',
+  'task_result_row',
+  'history_popover',
 ]
 
 ui_targets = []

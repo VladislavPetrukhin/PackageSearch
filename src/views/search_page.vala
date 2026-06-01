@@ -20,6 +20,8 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     [GtkChild] private unowned Gtk.Box       suggestions_box;
     [GtkChild] private unowned Gtk.MenuButton history_btn;
 
+    private HistoryPopover history_popover;
+
     private GLib.Settings? settings = null;
     private const int    HISTORY_LIMIT   = 15;
     private const string SETTINGS_SCHEMA = "space.altlinux.PackageSearch";
@@ -130,6 +132,13 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         } catch (Error e) {
             warning ("[SearchPage] settings unavailable: %s", e.message);
         }
+        history_popover = new HistoryPopover ();
+        history_popover.query_chosen.connect ((q) => {
+            search_entry.text = q;
+            set_query (q);
+            trigger_search_now ();
+        });
+        history_btn.set_popover (history_popover);
         rebuild_history_popover ();
 
         var mode_model = new Gtk.StringList (null);
@@ -167,14 +176,18 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         });
 
         results_list.row_activated.connect ((row) => {
-            var sg = row.get_data<Data.SourceGroup> ("sg");
-            if (sg == null) return;
-            cancel_verify ();
-            if (sg.bin_name != null) {
-                resolve_and_open.begin (sg, result_branch);
-            } else {
-                if (Ui.is_nonempty (sg.name)) save_to_history (sg.name);
-                open_details (sg, result_branch);
+            if (row is SourceResultRow) {
+                var sg = ((SourceResultRow) row).group;
+                cancel_verify ();
+                if (sg.bin_name != null) {
+                    resolve_and_open.begin (sg, result_branch);
+                } else {
+                    if (Ui.is_nonempty (sg.name)) save_to_history (sg.name);
+                    open_details (sg, result_branch);
+                }
+            } else if (row is TaskResultRow) {
+                var tr = (TaskResultRow) row;
+                open_task (tr.task_id, tr.target_branch);
             }
         });
 
@@ -343,12 +356,12 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     private void apply_results (Gee.ArrayList<Data.SourceGroup>? results, string branch, string term) {
         clear_results ();
         int n = 0;
-        var verify_rows = new Gee.ArrayList<Adw.ActionRow> ();
+        var verify_rows = new Gee.ArrayList<SourceResultRow> ();
         var verify_names = new Gee.ArrayList<string> ();
         if (results != null) {
             foreach (var g in results) {
                 if (g == null) continue;
-                var row = make_source_row (g);
+                var row = new SourceResultRow (g);
                 results_list.append (row);
                 if (verify_rows.size < VERIFY_LIMIT && Ui.is_nonempty (g.name)) {
                     verify_rows.add (row);
@@ -377,7 +390,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void verify_removed (
-        Gee.ArrayList<Adw.ActionRow> rows, Gee.ArrayList<string> names,
+        Gee.ArrayList<SourceResultRow> rows, Gee.ArrayList<string> names,
         string branch, uint64 my_seq
     ) {
         verify_cancel = new GLib.Cancellable ();
@@ -388,11 +401,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
             try {
                 bool deleted = yield api.is_source_deleted (branch, names[i], cancel);
                 if (cancel.is_cancelled () || my_seq != query_seq) return;
-                if (deleted) {
-                    rows[i].add_css_class ("removed-row");
-                    rows[i].subtitle = _("Removed from the repository");
-                    rows[i].subtitle_lines = 1;
-                }
+                if (deleted) rows[i].mark_removed ();
             } catch (Error e) {
                 if (cancel.is_cancelled ()) return;
                 warning ("[SearchPage] verify_removed: %s", e.message);
@@ -411,7 +420,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         if (results != null) {
             foreach (var t in results) {
                 if (t == null) continue;
-                results_list.append (make_task_row (t));
+                results_list.append (new TaskResultRow (t, result_branch));
                 n++;
             }
         }
@@ -425,32 +434,6 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         }
     }
 
-    private static Gtk.Label trailing_label (string text) {
-        var l = new Gtk.Label (text) { valign = Gtk.Align.CENTER };
-        l.add_css_class ("dim-label");
-        l.add_css_class ("numeric");
-        return l;
-    }
-
-    private Adw.ActionRow make_source_row (Data.SourceGroup sg) {
-        string vr = "";
-        if (Ui.is_nonempty (sg.version)) vr = sg.version;
-        if (Ui.is_nonempty (sg.release)) vr = (vr == "") ? sg.release : vr + "-" + sg.release;
-
-        var row = new Adw.ActionRow () {
-            title = sg.name ?? "",
-            activatable = true
-        };
-        if (Ui.is_nonempty (sg.subtitle)) {
-            row.subtitle = sg.subtitle;
-            row.subtitle_lines = 1;
-        }
-        if (vr != "") row.add_suffix (trailing_label (vr));
-        row.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
-        row.set_data ("sg", sg);
-        return row;
-    }
-
     private async void resolve_and_open (Data.SourceGroup sg, string branch) {
         var api = new Data.SearchApi ();
         string name = sg.bin_name;
@@ -462,36 +445,6 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         }
         if (Ui.is_nonempty (name)) save_to_history (name);
         open_details (new Data.SourceGroup (name), branch);
-    }
-
-    private Adw.ActionRow make_task_row (Data.TaskResult t) {
-        string title = _("Task #%lld").printf (t.task_id);
-        if (Ui.is_nonempty (t.state)) title += " · " + t.state;
-
-        var row = new Adw.ActionRow () { title = title, activatable = true };
-
-        string sub = "";
-        if (Ui.is_nonempty (t.owner))   sub = t.owner;
-        if (Ui.is_nonempty (t.repo))    sub = (sub == "") ? t.repo  : sub + " · " + t.repo;
-        if (Ui.is_nonempty (t.changed)) sub = (sub == "") ? t.changed : sub + " · " + t.changed;
-        if (Ui.is_nonempty (t.message)) sub = (sub == "") ? t.message : sub + " — " + t.message;
-        if (sub != "") {
-            row.subtitle = sub;
-            row.subtitle_lines = 2;
-        }
-        if (Ui.is_nonempty (t.packages)) {
-            var l = new Gtk.Label (t.packages) { valign = Gtk.Align.CENTER, ellipsize = Pango.EllipsizeMode.END, max_width_chars = 24 };
-            l.add_css_class ("dim-label");
-            row.add_suffix (l);
-        }
-        row.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
-
-        int64  captured_id = t.task_id;
-        string captured_branch = Ui.is_nonempty (t.repo) ? t.repo : result_branch;
-        row.activated.connect (() => {
-            open_task (captured_id, captured_branch);
-        });
-        return row;
     }
 
     private string[] load_history () {
@@ -519,40 +472,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private void rebuild_history_popover () {
-        var items = load_history ();
-        var popover = new Gtk.Popover ();
-        popover.set_size_request (260, -1);
-
-        var outer = new Gtk.Box (Gtk.Orientation.VERTICAL, 6) {
-            margin_top = 6, margin_bottom = 6, margin_start = 6, margin_end = 6
-        };
-
-        if (items.length == 0) {
-            var empty = new Gtk.Label (_("No recent searches yet")) {
-                halign = Gtk.Align.CENTER, margin_top = 6, margin_bottom = 6
-            };
-            empty.add_css_class ("dim-label");
-            outer.append (empty);
-        } else {
-            var list = new Gtk.ListBox () { selection_mode = Gtk.SelectionMode.NONE };
-            list.add_css_class ("boxed-list");
-            foreach (var q in items) {
-                var row = new Adw.ActionRow () { title = q, activatable = true };
-                row.add_prefix (new Gtk.Image.from_icon_name ("document-open-recent-symbolic"));
-                string captured = q;
-                row.activated.connect (() => {
-                    search_entry.text = captured;
-                    set_query (captured);
-                    trigger_search_now ();
-                    popover.popdown ();
-                });
-                list.append (row);
-            }
-            outer.append (list);
-        }
-
-        popover.set_child (outer);
-        history_btn.set_popover (popover);
+        history_popover.set_items (load_history ());
     }
 
     private void cancel_suggestions () {
