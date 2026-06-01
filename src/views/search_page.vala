@@ -64,7 +64,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         try {
             switch (mode) {
             case Data.SearchMode.FILE:
-                return new Regex ("^[A-Za-z0-9._+\\-/]+$").match (term);
+                return new Regex ("^[A-Za-z0-9._+/\\-]*[A-Za-z0-9]{2,}[A-Za-z0-9._+/\\-]*$").match (term);
             default:
                 return new Regex ("^[A-Za-z0-9._+\\-]+$").match (term);
             }

@@ -14,6 +14,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     private Business.PackageManager pkg_mgr = new Business.PackageManager ();
     private InstallController installer;
+    private Gee.HashMap<string, Gtk.Button> install_buttons = new Gee.HashMap<string, Gtk.Button> ();
+    private string repo_evr = "";
 
     [GtkChild] private unowned Adw.ToastOverlay   toast_overlay;
     [GtkChild] private unowned Adw.WindowTitle    header_title;
@@ -123,6 +125,9 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         loading_revealer.reveal_child = true;
 
         installer = new InstallController (this, toast_overlay, pkg_mgr);
+        installer.install_finished.connect ((ok) => {
+            if (ok) refresh_install_states.begin ();
+        });
 
         Ui.attach_find_bar (find_bar, find_entry, this, (q) => run_find (q));
 
@@ -234,6 +239,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     private async void populate_binaries (Data.PackageDetails d) {
         clear_group (bins_group);
+        install_buttons.clear ();
 
         var by_name = new Gee.HashMap<string, Gee.ArrayList<string>> ();
         foreach (var bp in d.binaries) {
@@ -260,7 +266,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         }
 
         Gee.HashMap<string, string>? installed = null;
-        string repo_evr = "";
+        repo_evr = "";
         if (can_install) {
             installed = yield pkg_mgr.get_installed_packages ();
             if (Ui.is_nonempty (d.version)) {
@@ -276,6 +282,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 tooltip_text = _("Install via apt-get (requires authentication)")
             };
             install_hero.add_css_class ("suggested-action");
+            install_buttons.set (group.name, install_hero);
 
             bool is_installed = installed.has_key (group.name);
             bool needs_update = false;
@@ -313,6 +320,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     tooltip_text = _("Install via apt-get (requires authentication)")
                 };
                 install_btn.add_css_class ("suggested-action");
+                install_buttons.set (name, install_btn);
 
                 bool is_installed = installed.has_key (name);
                 bool needs_update = false;
@@ -340,6 +348,16 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
         if (names.size == 0)
             bins_group.add (new Adw.ActionRow () { title = _("No binary packages") });
+    }
+
+    private async void refresh_install_states () {
+        if (repo_evr.length == 0 || install_buttons.size == 0) return;
+        var installed = yield pkg_mgr.get_installed_packages ();
+        foreach (var e in install_buttons.entries) {
+            if (!installed.has_key (e.key)) continue;
+            if (Business.VersionCompare.compare_evr (installed.get (e.key), repo_evr) >= 0)
+                InstallController.mark_installed (e.value);
+        }
     }
 
     private async void load_changelog () {

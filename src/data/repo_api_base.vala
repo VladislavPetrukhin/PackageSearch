@@ -15,20 +15,41 @@ public abstract class RepoApiBase : GLib.Object {
         soup.timeout = 30;
     }
 
+    private const int HTTP_MAX_TRIES = 3;
+
     protected async Json.Node? http_get_json (
         string url, GLib.Cancellable? cancellable = null
     ) throws GLib.Error {
-        yield throttle ();
-        var msg = new Soup.Message ("GET", url);
-        var bytes = yield soup.send_and_read_async (
-            msg, GLib.Priority.DEFAULT, cancellable
-        );
-        if (msg.status_code < 200 || msg.status_code >= 300) return null;
+        for (int attempt = 0; true; attempt++) {
+            yield throttle ();
+            var msg = new Soup.Message ("GET", url);
+            var bytes = yield soup.send_and_read_async (
+                msg, GLib.Priority.DEFAULT, cancellable
+            );
+            uint code = msg.status_code;
 
-        unowned uint8[] raw = bytes.get_data ();
-        var parser = new Json.Parser ();
-        parser.load_from_data ((string) raw, (ssize_t) raw.length);
-        return parser.get_root ();
+            if (code >= 200 && code < 300) {
+                unowned uint8[] raw = bytes.get_data ();
+                var parser = new Json.Parser ();
+                parser.load_from_data ((string) raw, (ssize_t) raw.length);
+                return parser.get_root ();
+            }
+
+            bool retryable = (code == 429 || code == 502 || code == 503 || code == 504);
+            if (!retryable || attempt >= HTTP_MAX_TRIES - 1) return null;
+            if (cancellable != null && cancellable.is_cancelled ()) return null;
+            yield backoff (attempt);
+        }
+    }
+
+    private static async void backoff (int attempt) {
+        var src = new GLib.TimeoutSource ((uint) (400 << attempt));
+        src.set_callback (() => {
+            backoff.callback ();
+            return GLib.Source.REMOVE;
+        });
+        src.attach (GLib.MainContext.default ());
+        yield;
     }
 
     protected static string? jstr (Json.Object? obj, string key) {

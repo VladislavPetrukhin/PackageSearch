@@ -8,6 +8,8 @@ public class InstallController : GLib.Object {
     private Adw.ToastOverlay      toast_overlay;
     private Business.PackageManager pkg_mgr;
 
+    public signal void install_finished (bool success);
+
     public InstallController (Gtk.Widget parent, Adw.ToastOverlay toast_overlay,
                               Business.PackageManager pkg_mgr) {
         this.parent        = parent;
@@ -42,8 +44,8 @@ public class InstallController : GLib.Object {
             return;
         }
         if (plan.is_empty ()) {
-            btn.sensitive = true;
-            toast (_("Nothing to do"));
+            mark_installed (btn);
+            toast (_("Already up to date"));
             return;
         }
 
@@ -61,6 +63,7 @@ public class InstallController : GLib.Object {
         case Business.InstallResult.SUCCESS:
             mark_installed (btn);
             toast ((is_update ? _("Updated %s") : _("Installed %s")).printf (pkg_name));
+            install_finished (true);
             break;
         case Business.InstallResult.CANCELLED:
             btn.label = orig_label;
