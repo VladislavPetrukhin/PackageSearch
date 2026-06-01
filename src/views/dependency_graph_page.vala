@@ -6,34 +6,8 @@ using Intl;
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/dependency_graph_page.ui")]
 public class DependencyGraphPage : Adw.NavigationPage {
 
-    private enum Mode { BUILD, REVERSE }
-
-    private class GNode : GLib.Object {
-        public string  name;
-        public string  branch;
-        public int     depth;
-        public bool    is_root;
-        public bool    is_more;
-        public bool    expandable;
-        public bool    expanded;
-        public bool    loading;
-        public bool    virtual;
-        public bool    probed;
-        public Gee.ArrayList<Data.DependencyPackage>? cached_children;
-        public Gee.ArrayList<GNode> parents = new Gee.ArrayList<GNode> ();
-        public GNode?   more_parent;
-        public Gee.ArrayList<Data.DependencyPackage> pending = new Gee.ArrayList<Data.DependencyPackage> ();
-        public double  gx;
-        public double  gy;
-        public double  w;
-        public double  h;
-    }
-
     private const double COL_W      = 215.0;
     private const double ROW_H      = 50.0;
-    private const double NODE_H     = 34.0;
-    private const double NODE_MINW  = 110.0;
-    private const double NODE_MAXW  = 210.0;
     private const double MARGIN     = 60.0;
     private const double MIN_SCALE  = 0.25;
     private const double MAX_SCALE  = 2.2;
@@ -42,10 +16,10 @@ public class DependencyGraphPage : Adw.NavigationPage {
     private MainWindow win;
     private string root_name;
     private string branch;
-    private Mode   mode = Mode.BUILD;
+    private GraphMode   mode = GraphMode.BUILD;
 
-    private Gee.ArrayList<GNode>           nodes   = new Gee.ArrayList<GNode> ();
-    private Gee.HashMap<string, GNode>     present = new Gee.HashMap<string, GNode> ();
+    private Gee.ArrayList<GraphNode>           nodes   = new Gee.ArrayList<GraphNode> ();
+    private Gee.HashMap<string, GraphNode>     present = new Gee.HashMap<string, GraphNode> ();
 
     [GtkChild] private unowned Adw.WindowTitle  title_widget;
     [GtkChild] private unowned Adw.ViewStack    stack;
@@ -65,8 +39,10 @@ public class DependencyGraphPage : Adw.NavigationPage {
     private bool   fitted   = false;
     private int    generation = 0;
 
-    private Gee.ArrayList<GNode> probe_queue = new Gee.ArrayList<GNode> ();
+    private Gee.ArrayList<GraphNode> probe_queue = new Gee.ArrayList<GraphNode> ();
     private bool probing = false;
+
+    private GraphRenderer renderer;
 
     private GLib.Cancellable cancel = new GLib.Cancellable ();
 
@@ -84,15 +60,17 @@ public class DependencyGraphPage : Adw.NavigationPage {
     }
 
     private void wire_ui () {
+        renderer = new GraphRenderer (canvas);
+
         title_widget.title = _("Dependency graph");
         title_widget.subtitle = root_name + " · " + branch;
         empty_status.description = _("Could not build a graph for %s.").printf (root_name);
 
         mode_build.toggled.connect (() => {
-            if (mode_build.active && mode != Mode.BUILD) { mode = Mode.BUILD; reset_and_load (); }
+            if (mode_build.active && mode != GraphMode.BUILD) { mode = GraphMode.BUILD; reset_and_load (); }
         });
         mode_reverse.toggled.connect (() => {
-            if (mode_reverse.active && mode != Mode.REVERSE) { mode = Mode.REVERSE; reset_and_load (); }
+            if (mode_reverse.active && mode != GraphMode.REVERSE) { mode = GraphMode.REVERSE; reset_and_load (); }
         });
 
         fit_btn.clicked.connect (() => { fit_to_content (); });
@@ -141,7 +119,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
 
     private async void load_root () {
         int g = generation;
-        var root = new GNode ();
+        var root = new GraphNode ();
         root.name    = root_name;
         root.branch  = branch;
         root.depth   = 0;
@@ -161,11 +139,11 @@ public class DependencyGraphPage : Adw.NavigationPage {
         relayout ();
     }
 
-    private async Gee.ArrayList<Data.DependencyPackage> fetch_deps (GNode n) {
+    private async Gee.ArrayList<Data.DependencyPackage> fetch_deps (GraphNode n) {
         var api = new Data.DependencyApi ();
         try {
             Gee.ArrayList<Data.DependencyPackage>? r;
-            if (mode == Mode.BUILD)
+            if (mode == GraphMode.BUILD)
                 r = yield api.get_direct_build_depends (branch, n.name, cancel);
             else
                 r = yield api.get_reverse_depends (branch, n.name, "both", cancel);
@@ -177,7 +155,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         }
     }
 
-    private async void expand_into (GNode n) {
+    private async void expand_into (GraphNode n) {
         int g = generation;
         Gee.ArrayList<Data.DependencyPackage> kids;
         if (n.probed && n.cached_children != null) {
@@ -197,7 +175,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         relayout ();
     }
 
-    private void materialize (GNode n, Gee.ArrayList<Data.DependencyPackage> kids) {
+    private void materialize (GraphNode n, Gee.ArrayList<Data.DependencyPackage> kids) {
         int shown = 0;
         var overflow = new Gee.ArrayList<Data.DependencyPackage> ();
         foreach (var d in kids) {
@@ -210,7 +188,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
             }
         }
         if (overflow.size > 0) {
-            var more = new GNode ();
+            var more = new GraphNode ();
             more.is_more = true;
             more.depth = n.depth + 1;
             more.more_parent = n;
@@ -219,14 +197,14 @@ public class DependencyGraphPage : Adw.NavigationPage {
         }
     }
 
-    private void add_child (GNode parent, string name, string br) {
+    private void add_child (GraphNode parent, string name, string br) {
         if (present.has_key (name)) {
             var existing = present.get (name);
             if (existing != parent && !existing.parents.contains (parent))
                 existing.parents.add (parent);
             return;
         }
-        var n = new GNode ();
+        var n = new GraphNode ();
         n.name       = name;
         n.branch     = br;
         n.depth      = parent.depth + 1;
@@ -238,7 +216,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         enqueue_probe (n);
     }
 
-    private void enqueue_probe (GNode n) {
+    private void enqueue_probe (GraphNode n) {
         if (n.is_root || n.is_more || n.virtual || n.probed) return;
         probe_queue.add (n);
         if (!probing) run_probe.begin ();
@@ -267,7 +245,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         return false;
     }
 
-    private void reveal_more (GNode more) {
+    private void reveal_more (GraphNode more) {
         foreach (var d in more.pending) {
             if (Ui.is_nonempty (d.name))
                 add_child (more.more_parent, d.name, d.branch ?? branch);
@@ -277,11 +255,11 @@ public class DependencyGraphPage : Adw.NavigationPage {
     }
 
     private void relayout () {
-        var by_depth = new Gee.HashMap<int, Gee.ArrayList<GNode>> ();
+        var by_depth = new Gee.HashMap<int, Gee.ArrayList<GraphNode>> ();
         int max_depth = 0;
         foreach (var n in nodes) {
-            measure_node (n);
-            if (!by_depth.has_key (n.depth)) by_depth.set (n.depth, new Gee.ArrayList<GNode> ());
+            renderer.measure_node (n);
+            if (!by_depth.has_key (n.depth)) by_depth.set (n.depth, new Gee.ArrayList<GraphNode> ());
             by_depth.get (n.depth).add (n);
             if (n.depth > max_depth) max_depth = n.depth;
         }
@@ -316,218 +294,12 @@ public class DependencyGraphPage : Adw.NavigationPage {
         canvas.queue_draw ();
     }
 
-    private void measure_node (GNode n) {
-        if (n.is_more) {
-            var l = new Pango.Layout (canvas.get_pango_context ());
-            l.set_text (more_label (n), -1);
-            int tw, th;
-            l.get_pixel_size (out tw, out th);
-            n.w = tw + 28;
-            n.h = 28;
-            return;
-        }
-        var layout = new Pango.Layout (canvas.get_pango_context ());
-        layout.set_text (n.name, -1);
-        int tw2, th2;
-        layout.get_pixel_size (out tw2, out th2);
-        double extras = (n.is_root ? 28.0 : 40.0)
-                      + (!n.is_root && n.expandable && !n.expanded ? 22.0 : 0.0)
-                      + (n.parents.size >= 2 ? 26.0 : 0.0);
-        n.w = (tw2 + extras).clamp (NODE_MINW, NODE_MAXW);
-        n.h = NODE_H;
-    }
-
-    private static string more_label (GNode n) {
-        return _("show %d more").printf (n.pending.size) + "  →";
-    }
-
-    private struct Palette {
-        Gdk.RGBA text; Gdk.RGBA dim; Gdk.RGBA card; Gdk.RGBA brd;
-        Gdk.RGBA accent; Gdk.RGBA accent_brd; Gdk.RGBA edge;
-    }
-
-    private static Gdk.RGBA rgb (double r, double g, double b, double a = 1.0) {
-        return { (float) r, (float) g, (float) b, (float) a };
-    }
-
-    private Palette palette () {
-        bool dark = Adw.StyleManager.get_default ().dark;
-        var p = Palette ();
-        if (dark) {
-            p.text       = rgb (0.95, 0.95, 0.96);
-            p.dim        = rgb (0.95, 0.95, 0.96, 0.55);
-            p.card       = rgb (0.21, 0.21, 0.23);
-            p.brd        = rgb (0.40, 0.40, 0.44);
-            p.accent     = rgb (0.47, 0.68, 1.0);
-            p.accent_brd = rgb (0.21, 0.52, 0.89);
-        } else {
-            p.text       = rgb (0.12, 0.12, 0.13);
-            p.dim        = rgb (0.12, 0.12, 0.13, 0.55);
-            p.card       = rgb (1.0, 1.0, 1.0);
-            p.brd        = rgb (0.82, 0.82, 0.84);
-            p.accent     = rgb (0.11, 0.44, 0.85);
-            p.accent_brd = rgb (0.21, 0.52, 0.89);
-        }
-        p.edge = (mode == Mode.BUILD)
-            ? rgb (0.16, 0.74, 0.46) : rgb (0.76, 0.45, 0.82);
-        return p;
-    }
-
     private void draw (Gtk.DrawingArea da, Cairo.Context cr, int width, int height) {
         if (!fitted && width > 0 && height > 0 && nodes.size > 1) {
             fit_to_content_in (width, height);
             fitted = true;
         }
-
-        var p = palette ();
-
-        cr.save ();
-        cr.translate (width / 2.0 + offset_x, height / 2.0 + offset_y);
-        cr.scale (scale, scale);
-
-        foreach (var n in nodes) {
-            if (n.is_root) continue;
-            cr.set_source_rgba (p.edge.red, p.edge.green, p.edge.blue, 0.5);
-            if (n.is_more && n.more_parent != null) {
-                draw_edge (cr, n.more_parent, n);
-            } else {
-                foreach (var par in n.parents) {
-                    bool hub = n.parents.size >= 2;
-                    cr.set_line_width (hub ? 2.0 : 1.4);
-                    cr.set_source_rgba (p.edge.red, p.edge.green, p.edge.blue, hub ? 0.8 : 0.45);
-                    draw_edge (cr, par, n);
-                }
-            }
-        }
-
-        foreach (var n in nodes) {
-            if (n.is_more) draw_more (cr, n, p);
-            else draw_node (cr, n, p);
-        }
-
-        cr.restore ();
-    }
-
-    private void draw_edge (Cairo.Context cr, GNode from, GNode to) {
-        double x1 = from.gx + from.w / 2.0, y1 = from.gy;
-        double x2 = to.gx - to.w / 2.0,     y2 = to.gy;
-        double mx = (x1 + x2) / 2.0;
-        cr.move_to (x1, y1);
-        cr.curve_to (mx, y1, mx, y2, x2, y2);
-        cr.stroke ();
-    }
-
-    private void draw_node (Cairo.Context cr, GNode n, Palette p) {
-        bool hub = n.parents.size >= 2;
-        double x = n.gx - n.w / 2.0, y = n.gy - n.h / 2.0;
-
-        rounded_rect (cr, x, y, n.w, n.h, 9.0);
-        if (n.is_root || hub)
-            cr.set_source_rgba (p.accent_brd.red, p.accent_brd.green, p.accent_brd.blue, 0.16);
-        else
-            cr.set_source_rgba (p.card.red, p.card.green, p.card.blue, 1.0);
-        cr.fill_preserve ();
-
-        if (n.is_root || hub) {
-            cr.set_source_rgba (p.accent_brd.red, p.accent_brd.green, p.accent_brd.blue, 1.0);
-            cr.set_line_width (2.0);
-        } else {
-            cr.set_source_rgba (p.brd.red, p.brd.green, p.brd.blue, 1.0);
-            cr.set_line_width (1.0);
-        }
-        cr.stroke ();
-
-        double tx = x + 12.0;
-        if (!n.is_root && !n.virtual) {
-            cr.set_source_rgba (p.edge.red, p.edge.green, p.edge.blue, 1.0);
-            cr.arc (x + 11.0, n.gy, 3.5, 0, 2 * Math.PI);
-            cr.fill ();
-            tx = x + 22.0;
-        }
-
-        double right_reserve = 10.0
-            + (!n.is_root && n.expandable && !n.expanded ? 20.0 : 0.0)
-            + (hub ? 24.0 : 0.0);
-        double avail = n.w - (tx - x) - right_reserve;
-
-        var layout = new Pango.Layout (canvas.get_pango_context ());
-        var fd = canvas.get_pango_context ().get_font_description ().copy ();
-        fd.set_weight (n.is_root ? Pango.Weight.BOLD : Pango.Weight.NORMAL);
-        if (n.virtual) fd.set_style (Pango.Style.ITALIC);
-        fd.set_absolute_size (13 * Pango.SCALE);
-        layout.set_font_description (fd);
-        layout.set_text (n.name, -1);
-        layout.set_ellipsize (Pango.EllipsizeMode.END);
-        layout.set_width ((int) (avail * Pango.SCALE));
-        int lw, lh;
-        layout.get_pixel_size (out lw, out lh);
-
-        Gdk.RGBA name_col = n.is_root ? p.accent : (n.virtual ? p.dim : p.text);
-        cr.set_source_rgba (name_col.red, name_col.green, name_col.blue, name_col.alpha);
-        cr.move_to (tx, n.gy - lh / 2.0);
-        Pango.cairo_show_layout (cr, layout);
-
-        if (hub) {
-            var deg = new Pango.Layout (canvas.get_pango_context ());
-            var dfd = canvas.get_pango_context ().get_font_description ().copy ();
-            dfd.set_weight (Pango.Weight.BOLD);
-            dfd.set_absolute_size (11 * Pango.SCALE);
-            deg.set_font_description (dfd);
-            deg.set_text ("×%d".printf (n.parents.size), -1);
-            int dw, dh;
-            deg.get_pixel_size (out dw, out dh);
-            double dx = x + n.w - (n.expandable && !n.expanded ? 22.0 : 8.0) - dw;
-            cr.set_source_rgba (p.accent.red, p.accent.green, p.accent.blue, 1.0);
-            cr.move_to (dx, n.gy - dh / 2.0);
-            Pango.cairo_show_layout (cr, deg);
-        }
-
-        if (!n.is_root && n.expandable && !n.expanded) {
-            double bx = x + n.w - 13.0;
-            cr.set_source_rgba (p.text.red, p.text.green, p.text.blue, 0.10);
-            cr.arc (bx, n.gy, 8.0, 0, 2 * Math.PI);
-            cr.fill ();
-            cr.set_source_rgba (p.text.red, p.text.green, p.text.blue, 0.75);
-            cr.set_line_width (1.5);
-            if (n.loading) {
-                cr.arc (bx, n.gy, 5.0, 0, 1.4 * Math.PI);
-                cr.stroke ();
-            } else {
-                cr.move_to (bx - 3.5, n.gy); cr.line_to (bx + 3.5, n.gy);
-                cr.move_to (bx, n.gy - 3.5); cr.line_to (bx, n.gy + 3.5);
-                cr.stroke ();
-            }
-        }
-    }
-
-    private void draw_more (Cairo.Context cr, GNode n, Palette p) {
-        double x = n.gx - n.w / 2.0, y = n.gy - n.h / 2.0;
-        rounded_rect (cr, x, y, n.w, n.h, 14.0);
-        cr.set_source_rgba (p.brd.red, p.brd.green, p.brd.blue, 1.0);
-        cr.set_line_width (1.0);
-        cr.set_dash ({ 4.0, 3.0 }, 0);
-        cr.stroke ();
-        cr.set_dash ({}, 0);
-
-        var layout = new Pango.Layout (canvas.get_pango_context ());
-        var fd = canvas.get_pango_context ().get_font_description ().copy ();
-        fd.set_absolute_size (12 * Pango.SCALE);
-        layout.set_font_description (fd);
-        layout.set_text (more_label (n), -1);
-        int lw, lh;
-        layout.get_pixel_size (out lw, out lh);
-        cr.set_source_rgba (p.dim.red, p.dim.green, p.dim.blue, 1.0);
-        cr.move_to (n.gx - lw / 2.0, n.gy - lh / 2.0);
-        Pango.cairo_show_layout (cr, layout);
-    }
-
-    private static void rounded_rect (Cairo.Context cr, double x, double y, double w, double h, double r) {
-        cr.new_sub_path ();
-        cr.arc (x + w - r, y + r,     r, -0.5 * Math.PI, 0);
-        cr.arc (x + w - r, y + h - r, r, 0,              0.5 * Math.PI);
-        cr.arc (x + r,     y + h - r, r, 0.5 * Math.PI,  Math.PI);
-        cr.arc (x + r,     y + r,     r, Math.PI,        1.5 * Math.PI);
-        cr.close_path ();
+        renderer.render (cr, nodes, mode, scale, offset_x, offset_y, width, height);
     }
 
     private void on_click (Gtk.GestureClick g, int n_press, double px, double py) {
@@ -557,7 +329,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         }
     }
 
-    private async void resolve_and_open (GNode n) {
+    private async void resolve_and_open (GraphNode n) {
         if (n.loading) return;
         n.loading = true;
         var api = new Data.DependencyApi ();
