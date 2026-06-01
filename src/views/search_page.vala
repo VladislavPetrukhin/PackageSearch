@@ -193,11 +193,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
 
         retry_btn.clicked.connect (() => trigger_search_now ());
 
-        find_bar.connect_entry (find_entry);
-        find_entry.search_changed.connect (() => Ui.filter_listbox (results_list, find_entry.text));
-        find_bar.notify["search-mode-enabled"].connect (() => {
-            if (!find_bar.search_mode_enabled) Ui.filter_listbox (results_list, "");
-        });
+        Ui.attach_find_bar (find_bar, find_entry, null, (q) => Ui.filter_listbox (results_list, q));
 
         show_idle ();
     }

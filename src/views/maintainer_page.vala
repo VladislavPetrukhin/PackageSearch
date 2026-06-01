@@ -29,12 +29,7 @@ public class MaintainerPage : Adw.NavigationPage, Ui.Findable {
         title_widget.subtitle = branch;
         empty_status.description = _("This maintainer has no packages in %s.").printf (branch);
 
-        find_bar.connect_entry (find_entry);
-        find_bar.set_key_capture_widget (this);
-        find_entry.search_changed.connect (() => Ui.filter_listbox (list, find_entry.text));
-        find_bar.notify["search-mode-enabled"].connect (() => {
-            if (!find_bar.search_mode_enabled) Ui.filter_listbox (list, "");
-        });
+        Ui.attach_find_bar (find_bar, find_entry, this, (q) => Ui.filter_listbox (list, q));
 
         this.hidden.connect (() => {
             if (!cancel.is_cancelled ()) cancel.cancel ();

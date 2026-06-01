@@ -37,4 +37,16 @@ namespace Ui {
         if (is_nonempty (release)) vr = (vr == "") ? release : vr + "-" + release;
         return vr;
     }
+
+    public delegate void FindFunc (string query);
+
+    public static void attach_find_bar (Gtk.SearchBar bar, Gtk.SearchEntry entry,
+                                        Gtk.Widget? capture, owned FindFunc on_query) {
+        bar.connect_entry (entry);
+        if (capture != null) bar.set_key_capture_widget (capture);
+        entry.search_changed.connect (() => on_query (entry.text));
+        bar.notify["search-mode-enabled"].connect (() => {
+            if (!bar.search_mode_enabled) on_query ("");
+        });
+    }
 }

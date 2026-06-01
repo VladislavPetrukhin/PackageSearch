@@ -31,12 +31,7 @@ public class TaskDetailsPage : Adw.NavigationPage, Ui.Findable {
         title_widget.subtitle = branch;
         error_status.description = _("Could not load task #%lld.").printf (task_id);
 
-        find_bar.connect_entry (find_entry);
-        find_bar.set_key_capture_widget (this);
-        find_entry.search_changed.connect (() => run_find (find_entry.text));
-        find_bar.notify["search-mode-enabled"].connect (() => {
-            if (!find_bar.search_mode_enabled) run_find ("");
-        });
+        Ui.attach_find_bar (find_bar, find_entry, this, (q) => run_find (q));
 
         this.hidden.connect (() => {
             if (!cancel.is_cancelled ()) cancel.cancel ();

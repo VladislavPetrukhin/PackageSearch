@@ -124,12 +124,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
         installer = new InstallController (this, toast_overlay, pkg_mgr);
 
-        find_bar.connect_entry (find_entry);
-        find_bar.set_key_capture_widget (this);
-        find_entry.search_changed.connect (() => run_find (find_entry.text));
-        find_bar.notify["search-mode-enabled"].connect (() => {
-            if (!find_bar.search_mode_enabled) run_find ("");
-        });
+        Ui.attach_find_bar (find_bar, find_entry, this, (q) => run_find (q));
 
         load_details.begin ();
     }
