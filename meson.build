@@ -4,7 +4,6 @@ project('PackageSearch', 'vala',
   default_options: ['warning_level=0'],
 )
 
-fs = import('fs')
 gnome = import('gnome')
 i18n = import('i18n')
 
