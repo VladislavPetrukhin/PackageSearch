@@ -35,8 +35,6 @@ src = files(
   'business/package_manager.vala',
 )
 
-# Static library with the subset of sources that have no UI / network /
-# libalt-repo dependencies — used by the unit tests in tests/.
 lib_testable = static_library(
   'testable',
   sources: [
@@ -59,8 +57,6 @@ lib_testable = static_library(
   install: false,
 )
 
-# Exposes lib_testable plus the build dir where valac dropped the generated
-# testable.h so dependent targets (tests/) can #include it.
 lib_testable_dep = declare_dependency(
   link_with:           lib_testable,
   include_directories: include_directories('.'),
