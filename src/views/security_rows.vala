@@ -23,15 +23,11 @@ public class BugRow : Adw.ActionRow {
         string id = b.id;
         var click = new Gtk.GestureClick ();
         click.released.connect ((n, x, y) => {
-            if (n == 1) open_uri ("https://bugzilla.altlinux.org/" + id);
+            if (n == 1) Ui.open_uri ("https://bugzilla.altlinux.org/" + id);
         });
         this.add_controller (click);
     }
 
-    private static void open_uri (string url) {
-        try { AppInfo.launch_default_for_uri (url, null); }
-        catch (Error e) { warning ("open url failed: %s", e.message); }
-    }
 }
 
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/bug_filter_row.ui")]
@@ -70,12 +66,8 @@ public class LinkRow : Adw.ActionRow {
             activatable = true;
             arrow.visible = true;
             string u = url;
-            activated.connect (() => open_uri (u));
+            activated.connect (() => Ui.open_uri (u));
         }
     }
 
-    private static void open_uri (string url) {
-        try { AppInfo.launch_default_for_uri (url, null); }
-        catch (Error e) { warning ("open url failed: %s", e.message); }
-    }
 }

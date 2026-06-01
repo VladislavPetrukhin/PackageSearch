@@ -6,93 +6,31 @@ app_id = 'space.altlinux.PackageSearch'
 desktop_conf = configuration_data()
 desktop_conf.set('APP_ID', app_id)
 
-ui_main = custom_target(
-  'main_window.ui',
-  input: files('ui/main_window.blp'),
-  output: 'main_window.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
+blueprints = [
+  'main_window',
+  'search_page',
+  'details_page',
+  'maintainer_page',
+  'dependency_graph_page',
+  'task_details_page',
+  'shortcuts',
+  'bug_row',
+  'bug_filter_row',
+  'errata_row',
+  'link_row',
+  'lazy_expander_row',
+]
 
-ui_search = custom_target(
-  'search_page.ui',
-  input: files('ui/search_page.blp'),
-  output: 'search_page.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
-
-ui_details = custom_target(
-  'details_page.ui',
-  input: files('ui/details_page.blp'),
-  output: 'details_page.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
-
-ui_maintainer = custom_target(
-  'maintainer_page.ui',
-  input: files('ui/maintainer_page.blp'),
-  output: 'maintainer_page.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
-
-ui_graph = custom_target(
-  'dependency_graph_page.ui',
-  input: files('ui/dependency_graph_page.blp'),
-  output: 'dependency_graph_page.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
-
-ui_task = custom_target(
-  'task_details_page.ui',
-  input: files('ui/task_details_page.blp'),
-  output: 'task_details_page.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
-
-ui_shortcuts = custom_target(
-  'shortcuts.ui',
-  input: files('ui/shortcuts.blp'),
-  output: 'shortcuts.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
-
-ui_bug_row = custom_target(
-  'bug_row.ui',
-  input: files('ui/bug_row.blp'),
-  output: 'bug_row.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
-
-ui_bug_filter_row = custom_target(
-  'bug_filter_row.ui',
-  input: files('ui/bug_filter_row.blp'),
-  output: 'bug_filter_row.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
-
-ui_errata_row = custom_target(
-  'errata_row.ui',
-  input: files('ui/errata_row.blp'),
-  output: 'errata_row.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
-
-ui_link_row = custom_target(
-  'link_row.ui',
-  input: files('ui/link_row.blp'),
-  output: 'link_row.ui',
-  command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
-  build_by_default: true
-)
+ui_targets = []
+foreach name : blueprints
+  ui_targets += custom_target(
+    name + '.ui',
+    input: files('ui' / (name + '.blp')),
+    output: name + '.ui',
+    command: [bp, 'compile', '--output', '@OUTPUT@', '@INPUT@'],
+    build_by_default: true,
+  )
+endforeach
 
 gresource_xml = configure_file(
   input: files('resources.gresource.xml.in'),
@@ -104,7 +42,7 @@ resources = gnome.compile_resources(
   'packagesearch-resources',
   gresource_xml,
   source_dir: [meson.current_build_dir(), meson.current_source_dir()],
-  dependencies: [ui_main, ui_search, ui_details, ui_maintainer, ui_graph, ui_task, ui_shortcuts, ui_bug_row, ui_bug_filter_row, ui_errata_row, ui_link_row],
+  dependencies: ui_targets,
   c_name: 'packagesearch'
 )
 

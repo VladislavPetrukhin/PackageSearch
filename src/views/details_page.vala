@@ -45,23 +45,6 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         if (!cancel.is_cancelled ()) cancel.cancel ();
     }
 
-    private static bool is_nonempty (string? s) {
-        return s != null && s.strip ().length > 0;
-    }
-
-    private static string normalize_url (string raw) {
-        string url = (raw ?? "").strip ();
-        if (url.length == 0) return url;
-        if (!(url.has_prefix ("http://") || url.has_prefix ("https://")))
-            url = "https://" + url;
-        return url;
-    }
-
-    private static void open_uri (string url) {
-        try { AppInfo.launch_default_for_uri (url, null); }
-        catch (Error e) { warning ("open url failed: %s", e.message); }
-    }
-
     private void copy_to_clipboard (string text) {
         var disp = Gdk.Display.get_default ();
         if (disp != null) disp.get_clipboard ().set_text (text);
@@ -81,15 +64,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         make_row_clickable (row, () => copy_to_clipboard (name));
     }
 
-    private static string trim_toast (string s) {
-        const int LIMIT = 80;
-        var clean = s.replace ("\n", " ").strip ();
-        if (clean.length <= LIMIT) return clean;
-        return clean.substring (0, LIMIT) + "…";
-    }
-
     private void toast (string s) {
-        toast_overlay.add_toast (new Adw.Toast (trim_toast (s)));
+        toast_overlay.add_toast (new Adw.Toast (Ui.trim_toast (s)));
     }
 
     private static Gtk.Label dim_label (string text) {
@@ -126,7 +102,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private void add_info_row_if_nonempty (string title, string? value) {
-        if (is_nonempty (value))
+        if (Ui.is_nonempty (value))
             info_group.add (new Adw.ActionRow () {
                 title = title,
                 subtitle = GLib.Markup.escape_text (value, -1),
@@ -176,7 +152,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         name_l.add_css_class ("title-2");
         col.append (name_l);
 
-        if (is_nonempty (summary)) {
+        if (Ui.is_nonempty (summary)) {
             var sum_l = new Gtk.Label (summary) {
                 xalign = 0,
                 wrap = true,
@@ -186,7 +162,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             col.append (sum_l);
         }
 
-        if (is_nonempty (grp)) {
+        if (Ui.is_nonempty (grp)) {
             var grp_l = new Gtk.Label (grp) {
                 xalign = 0,
                 ellipsize = Pango.EllipsizeMode.END,
@@ -340,9 +316,9 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             (is_update ? _("Update %s?") : _("Install %s?")).printf (pkg_name), null);
 
         string sub = "";
-        if (is_nonempty (plan.summary))  sub = plan.summary;
-        if (is_nonempty (plan.download)) sub += (sub == "" ? "" : "\n") + plan.download;
-        if (is_nonempty (plan.disk))     sub += (sub == "" ? "" : "\n") + plan.disk;
+        if (Ui.is_nonempty (plan.summary))  sub = plan.summary;
+        if (Ui.is_nonempty (plan.download)) sub += (sub == "" ? "" : "\n") + plan.download;
+        if (Ui.is_nonempty (plan.disk))     sub += (sub == "" ? "" : "\n") + plan.disk;
         if (sub != "") dlg.set_body (sub);
 
         dlg.set_extra_child (build_plan_widget (plan));
@@ -453,7 +429,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             var d = yield api.get_source_details (branch, group.name);
 
             var vr = (d.version ?? "");
-            if (is_nonempty (d.release))
+            if (Ui.is_nonempty (d.release))
                 vr = (vr == "") ? d.release : vr + "-" + d.release;
             this.title = (vr != "") ? @"$(group.name) $(vr)" : group.name;
             header_title.set_title (group.name);
@@ -465,7 +441,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
             add_info_row_if_nonempty (_("Version"),    d.version);
             add_info_row_if_nonempty (_("Release"),    d.release);
-            if (is_nonempty (d.maintainer)) {
+            if (Ui.is_nonempty (d.maintainer)) {
                 string nick = d.maintainer;
                 var row_m = new Adw.ActionRow () {
                     title = _("Maintainer"),
@@ -478,8 +454,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             }
             add_info_row_if_nonempty (_("License"),    d.license);
 
-            if (is_nonempty (d.homepage)) {
-                string url = normalize_url (d.homepage ?? "");
+            if (Ui.is_nonempty (d.homepage)) {
+                string url = Ui.normalize_url (d.homepage ?? "");
                 if (url.length > 0) {
                     var row_home = new Adw.ActionRow () {
                         title = _("Homepage"),
@@ -487,7 +463,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                         subtitle_selectable = true
                     };
                     row_home.add_suffix (new Gtk.Image.from_icon_name ("adw-external-link-symbolic"));
-                    make_row_clickable (row_home, () => open_uri (url));
+                    make_row_clickable (row_home, () => Ui.open_uri (url));
                     info_group.add (row_home);
                 }
             }
@@ -530,13 +506,6 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         error_status.visible = true;
     }
 
-    private Adw.ActionRow loading_row () {
-        var r = new Adw.ActionRow () { title = _("Loading…") };
-        var sp = new Gtk.Spinner () { spinning = true, valign = Gtk.Align.CENTER };
-        r.add_prefix (sp);
-        return r;
-    }
-
     private async void populate_binaries (Data.PackageDetails d) {
         clear_group (bins_group);
 
@@ -568,9 +537,9 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         string repo_evr = "";
         if (can_install) {
             installed = yield pkg_mgr.get_installed_packages ();
-            if (is_nonempty (d.version)) {
+            if (Ui.is_nonempty (d.version)) {
                 repo_evr = "0:" + d.version;
-                if (is_nonempty (d.release)) repo_evr += "-" + d.release;
+                if (Ui.is_nonempty (d.release)) repo_evr += "-" + d.release;
             }
         }
 
@@ -656,8 +625,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             foreach (var it in log.changelog) {
                 any = true;
                 string head = "";
-                if (is_nonempty (it.date)) head = it.date;
-                if (is_nonempty (it.nick)) head = (head == "") ? it.nick : head + " — " + it.nick;
+                if (Ui.is_nonempty (it.date)) head = it.date;
+                if (Ui.is_nonempty (it.nick)) head = (head == "") ? it.nick : head + " — " + it.nick;
 
                 string preview = (it.message ?? "").strip ();
                 int nl = preview.index_of_char ('\n');
@@ -671,7 +640,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     activatable = true
                 };
                 row.set_subtitle_lines (1);
-                if (is_nonempty (it.evr)) row.add_suffix (dim_label (it.evr));
+                if (Ui.is_nonempty (it.evr)) row.add_suffix (dim_label (it.evr));
 
                 string captured_title = row.title;
                 string captured_body  = it.message ?? "";
@@ -708,123 +677,86 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         graph_btn.clicked.connect (() => win.show_dependency_graph (group.name, branch));
         deps_group.add (graph_row);
 
-        var build_exp = new Adw.ExpanderRow () {
+        var build_exp = new LazyExpanderRow () {
             title = _("Build dependencies"),
             subtitle = _("Packages required to build %s").printf (group.name)
         };
-        var build_ph = loading_row ();
-        build_exp.add_row (build_ph);
-        bool build_started = false;
-        build_exp.notify["expanded"].connect (() => {
-            if (build_started || !build_exp.expanded) return;
-            build_started = true;
-            fill_build_depends.begin (build_exp, build_ph);
-        });
+        build_exp.load_requested.connect (() => fill_build_depends.begin (build_exp));
         deps_group.add (build_exp);
 
-        var rev_exp = new Adw.ExpanderRow () {
+        var rev_exp = new LazyExpanderRow () {
             title = _("Reverse dependencies"),
             subtitle = _("Source packages that depend on %s").printf (group.name)
         };
-        var rev_ph = loading_row ();
-        rev_exp.add_row (rev_ph);
-        bool rev_started = false;
-        rev_exp.notify["expanded"].connect (() => {
-            if (rev_started || !rev_exp.expanded) return;
-            rev_started = true;
-            fill_reverse_depends.begin (rev_exp, rev_ph);
-        });
+        rev_exp.load_requested.connect (() => fill_reverse_depends.begin (rev_exp));
         deps_group.add (rev_exp);
     }
 
-    private async void fill_build_depends (Adw.ExpanderRow exp, Adw.ActionRow placeholder) {
+    private async void fill_build_depends (LazyExpanderRow exp) {
         var api = new Data.AltRepoClient ();
         try {
             var builds = yield api.get_direct_build_depends (branch, group.name);
             if (cancel.is_cancelled ()) return;
-            exp.remove (placeholder);
+            exp.clear_placeholder ();
             if (builds == null || builds.size == 0) {
-                exp.add_row (new Adw.ActionRow () { title = _("No dependencies found") });
+                exp.show_message (_("No dependencies found"));
             } else {
                 exp.set_subtitle (_("%d packages").printf (builds.size));
                 foreach (var d in builds) {
-                    var vr = (d.version ?? "");
-                    if (is_nonempty (d.release)) vr = (vr == "") ? d.release : vr + "-" + d.release;
                     var r = new Adw.ActionRow () { title = d.name };
                     make_name_copyable (r, d.name);
+                    var vr = Ui.evr (d.version, d.release);
                     if (vr != "") r.add_suffix (dim_label (vr));
                     exp.add_row (r);
                 }
             }
         } catch (Error e) {
             warning ("[DetailsPage] build deps failed: %s", e.message);
-            exp.remove (placeholder);
-            exp.add_row (new Adw.ActionRow () {
-                title = _("Build dependencies unavailable"),
-                subtitle = GLib.Markup.escape_text (e.message, -1)
-            });
+            exp.show_message (_("Build dependencies unavailable"), e.message);
         }
     }
 
-    private async void fill_reverse_depends (Adw.ExpanderRow exp, Adw.ActionRow placeholder) {
+    private async void fill_reverse_depends (LazyExpanderRow exp) {
         var api = new Data.AltRepoClient ();
         try {
             var revs = yield api.get_reverse_depends (branch, group.name, "both");
             if (cancel.is_cancelled ()) return;
-            exp.remove (placeholder);
+            exp.clear_placeholder ();
             if (revs == null || revs.size == 0) {
-                exp.add_row (new Adw.ActionRow () { title = _("No reverse dependencies") });
+                exp.show_message (_("No reverse dependencies"));
             } else {
                 exp.set_subtitle (_("%d packages").printf (revs.size));
                 foreach (var d in revs) {
                     var r = new Adw.ActionRow () { title = d.name };
                     make_name_copyable (r, d.name);
-                    if (is_nonempty (d.branch)) r.add_suffix (dim_label (d.branch));
+                    if (Ui.is_nonempty (d.branch)) r.add_suffix (dim_label (d.branch));
                     exp.add_row (r);
                 }
             }
         } catch (Error e) {
             warning ("[DetailsPage] reverse deps failed: %s", e.message);
-            exp.remove (placeholder);
-            exp.add_row (new Adw.ActionRow () {
-                title = _("Reverse dependencies unavailable"),
-                subtitle = GLib.Markup.escape_text (e.message, -1)
-            });
+            exp.show_message (_("Reverse dependencies unavailable"), e.message);
         }
     }
 
     private void load_security () {
         clear_group (security_group);
 
-        var errata_exp = new Adw.ExpanderRow () { title = _("Security advisories") };
-        var errata_ph = loading_row ();
-        errata_exp.add_row (errata_ph);
-        bool errata_started = false;
-        errata_exp.notify["expanded"].connect (() => {
-            if (errata_started || !errata_exp.expanded) return;
-            errata_started = true;
-            fill_errata.begin (errata_exp, errata_ph);
-        });
+        var errata_exp = new LazyExpanderRow () { title = _("Security advisories") };
+        errata_exp.load_requested.connect (() => fill_errata.begin (errata_exp));
         security_group.add (errata_exp);
 
-        var bugs_exp = new Adw.ExpanderRow () { title = _("Bugzilla") };
-        var bugs_ph = loading_row ();
-        bugs_exp.add_row (bugs_ph);
-        bool bugs_started = false;
-        bugs_exp.notify["expanded"].connect (() => {
-            if (bugs_started || !bugs_exp.expanded) return;
-            bugs_started = true;
-            fill_bugs.begin (bugs_exp, bugs_ph);
-        });
+        var bugs_exp = new LazyExpanderRow () { title = _("Bugzilla") };
+        bugs_exp.load_requested.connect (() => fill_bugs.begin (bugs_exp));
         security_group.add (bugs_exp);
     }
 
-    private async void fill_errata (Adw.ExpanderRow exp, Adw.ActionRow placeholder) {
+    private async void fill_errata (LazyExpanderRow exp) {
         var api = new Data.AltRepoClient ();
         try {
             var erratas = yield api.get_errata_for_package (branch, group.name);
             if (cancel.is_cancelled ()) return;
-            exp.remove (placeholder);
+            exp.clear_placeholder ();
             int shown = 0;
             if (erratas != null) {
                 foreach (var er in erratas) {
@@ -833,27 +765,17 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 }
             }
             if (shown == 0)
-                exp.add_row (new Adw.ActionRow () { title = _("No security advisories") });
+                exp.show_message (_("No security advisories"));
             else
                 exp.set_subtitle (_("%d advisories").printf (shown));
         } catch (Error e) {
             warning ("[DetailsPage] errata failed: %s", e.message);
-            exp.remove (placeholder);
-            exp.add_row (new Adw.ActionRow () {
-                title = _("Advisories unavailable"),
-                subtitle = GLib.Markup.escape_text (e.message, -1)
-            });
+            exp.show_message (_("Advisories unavailable"), e.message);
         }
     }
 
-    private static string date_only (string? iso) {
-        if (iso == null) return "";
-        int t = iso.index_of ("T");
-        return (t > 0) ? iso.substring (0, t) : iso;
-    }
-
     private static bool is_vuln_ref (Data.ErrataRef r) {
-        if (!is_nonempty (r.id)) return false;
+        if (!Ui.is_nonempty (r.id)) return false;
         if ((r.ref_type ?? "").down () == "bug") return false;
         string idu = r.id.up ();
         if (idu.has_prefix ("CVE") || idu.has_prefix ("BDU") || idu.has_prefix ("GHSA"))
@@ -879,13 +801,13 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         }
 
         string ver = "";
-        if (is_nonempty (er.pkg_version)) {
+        if (Ui.is_nonempty (er.pkg_version)) {
             ver = er.pkg_version;
-            if (is_nonempty (er.pkg_release)) ver += "-" + er.pkg_release;
+            if (Ui.is_nonempty (er.pkg_release)) ver += "-" + er.pkg_release;
         }
         string title = (ver != "") ? ver : er.id;
 
-        string sub = date_only (er.created);
+        string sub = Ui.date_only (er.created);
         string counts = "";
         if (cve > 0) counts = _("%d CVE").printf (cve);
         if (bdu > 0) counts = (counts == "") ? _("%d BDU").printf (bdu)
@@ -911,14 +833,14 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         return null;
     }
 
-    private async void fill_bugs (Adw.ExpanderRow exp, Adw.ActionRow placeholder) {
+    private async void fill_bugs (LazyExpanderRow exp) {
         var api = new Data.AltRepoClient ();
         try {
             var bugs = yield api.get_bugs_by_package (group.name);
             if (cancel.is_cancelled ()) return;
-            exp.remove (placeholder);
+            exp.clear_placeholder ();
             if (bugs == null || bugs.size == 0) {
-                exp.add_row (new Adw.ActionRow () { title = _("No bugs found") });
+                exp.show_message (_("No bugs found"));
                 return;
             }
             exp.set_subtitle (_("%d bug(s) found").printf (bugs.size));
@@ -953,11 +875,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 exp.add_row (row);
         } catch (Error e) {
             warning ("[DetailsPage] bugs failed: %s", e.message);
-            exp.remove (placeholder);
-            exp.add_row (new Adw.ActionRow () {
-                title = _("Bugzilla unavailable"),
-                subtitle = GLib.Markup.escape_text (e.message, -1)
-            });
+            exp.show_message (_("Bugzilla unavailable"), e.message);
         }
     }
 
@@ -989,7 +907,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             }
             foreach (var v in vs) {
                 string vr = (v.version ?? "");
-                if (is_nonempty (v.release)) vr = (vr == "") ? v.release : vr + "-" + v.release;
+                if (Ui.is_nonempty (v.release)) vr = (vr == "") ? v.release : vr + "-" + v.release;
 
                 bool is_current = (v.branch == branch);
                 var row = new Adw.ActionRow () { title = v.branch };
@@ -1041,7 +959,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     private string evr_string (string? v, string? r) {
         string s = v ?? "";
-        if (is_nonempty (r)) s = (s == "") ? r : s + "-" + r;
+        if (Ui.is_nonempty (r)) s = (s == "") ? r : s + "-" + r;
         return (s == "") ? "—" : s;
     }
 
@@ -1220,68 +1138,46 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private void load_downloads () {
         clear_group (downloads_group);
 
-        var src_exp = new Adw.ExpanderRow () { title = _("Source (.src.rpm)") };
-        var src_ph = loading_row ();
-        src_exp.add_row (src_ph);
-        bool src_started = false;
-        src_exp.notify["expanded"].connect (() => {
-            if (src_started || !src_exp.expanded) return;
-            src_started = true;
-            fill_src_downloads.begin (src_exp, src_ph);
-        });
+        var src_exp = new LazyExpanderRow () { title = _("Source (.src.rpm)") };
+        src_exp.load_requested.connect (() => fill_src_downloads.begin (src_exp));
         downloads_group.add (src_exp);
 
-        var bin_exp = new Adw.ExpanderRow () { title = _("Binaries (.rpm)") };
-        var bin_ph = loading_row ();
-        bin_exp.add_row (bin_ph);
-        bool bin_started = false;
-        bin_exp.notify["expanded"].connect (() => {
-            if (bin_started || !bin_exp.expanded) return;
-            bin_started = true;
-            fill_bin_downloads.begin (bin_exp, bin_ph);
-        });
+        var bin_exp = new LazyExpanderRow () { title = _("Binaries (.rpm)") };
+        bin_exp.load_requested.connect (() => fill_bin_downloads.begin (bin_exp));
         downloads_group.add (bin_exp);
     }
 
-    private async void fill_src_downloads (Adw.ExpanderRow exp, Adw.ActionRow placeholder) {
+    private async void fill_src_downloads (LazyExpanderRow exp) {
         var api = new Data.AltRepoClient ();
         try {
             var src_links = yield api.get_source_downloads (branch, group.name);
             if (cancel.is_cancelled ()) return;
-            exp.remove (placeholder);
+            exp.clear_placeholder ();
             if (src_links == null || src_links.size == 0) {
-                exp.add_row (new Adw.ActionRow () { title = _("No source downloads") });
+                exp.show_message (_("No source downloads"));
             } else {
                 foreach (var d in src_links) add_download_row (exp, d);
             }
         } catch (Error e) {
             warning ("[DetailsPage] src downloads failed: %s", e.message);
-            exp.remove (placeholder);
-            exp.add_row (new Adw.ActionRow () {
-                title = _("Source downloads unavailable"),
-                subtitle = GLib.Markup.escape_text (e.message, -1)
-            });
+            exp.show_message (_("Source downloads unavailable"), e.message);
         }
     }
 
-    private async void fill_bin_downloads (Adw.ExpanderRow exp, Adw.ActionRow placeholder) {
+    private async void fill_bin_downloads (LazyExpanderRow exp) {
         var api = new Data.AltRepoClient ();
         try {
             var bin_links = yield api.get_binary_downloads (branch, group.name);
             if (cancel.is_cancelled ()) return;
-            exp.remove (placeholder);
+            exp.clear_placeholder ();
             if (bin_links == null || bin_links.size == 0) {
-                exp.add_row (new Adw.ActionRow () { title = _("No binary downloads") });
+                exp.show_message (_("No binary downloads"));
             } else {
                 foreach (var d in bin_links) add_download_row (exp, d);
             }
         } catch (Error e) {
             warning ("[DetailsPage] bin downloads failed: %s", e.message);
-            exp.remove (placeholder);
-            exp.add_row (new Adw.ActionRow () {
-                title = _("Binary downloads unavailable"),
-                subtitle = GLib.Markup.escape_text (e.message, -1)
-            });
+            exp.show_message (_("Binary downloads unavailable"), e.message);
         }
     }
 
@@ -1289,13 +1185,13 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         var row = new Adw.ActionRow () { title = d.name, title_selectable = true };
 
         string meta = "";
-        if (is_nonempty (d.arch)) meta = d.arch;
-        if (is_nonempty (d.size)) meta = (meta == "") ? d.size : meta + " · " + d.size;
+        if (Ui.is_nonempty (d.arch)) meta = d.arch;
+        if (Ui.is_nonempty (d.size)) meta = (meta == "") ? d.size : meta + " · " + d.size;
         if (meta != "") row.add_suffix (dim_label (meta));
 
-        if (is_nonempty (d.url)) {
+        if (Ui.is_nonempty (d.url)) {
             string captured_url = d.url;
-            make_row_clickable (row, () => open_uri (captured_url));
+            make_row_clickable (row, () => Ui.open_uri (captured_url));
             var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
                 valign = Gtk.Align.CENTER, tooltip_text = _("Copy download URL")
             };
@@ -1330,11 +1226,11 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             var spec = yield api.get_specfile (branch, group.name);
             btn.label = orig;
             btn.sensitive = true;
-            if (spec == null || !is_nonempty (spec.content)) {
+            if (spec == null || !Ui.is_nonempty (spec.content)) {
                 toast (_("Spec file not available"));
                 return;
             }
-            string fname = is_nonempty (spec.name) ? spec.name : group.name + ".spec";
+            string fname = Ui.is_nonempty (spec.name) ? spec.name : group.name + ".spec";
             show_text_dialog (fname, spec.content);
         } catch (Error e) {
             warning ("[DetailsPage] specfile failed: %s", e.message);

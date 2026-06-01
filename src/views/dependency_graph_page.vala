@@ -83,10 +83,6 @@ public class DependencyGraphPage : Adw.NavigationPage {
         load_root.begin ();
     }
 
-    private static bool is_nonempty (string? s) {
-        return s != null && s.strip ().length > 0;
-    }
-
     private void wire_ui () {
         title_widget.title = _("Dependency graph");
         title_widget.subtitle = root_name + " · " + branch;
@@ -205,7 +201,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         int shown = 0;
         var overflow = new Gee.ArrayList<Data.DependencyPackage> ();
         foreach (var d in kids) {
-            if (!is_nonempty (d.name)) continue;
+            if (!Ui.is_nonempty (d.name)) continue;
             if (shown < CHILD_LIMIT) {
                 add_child (n, d.name, d.branch ?? branch);
                 shown++;
@@ -267,13 +263,13 @@ public class DependencyGraphPage : Adw.NavigationPage {
 
     private static bool has_real_children (Gee.ArrayList<Data.DependencyPackage> kids) {
         foreach (var d in kids)
-            if (is_nonempty (d.name)) return true;
+            if (Ui.is_nonempty (d.name)) return true;
         return false;
     }
 
     private void reveal_more (GNode more) {
         foreach (var d in more.pending) {
-            if (is_nonempty (d.name))
+            if (Ui.is_nonempty (d.name))
                 add_child (more.more_parent, d.name, d.branch ?? branch);
         }
         nodes.remove (more);

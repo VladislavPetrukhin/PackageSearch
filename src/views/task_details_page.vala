@@ -55,15 +55,6 @@ public class TaskDetailsPage : Adw.NavigationPage, Ui.Findable {
         Ui.filter_group (deps_group, q);
     }
 
-    private static bool is_nonempty (string? s) {
-        return s != null && s.strip ().length > 0;
-    }
-
-    private static void open_uri (string url) {
-        try { AppInfo.launch_default_for_uri (url, null); }
-        catch (Error e) { warning ("open url failed: %s", e.message); }
-    }
-
     private async void load () {
         var api = new Data.AltRepoClient ();
         try {
@@ -79,7 +70,7 @@ public class TaskDetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private void populate (Data.TaskDetails d) {
-        if (is_nonempty (d.state)) title_widget.subtitle = "%s · %s".printf (branch, d.state);
+        if (Ui.is_nonempty (d.state)) title_widget.subtitle = "%s · %s".printf (branch, d.state);
 
         add_info (_("State"), d.state);
         add_info (_("Owner"), d.owner);
@@ -112,7 +103,7 @@ public class TaskDetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private void add_info (string label, string? value) {
-        if (!is_nonempty (value)) return;
+        if (!Ui.is_nonempty (value)) return;
         var row = new Adw.ActionRow () { title = label };
         var l = new Gtk.Label (value) { valign = Gtk.Align.CENTER, selectable = true };
         l.add_css_class ("dim-label");
@@ -121,7 +112,7 @@ public class TaskDetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private void add_message (string? message) {
-        if (!is_nonempty (message)) return;
+        if (!Ui.is_nonempty (message)) return;
         var row = new Adw.ActionRow () {
             title = _("Message"),
             subtitle = message,
@@ -138,7 +129,7 @@ public class TaskDetailsPage : Adw.NavigationPage, Ui.Findable {
         };
         row.add_suffix (new Gtk.Image.from_icon_name ("adw-external-link-symbolic"));
         string uri = "https://rdb.altlinux.org/tasks/%lld/".printf (task_id);
-        row.activated.connect (() => open_uri (uri));
+        row.activated.connect (() => Ui.open_uri (uri));
         info_group.add (row);
     }
 
@@ -146,18 +137,18 @@ public class TaskDetailsPage : Adw.NavigationPage, Ui.Findable {
         var row = new Adw.ActionRow () { title = st.name };
 
         string sub = "";
-        if (is_nonempty (st.kind))     sub = st.kind;
-        if (is_nonempty (st.pkg_from)) sub = (sub == "") ? st.pkg_from : sub + " · " + st.pkg_from;
-        if (is_nonempty (sub)) row.subtitle = sub;
+        if (Ui.is_nonempty (st.kind))     sub = st.kind;
+        if (Ui.is_nonempty (st.pkg_from)) sub = (sub == "") ? st.pkg_from : sub + " · " + st.pkg_from;
+        if (Ui.is_nonempty (sub)) row.subtitle = sub;
 
-        if (is_nonempty (st.evr)) {
+        if (Ui.is_nonempty (st.evr)) {
             var l = new Gtk.Label (st.evr) { valign = Gtk.Align.CENTER };
             l.add_css_class ("dim-label");
             l.add_css_class ("numeric");
             row.add_suffix (l);
         }
 
-        if (is_nonempty (st.name)) {
+        if (Ui.is_nonempty (st.name)) {
             row.activatable = true;
             row.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
             string captured = st.name;

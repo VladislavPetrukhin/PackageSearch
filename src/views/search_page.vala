@@ -55,10 +55,6 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     public signal void open_details (Data.SourceGroup group, string branch);
     public signal void open_task (int64 task_id, string branch);
 
-    private static bool is_nonempty (string? s) {
-        return s != null && s.strip ().length > 0;
-    }
-
     private static bool is_reasonable_term (string? s, Data.SearchMode mode) {
         if (s == null) return false;
         string term = s.strip ();
@@ -177,7 +173,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
             if (sg.bin_name != null) {
                 resolve_and_open.begin (sg, result_branch);
             } else {
-                if (is_nonempty (sg.name)) save_to_history (sg.name);
+                if (Ui.is_nonempty (sg.name)) save_to_history (sg.name);
                 open_details (sg, result_branch);
             }
         });
@@ -354,7 +350,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
                 if (g == null) continue;
                 var row = make_source_row (g);
                 results_list.append (row);
-                if (verify_rows.size < VERIFY_LIMIT && is_nonempty (g.name)) {
+                if (verify_rows.size < VERIFY_LIMIT && Ui.is_nonempty (g.name)) {
                     verify_rows.add (row);
                     verify_names.add (g.name);
                 }
@@ -438,14 +434,14 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
 
     private Adw.ActionRow make_source_row (Data.SourceGroup sg) {
         string vr = "";
-        if (is_nonempty (sg.version)) vr = sg.version;
-        if (is_nonempty (sg.release)) vr = (vr == "") ? sg.release : vr + "-" + sg.release;
+        if (Ui.is_nonempty (sg.version)) vr = sg.version;
+        if (Ui.is_nonempty (sg.release)) vr = (vr == "") ? sg.release : vr + "-" + sg.release;
 
         var row = new Adw.ActionRow () {
             title = sg.name ?? "",
             activatable = true
         };
-        if (is_nonempty (sg.subtitle)) {
+        if (Ui.is_nonempty (sg.subtitle)) {
             row.subtitle = sg.subtitle;
             row.subtitle_lines = 1;
         }
@@ -464,26 +460,26 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         } catch (Error e) {
             warning ("[SearchPage] resolve_and_open: %s", e.message);
         }
-        if (is_nonempty (name)) save_to_history (name);
+        if (Ui.is_nonempty (name)) save_to_history (name);
         open_details (new Data.SourceGroup (name), branch);
     }
 
     private Adw.ActionRow make_task_row (Data.TaskResult t) {
         string title = _("Task #%lld").printf (t.task_id);
-        if (is_nonempty (t.state)) title += " · " + t.state;
+        if (Ui.is_nonempty (t.state)) title += " · " + t.state;
 
         var row = new Adw.ActionRow () { title = title, activatable = true };
 
         string sub = "";
-        if (is_nonempty (t.owner))   sub = t.owner;
-        if (is_nonempty (t.repo))    sub = (sub == "") ? t.repo  : sub + " · " + t.repo;
-        if (is_nonempty (t.changed)) sub = (sub == "") ? t.changed : sub + " · " + t.changed;
-        if (is_nonempty (t.message)) sub = (sub == "") ? t.message : sub + " — " + t.message;
+        if (Ui.is_nonempty (t.owner))   sub = t.owner;
+        if (Ui.is_nonempty (t.repo))    sub = (sub == "") ? t.repo  : sub + " · " + t.repo;
+        if (Ui.is_nonempty (t.changed)) sub = (sub == "") ? t.changed : sub + " · " + t.changed;
+        if (Ui.is_nonempty (t.message)) sub = (sub == "") ? t.message : sub + " — " + t.message;
         if (sub != "") {
             row.subtitle = sub;
             row.subtitle_lines = 2;
         }
-        if (is_nonempty (t.packages)) {
+        if (Ui.is_nonempty (t.packages)) {
             var l = new Gtk.Label (t.packages) { valign = Gtk.Align.CENTER, ellipsize = Pango.EllipsizeMode.END, max_width_chars = 24 };
             l.add_css_class ("dim-label");
             row.add_suffix (l);
@@ -491,7 +487,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         row.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
 
         int64  captured_id = t.task_id;
-        string captured_branch = is_nonempty (t.repo) ? t.repo : result_branch;
+        string captured_branch = Ui.is_nonempty (t.repo) ? t.repo : result_branch;
         row.activated.connect (() => {
             open_task (captured_id, captured_branch);
         });

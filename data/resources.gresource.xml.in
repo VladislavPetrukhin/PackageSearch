@@ -12,6 +12,7 @@
     <file>bug_filter_row.ui</file>
     <file>errata_row.ui</file>
     <file>link_row.ui</file>
+    <file>lazy_expander_row.ui</file>
     <file>style.css</file>
   </gresource>
 

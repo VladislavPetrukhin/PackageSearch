@@ -47,10 +47,6 @@ public class MaintainerPage : Adw.NavigationPage, Ui.Findable {
         find_entry.grab_focus ();
     }
 
-    private static bool is_nonempty (string? s) {
-        return s != null && s.strip ().length > 0;
-    }
-
     private async void load () {
         var api = new Data.AltRepoClient ();
         try {
@@ -75,7 +71,7 @@ public class MaintainerPage : Adw.NavigationPage, Ui.Findable {
 
     private Adw.ActionRow make_row (Data.SourceGroup g) {
         string vr = (g.version ?? "");
-        if (is_nonempty (g.release)) vr = (vr == "") ? g.release : vr + "-" + g.release;
+        if (Ui.is_nonempty (g.release)) vr = (vr == "") ? g.release : vr + "-" + g.release;
 
         var row = new Adw.ActionRow () { title = g.name ?? "", activatable = true };
         if (vr != "") {

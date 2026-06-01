@@ -1,0 +1,14 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $LazyExpanderRow : Adw.ExpanderRow {
+  Adw.ActionRow placeholder {
+    title: _("Loading…");
+
+    [prefix]
+    Gtk.Spinner {
+      spinning: true;
+      valign: center;
+    }
+  }
+}
