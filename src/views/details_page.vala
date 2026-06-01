@@ -17,7 +17,6 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     [GtkChild] private unowned Gtk.Box            header_actions;
     [GtkChild] private unowned Adw.Banner         banner;
     [GtkChild] private unowned Gtk.Revealer       loading_revealer;
-    [GtkChild] private unowned Gtk.Revealer       error_revealer;
     [GtkChild] private unowned Adw.StatusPage     error_status;
     [GtkChild] private unowned Gtk.ScrolledWindow content_scroll;
     [GtkChild] private unowned Gtk.SearchBar      find_bar;
@@ -509,7 +508,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 _("Could not load package details. Check your connection and try again.");
         }
         content_scroll.visible = false;
-        error_revealer.reveal_child = true;
+        error_status.visible = true;
     }
 
     private Adw.ActionRow loading_row () {
