@@ -13,6 +13,7 @@
     <file>errata_row.ui</file>
     <file>link_row.ui</file>
     <file>lazy_expander_row.ui</file>
+    <file>install_progress_dialog.ui</file>
     <file>style.css</file>
   </gresource>
 

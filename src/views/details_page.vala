@@ -13,6 +13,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private MainWindow win;
 
     private Business.PackageManager pkg_mgr = new Business.PackageManager ();
+    private InstallController installer;
 
     [GtkChild] private unowned Adw.ToastOverlay   toast_overlay;
     [GtkChild] private unowned Adw.WindowTitle    header_title;
@@ -177,13 +178,6 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         return box;
     }
 
-    private static void mark_installed (Gtk.Button btn) {
-        btn.remove_css_class ("suggested-action");
-        btn.label = _("Installed");
-        btn.tooltip_text = _("Package is already installed");
-        btn.sensitive = false;
-    }
-
     public DetailsPage (Data.SourceGroup group, string branch, MainWindow win) {
         this.group  = group;
         this.branch = branch;
@@ -194,6 +188,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         header_title.set_subtitle (branch);
 
         loading_revealer.reveal_child = true;
+
+        installer = new InstallController (this, toast_overlay, pkg_mgr);
 
         find_bar.connect_entry (find_entry);
         find_bar.set_key_capture_widget (this);
@@ -260,167 +256,6 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         hb.pack_end (copy_btn);
 
         dlg.present (this.get_root () as Gtk.Window);
-    }
-
-    private async void install_binary (string pkg_name, Gtk.Button btn,
-                                       string? repo_evr, bool is_update) {
-        string orig_label = btn.label;
-        btn.sensitive = false;
-        btn.label = _("Checking…");
-
-        var plan = yield pkg_mgr.simulate_install (pkg_name);
-        btn.label = orig_label;
-
-        if (!plan.ok) {
-            btn.sensitive = true;
-            warning ("[DetailsPage] simulate failed for %s:\n%s", pkg_name, plan.error ?? "(no output)");
-            toast (_("Could not compute changes for %s").printf (pkg_name));
-            return;
-        }
-        if (plan.is_empty ()) {
-            btn.sensitive = true;
-            toast (_("Nothing to do"));
-            return;
-        }
-
-        bool confirmed = yield confirm_plan (pkg_name, is_update, plan);
-        if (!confirmed) {
-            btn.sensitive = true;
-            toast (_("Installation cancelled"));
-            return;
-        }
-
-        btn.label = is_update ? _("Updating…") : _("Installing…");
-        var result = yield run_with_progress (pkg_name, repo_evr, is_update);
-
-        switch (result) {
-        case Business.InstallResult.SUCCESS:
-            mark_installed (btn);
-            toast ((is_update ? _("Updated %s") : _("Installed %s")).printf (pkg_name));
-            break;
-        case Business.InstallResult.CANCELLED:
-            btn.label = orig_label;
-            btn.sensitive = true;
-            toast (_("Installation cancelled"));
-            break;
-        case Business.InstallResult.FAILED:
-            btn.label = orig_label;
-            btn.sensitive = true;
-            toast ((is_update ? _("Failed to update %s") : _("Failed to install %s")).printf (pkg_name));
-            break;
-        }
-    }
-
-    private async bool confirm_plan (string pkg_name, bool is_update, Business.InstallPlan plan) {
-        var dlg = new Adw.AlertDialog (
-            (is_update ? _("Update %s?") : _("Install %s?")).printf (pkg_name), null);
-
-        string sub = "";
-        if (Ui.is_nonempty (plan.summary))  sub = plan.summary;
-        if (Ui.is_nonempty (plan.download)) sub += (sub == "" ? "" : "\n") + plan.download;
-        if (Ui.is_nonempty (plan.disk))     sub += (sub == "" ? "" : "\n") + plan.disk;
-        if (sub != "") dlg.set_body (sub);
-
-        dlg.set_extra_child (build_plan_widget (plan));
-
-        dlg.add_response ("cancel", _("Cancel"));
-        dlg.add_response ("ok", is_update ? _("Update") : _("Install"));
-        dlg.set_response_appearance ("ok", plan.remove.size > 0
-            ? Adw.ResponseAppearance.DESTRUCTIVE : Adw.ResponseAppearance.SUGGESTED);
-        dlg.set_default_response ("ok");
-        dlg.set_close_response ("cancel");
-
-        string resp = yield dlg.choose (this, null);
-        return resp == "ok";
-    }
-
-    private Gtk.Widget build_plan_widget (Business.InstallPlan plan) {
-        var box = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
-        add_plan_section (box, _("New packages"),     plan.install, false);
-        add_plan_section (box, _("Will be upgraded"), plan.upgrade, false);
-        add_plan_section (box, _("Will be REMOVED"),  plan.remove,  true);
-
-        var sw = new Gtk.ScrolledWindow () {
-            hscrollbar_policy = Gtk.PolicyType.NEVER,
-            max_content_height = 240,
-            propagate_natural_height = true
-        };
-        sw.set_child (box);
-        return sw;
-    }
-
-    private void add_plan_section (Gtk.Box box, string title,
-                                   Gee.ArrayList<string> items, bool danger) {
-        if (items.size == 0) return;
-
-        var head = new Gtk.Label (title) { xalign = 0.0f, halign = Gtk.Align.START };
-        head.add_css_class ("heading");
-        if (danger) head.add_css_class ("error");
-        box.append (head);
-
-        string names = "";
-        foreach (var n in items) names = (names == "") ? n : names + ", " + n;
-        var lbl = new Gtk.Label (names) {
-            xalign = 0.0f, halign = Gtk.Align.START,
-            wrap = true, wrap_mode = Pango.WrapMode.WORD_CHAR
-        };
-        lbl.add_css_class ("dim-label");
-        box.append (lbl);
-    }
-
-    private async Business.InstallResult run_with_progress (string pkg_name,
-                                                            string? repo_evr, bool is_update) {
-        var cancellable = new GLib.Cancellable ();
-
-        var pdlg = new Adw.Dialog ();
-        pdlg.set_content_width (460);
-        pdlg.set_can_close (false);
-
-        var box = new Gtk.Box (Gtk.Orientation.VERTICAL, 12) {
-            margin_top = 24, margin_bottom = 24, margin_start = 24, margin_end = 24
-        };
-
-        var title_lbl = new Gtk.Label (
-            (is_update ? _("Updating %s…") : _("Installing %s…")).printf (pkg_name)) {
-            xalign = 0.0f, halign = Gtk.Align.START, wrap = true
-        };
-        title_lbl.add_css_class ("title-4");
-
-        var pb = new Gtk.ProgressBar () { hexpand = true };
-
-        var status = new Gtk.Label ("") {
-            xalign = 0.0f, halign = Gtk.Align.START,
-            ellipsize = Pango.EllipsizeMode.END, max_width_chars = 48
-        };
-        status.add_css_class ("dim-label");
-        status.add_css_class ("monospace");
-
-        var cancel_btn = new Gtk.Button.with_label (_("Cancel")) { halign = Gtk.Align.END };
-        cancel_btn.clicked.connect (() => {
-            cancel_btn.sensitive = false;
-            cancellable.cancel ();
-        });
-
-        box.append (title_lbl);
-        box.append (pb);
-        box.append (status);
-        box.append (cancel_btn);
-        pdlg.set_child (box);
-        pdlg.present (this);
-
-        uint pulse_id = Timeout.add (120, () => { pb.pulse (); return Source.CONTINUE; });
-        ulong sig_id = pkg_mgr.install_progress.connect ((line) => { status.label = line; });
-
-        string? err = null;
-        var result = yield pkg_mgr.run_install (pkg_name, repo_evr, cancellable, out err);
-
-        Source.remove (pulse_id);
-        pkg_mgr.disconnect (sig_id);
-        pdlg.force_close ();
-
-        if (result == Business.InstallResult.FAILED)
-            warning ("[DetailsPage] install failed for %s:\n%s", pkg_name, err ?? "(no output)");
-        return result;
     }
 
     private async void load_details () {
@@ -557,7 +392,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 needs_update = Business.VersionCompare.compare_evr (installed.get (group.name), repo_evr) < 0;
 
             if (is_installed && !needs_update) {
-                mark_installed (install_hero);
+                InstallController.mark_installed (install_hero);
             } else {
                 string captured_evr = repo_evr;
                 bool is_update = needs_update;
@@ -566,7 +401,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     install_hero.tooltip_text = _("Update via apt-get (requires authentication)");
                 }
                 install_hero.clicked.connect (() => {
-                    install_binary.begin (group.name, install_hero, captured_evr, is_update);
+                    installer.install.begin (group.name, install_hero, captured_evr, is_update);
                 });
             }
             header_actions.append (install_hero);
@@ -594,7 +429,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     needs_update = Business.VersionCompare.compare_evr (installed.get (name), repo_evr) < 0;
 
                 if (is_installed && !needs_update) {
-                    mark_installed (install_btn);
+                    InstallController.mark_installed (install_btn);
                 } else {
                     bool is_update = needs_update;
                     string captured_evr = repo_evr;
@@ -603,7 +438,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                         install_btn.tooltip_text = _("Update via apt-get (requires authentication)");
                     }
                     install_btn.clicked.connect (() => {
-                        install_binary.begin (name, install_btn, captured_evr, is_update);
+                        installer.install.begin (name, install_btn, captured_evr, is_update);
                     });
                 }
                 row.add_suffix (install_btn);

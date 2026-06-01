@@ -19,6 +19,7 @@ blueprints = [
   'errata_row',
   'link_row',
   'lazy_expander_row',
+  'install_progress_dialog',
 ]
 
 ui_targets = []

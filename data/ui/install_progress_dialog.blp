@@ -1,0 +1,42 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $InstallProgressDialog : Adw.Dialog {
+  content-width: 460;
+  can-close: false;
+
+  child: Gtk.Box {
+    orientation: vertical;
+    spacing: 12;
+    margin-top: 24;
+    margin-bottom: 24;
+    margin-start: 24;
+    margin-end: 24;
+
+    Gtk.Label title_label {
+      xalign: 0;
+      halign: start;
+      wrap: true;
+
+      styles ["title-4"]
+    }
+
+    Gtk.ProgressBar progress_bar {
+      hexpand: true;
+    }
+
+    Gtk.Label status_label {
+      xalign: 0;
+      halign: start;
+      ellipsize: end;
+      max-width-chars: 48;
+
+      styles ["dim-label", "monospace"]
+    }
+
+    Gtk.Button cancel_button {
+      label: _("Cancel");
+      halign: end;
+    }
+  };
+}

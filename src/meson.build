@@ -4,6 +4,8 @@ src = files(
   'views/find.vala',
   'views/util.vala',
   'views/lazy_expander_row.vala',
+  'views/install_progress_dialog.vala',
+  'views/install_controller.vala',
   'views/search_page.vala',
   'views/details_page.vala',
   'views/maintainer_page.vala',
