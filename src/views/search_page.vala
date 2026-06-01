@@ -39,14 +39,14 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     private uint64            query_seq            = 0;
 
     private const string[] MODE_LABELS = {
-        "Package", "Binary", "File", "Maintainer", "Task"
+        N_("Package"), N_("Binary"), N_("File"), N_("Maintainer"), N_("Task")
     };
     private const string[] MODE_PLACEHOLDERS = {
-        "Type a package name…",
-        "Type a binary package name…",
-        "Type a file name or path…",
-        "Type a maintainer nickname…",
-        "Type a package name or task ID…"
+        N_("Type a package name…"),
+        N_("Type a binary package name…"),
+        N_("Type a file name or path…"),
+        N_("Type a maintainer nickname…"),
+        N_("Type a package name or task ID…")
     };
 
     public signal void open_details (Data.SourceGroup group, string branch);
