@@ -531,7 +531,7 @@ public class AltRepoClient : GLib.Object {
         yield throttle ();
         try {
             var resp = yield cli.get_site_deleted_package_info_async (
-                branch, name, "source", null, Priority.DEFAULT, cancellable
+                branch, name, "source", null, Priority.DEFAULT, null
             );
             bool deleted = resp != null && resp.package != null && resp.package.length > 0;
             cache_put_str (key, deleted ? "1" : "0");

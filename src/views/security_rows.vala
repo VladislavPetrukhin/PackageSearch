@@ -11,6 +11,7 @@ public class BugRow : Adw.ActionRow {
     public BugRow (Data.BugItem b) {
         Object ();
         title = "#" + b.id;
+        title_selectable = true;
         subtitle = GLib.Markup.escape_text (b.summary ?? "", -1);
 
         status_value = (b.status ?? "").strip ();
@@ -20,7 +21,11 @@ public class BugRow : Adw.ActionRow {
         }
 
         string id = b.id;
-        activated.connect (() => open_uri ("https://bugzilla.altlinux.org/" + id));
+        var click = new Gtk.GestureClick ();
+        click.released.connect ((n, x, y) => {
+            if (n == 1) open_uri ("https://bugzilla.altlinux.org/" + id);
+        });
+        this.add_controller (click);
     }
 
     private static void open_uri (string url) {

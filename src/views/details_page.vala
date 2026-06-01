@@ -4,6 +4,8 @@ using GLib;
 using Gdk;
 using Intl;
 
+private delegate void RowClickFunc ();
+
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/details_page.ui")]
 public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private Data.SourceGroup group;
@@ -66,6 +68,19 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         toast_overlay.add_toast (new Adw.Toast (_("Copied")));
     }
 
+    private void make_row_clickable (Adw.ActionRow row, owned RowClickFunc action) {
+        row.activatable = false;
+        var click = new Gtk.GestureClick ();
+        click.released.connect ((n, x, y) => {
+            if (n == 1) action ();
+        });
+        row.add_controller (click);
+    }
+
+    private void make_name_copyable (Adw.ActionRow row, string name) {
+        make_row_clickable (row, () => copy_to_clipboard (name));
+    }
+
     private static string trim_toast (string s) {
         const int LIMIT = 80;
         var clean = s.replace ("\n", " ").strip ();
@@ -114,7 +129,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         if (is_nonempty (value))
             info_group.add (new Adw.ActionRow () {
                 title = title,
-                subtitle = GLib.Markup.escape_text (value, -1)
+                subtitle = GLib.Markup.escape_text (value, -1),
+                subtitle_selectable = true
             });
     }
 
@@ -154,7 +170,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
         var name_l = new Gtk.Label (name) {
             xalign = 0,
-            ellipsize = Pango.EllipsizeMode.END
+            ellipsize = Pango.EllipsizeMode.END,
+            selectable = true
         };
         name_l.add_css_class ("title-2");
         col.append (name_l);
@@ -163,7 +180,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             var sum_l = new Gtk.Label (summary) {
                 xalign = 0,
                 wrap = true,
-                wrap_mode = Pango.WrapMode.WORD_CHAR
+                wrap_mode = Pango.WrapMode.WORD_CHAR,
+                selectable = true
             };
             col.append (sum_l);
         }
@@ -171,7 +189,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         if (is_nonempty (grp)) {
             var grp_l = new Gtk.Label (grp) {
                 xalign = 0,
-                ellipsize = Pango.EllipsizeMode.END
+                ellipsize = Pango.EllipsizeMode.END,
+                selectable = true
             };
             grp_l.add_css_class ("caption");
             grp_l.add_css_class ("dim-label");
@@ -451,10 +470,10 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 var row_m = new Adw.ActionRow () {
                     title = _("Maintainer"),
                     subtitle = GLib.Markup.escape_text (nick, -1),
-                    activatable = true
+                    subtitle_selectable = true
                 };
                 row_m.add_suffix (new Gtk.Image.from_icon_name ("go-next-symbolic"));
-                row_m.activated.connect (() => win.show_maintainer (nick, branch));
+                make_row_clickable (row_m, () => win.show_maintainer (nick, branch));
                 info_group.add (row_m);
             }
             add_info_row_if_nonempty (_("License"),    d.license);
@@ -465,10 +484,10 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     var row_home = new Adw.ActionRow () {
                         title = _("Homepage"),
                         subtitle = GLib.Markup.escape_text (url, -1),
-                        activatable = true
+                        subtitle_selectable = true
                     };
                     row_home.add_suffix (new Gtk.Image.from_icon_name ("adw-external-link-symbolic"));
-                    row_home.activated.connect (() => open_uri (url));
+                    make_row_clickable (row_home, () => open_uri (url));
                     info_group.add (row_home);
                 }
             }
@@ -587,6 +606,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         foreach (var name in names) {
             var arches = by_name.get (name);
             var row = new Adw.ActionRow () { title = name };
+            make_name_copyable (row, name);
 
             var arch_str = "";
             foreach (var a in arches) arch_str = (arch_str == "") ? a : arch_str + ", " + a;
@@ -731,6 +751,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     var vr = (d.version ?? "");
                     if (is_nonempty (d.release)) vr = (vr == "") ? d.release : vr + "-" + d.release;
                     var r = new Adw.ActionRow () { title = d.name };
+                    make_name_copyable (r, d.name);
                     if (vr != "") r.add_suffix (dim_label (vr));
                     exp.add_row (r);
                 }
@@ -757,6 +778,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 exp.set_subtitle (_("%d packages").printf (revs.size));
                 foreach (var d in revs) {
                     var r = new Adw.ActionRow () { title = d.name };
+                    make_name_copyable (r, d.name);
                     if (is_nonempty (d.branch)) r.add_suffix (dim_label (d.branch));
                     exp.add_row (r);
                 }
@@ -1264,7 +1286,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private void add_download_row (Adw.ExpanderRow exp, Data.DownloadLink d) {
-        var row = new Adw.ActionRow () { title = d.name, activatable = true };
+        var row = new Adw.ActionRow () { title = d.name, title_selectable = true };
 
         string meta = "";
         if (is_nonempty (d.arch)) meta = d.arch;
@@ -1273,7 +1295,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
         if (is_nonempty (d.url)) {
             string captured_url = d.url;
-            row.activated.connect (() => open_uri (captured_url));
+            make_row_clickable (row, () => open_uri (captured_url));
             var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
                 valign = Gtk.Align.CENTER, tooltip_text = _("Copy download URL")
             };
