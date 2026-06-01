@@ -1,0 +1,46 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $PackageHero : Gtk.Box {
+  orientation: horizontal;
+  spacing: 18;
+  margin-top: 6;
+  margin-bottom: 6;
+
+  Gtk.Image icon {
+    pixel-size: 48;
+    valign: center;
+  }
+
+  Gtk.Box {
+    orientation: vertical;
+    spacing: 3;
+    valign: center;
+    hexpand: true;
+
+    Gtk.Label name_label {
+      xalign: 0;
+      ellipsize: end;
+      selectable: true;
+
+      styles ["title-2"]
+    }
+
+    Gtk.Label summary_label {
+      visible: false;
+      xalign: 0;
+      wrap: true;
+      wrap-mode: word_char;
+      selectable: true;
+    }
+
+    Gtk.Label group_label {
+      visible: false;
+      xalign: 0;
+      ellipsize: end;
+      selectable: true;
+
+      styles ["caption", "dim-label"]
+    }
+  }
+}

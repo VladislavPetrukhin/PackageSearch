@@ -20,6 +20,9 @@ blueprints = [
   'link_row',
   'lazy_expander_row',
   'install_progress_dialog',
+  'text_dialog',
+  'version_compare_dialog',
+  'package_hero',
 ]
 
 ui_targets = []

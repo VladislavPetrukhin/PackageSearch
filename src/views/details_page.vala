@@ -111,73 +111,6 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             });
     }
 
-    private static string category_icon (string? grp) {
-        var g = (grp ?? "").down ();
-        if (g.contains ("librar"))                                 return "application-x-addon-symbolic";
-        if (g.has_prefix ("develop"))                              return "applications-engineering-symbolic";
-        if (g.has_prefix ("graphic"))                              return "applications-graphics-symbolic";
-        if (g.has_prefix ("network") || g.contains ("internet"))   return "applications-internet-symbolic";
-        if (g.has_prefix ("game"))                                 return "applications-games-symbolic";
-        if (g.has_prefix ("sound") || g.contains ("video") || g.contains ("multimedia"))
-                                                                   return "applications-multimedia-symbolic";
-        if (g.has_prefix ("editor") || g.has_prefix ("text"))      return "text-editor-symbolic";
-        if (g.contains ("font"))                                   return "font-x-generic-symbolic";
-        if (g.has_prefix ("scien") || g.contains ("engineering"))  return "applications-science-symbolic";
-        if (g.has_prefix ("databas"))                              return "drive-harddisk-symbolic";
-        if (g.has_prefix ("office") || g.contains ("publish"))     return "x-office-document-symbolic";
-        if (g.has_prefix ("system"))                               return "applications-system-symbolic";
-        return "package-x-generic-symbolic";
-    }
-
-    private Gtk.Widget build_hero (string name, string? summary, string? grp) {
-        var box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 18) {
-            margin_top = 6,
-            margin_bottom = 6
-        };
-
-        box.append (new Gtk.Image.from_icon_name (category_icon (grp)) {
-            pixel_size = 48,
-            valign = Gtk.Align.CENTER
-        });
-
-        var col = new Gtk.Box (Gtk.Orientation.VERTICAL, 3) {
-            valign = Gtk.Align.CENTER,
-            hexpand = true
-        };
-
-        var name_l = new Gtk.Label (name) {
-            xalign = 0,
-            ellipsize = Pango.EllipsizeMode.END,
-            selectable = true
-        };
-        name_l.add_css_class ("title-2");
-        col.append (name_l);
-
-        if (Ui.is_nonempty (summary)) {
-            var sum_l = new Gtk.Label (summary) {
-                xalign = 0,
-                wrap = true,
-                wrap_mode = Pango.WrapMode.WORD_CHAR,
-                selectable = true
-            };
-            col.append (sum_l);
-        }
-
-        if (Ui.is_nonempty (grp)) {
-            var grp_l = new Gtk.Label (grp) {
-                xalign = 0,
-                ellipsize = Pango.EllipsizeMode.END,
-                selectable = true
-            };
-            grp_l.add_css_class ("caption");
-            grp_l.add_css_class ("dim-label");
-            col.append (grp_l);
-        }
-
-        box.append (col);
-        return box;
-    }
-
     public DetailsPage (Data.SourceGroup group, string branch, MainWindow win) {
         this.group  = group;
         this.branch = branch;
@@ -217,45 +150,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         Ui.filter_group (changelog_group, q);
     }
 
-    private Adw.Dialog new_dialog (string title, string subtitle, int width, int height,
-                                   Gtk.Widget content, out Adw.HeaderBar header) {
-        var dlg = new Adw.Dialog ();
-        if (width > 0)  dlg.set_content_width (width);
-        if (height > 0) dlg.set_content_height (height);
-        dlg.set_title (title);
-
-        header = new Adw.HeaderBar () { show_end_title_buttons = true };
-        header.set_title_widget (new Adw.WindowTitle (title, subtitle));
-
-        var tb = new Adw.ToolbarView ();
-        tb.add_top_bar (header);
-        tb.set_content (content);
-        dlg.set_child (tb);
-        return dlg;
-    }
-
     private void show_text_dialog (string head, string body) {
-        var tv = new Gtk.TextView () {
-            editable = false, cursor_visible = false, monospace = true,
-            wrap_mode = Gtk.WrapMode.WORD_CHAR,
-            top_margin = 8, bottom_margin = 8, left_margin = 12, right_margin = 12
-        };
-        tv.buffer.set_text (body ?? "");
-
-        var sw = new Gtk.ScrolledWindow () { vexpand = true };
-        sw.set_child (tv);
-
-        Adw.HeaderBar hb;
-        var dlg = new_dialog (head, "", 820, 600, sw, out hb);
-
-        var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
-            tooltip_text = _("Copy"), valign = Gtk.Align.CENTER
-        };
-        copy_btn.add_css_class ("flat");
-        copy_btn.clicked.connect (() => copy_to_clipboard (body ?? ""));
-        hb.pack_end (copy_btn);
-
-        dlg.present (this.get_root () as Gtk.Window);
+        new TextDialog (head, body).present (this);
     }
 
     private async void load_details () {
@@ -270,7 +166,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             header_title.set_title (group.name);
             header_title.set_subtitle ((vr != "" ? vr + " · " : "") + branch);
 
-            hero_group.add (build_hero (group.name, d.summary, d.group));
+            hero_group.add (new PackageHero (group.name, d.summary, d.group));
 
             clear_group (info_group);
 
@@ -792,12 +688,6 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         }
     }
 
-    private string evr_string (string? v, string? r) {
-        string s = v ?? "";
-        if (Ui.is_nonempty (r)) s = (s == "") ? r : s + "-" + r;
-        return (s == "") ? "—" : s;
-    }
-
     private async void show_compare_dialog (string branch_a, string branch_b) {
         compare_btn.sensitive = false;
         compare_btn.label = _("Loading…");
@@ -825,149 +715,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         try { spec_b = yield api.get_specfile (branch_b, group.name); }
         catch (Error e) { warning ("[DetailsPage] compare spec %s failed: %s", branch_b, e.message); }
 
-        var only_diff = new Gtk.ToggleButton () {
-            label = _("Only differences"), active = true, valign = Gtk.Align.CENTER
-        };
-
-        var equal_widgets = new Gee.ArrayList<Gtk.Widget> ();
-
-        var page = new Adw.PreferencesPage ();
-
-        var meta_grp = new Adw.PreferencesGroup () { title = _("Metadata") };
-
-        string evr_a = evr_string (a.version, a.release);
-        string evr_b = evr_string (b.version, b.release);
-        var ver_row = make_compare_text_row (_("Version"), evr_a, evr_b);
-        if (evr_a != "—" && evr_b != "—") {
-            int c = Business.VersionCompare.compare_evr (evr_a, evr_b);
-            if (c > 0)      ver_row.subtitle = _("%s is newer").printf (branch_a);
-            else if (c < 0) ver_row.subtitle = _("%s is newer").printf (branch_b);
-            else            ver_row.subtitle = _("Same version");
-        }
-        meta_grp.add (ver_row);
-
-        add_compare_row (meta_grp, equal_widgets, _("Maintainer"), a.maintainer ?? "—", b.maintainer ?? "—");
-        add_compare_row (meta_grp, equal_widgets, _("License"), a.license ?? "—", b.license ?? "—");
-        add_compare_row (meta_grp, equal_widgets, _("Group"), a.group ?? "—", b.group ?? "—");
-        add_compare_row (meta_grp, equal_widgets, _("Summary"), a.summary ?? "—", b.summary ?? "—");
-        page.add (meta_grp);
-
-        var names_a = new Gee.HashSet<string> ();
-        var names_b = new Gee.HashSet<string> ();
-        foreach (var bp in a.binaries) if (bp.name != null) names_a.add (bp.name);
-        foreach (var bp in b.binaries) if (bp.name != null) names_b.add (bp.name);
-
-        var only_a = new Gee.ArrayList<string> ();
-        var only_b = new Gee.ArrayList<string> ();
-        var common = new Gee.ArrayList<string> ();
-        foreach (var n in names_a) {
-            if (names_b.contains (n)) common.add (n); else only_a.add (n);
-        }
-        foreach (var n in names_b) if (!names_a.contains (n)) only_b.add (n);
-        only_a.sort ((x, y) => strcmp (x, y));
-        only_b.sort ((x, y) => strcmp (x, y));
-        common.sort ((x, y) => strcmp (x, y));
-
-        var bins_grp = new Adw.PreferencesGroup () {
-            title = _("Binary packages"),
-            description = _("%d common · %d only in %s · %d only in %s").printf (
-                common.size, only_a.size, branch_a, only_b.size, branch_b)
-        };
-        if (only_a.size > 0) {
-            var r = new Adw.ExpanderRow () {
-                title = _("Only in %s").printf (branch_a),
-                subtitle = _("%d packages").printf (only_a.size)
-            };
-            foreach (var n in only_a) r.add_row (new Adw.ActionRow () { title = n });
-            bins_grp.add (r);
-        }
-        if (only_b.size > 0) {
-            var r = new Adw.ExpanderRow () {
-                title = _("Only in %s").printf (branch_b),
-                subtitle = _("%d packages").printf (only_b.size)
-            };
-            foreach (var n in only_b) r.add_row (new Adw.ActionRow () { title = n });
-            bins_grp.add (r);
-        }
-        if (common.size > 0) {
-            var r = new Adw.ExpanderRow () {
-                title = _("In both branches"),
-                subtitle = _("%d packages").printf (common.size)
-            };
-            foreach (var n in common) r.add_row (new Adw.ActionRow () { title = n });
-            bins_grp.add (r);
-            equal_widgets.add (r);
-        }
-        if (only_a.size == 0 && only_b.size == 0 && common.size == 0)
-            bins_grp.add (new Adw.ActionRow () { title = _("No binary packages reported") });
-        page.add (bins_grp);
-
-        var spec_grp = new Adw.PreferencesGroup () { title = _("Spec file") };
-        string sa = (spec_a != null && spec_a.content != null) ? spec_a.content : "";
-        string sb = (spec_b != null && spec_b.content != null) ? spec_b.content : "";
-        if (sa.strip () == "" && sb.strip () == "") {
-            spec_grp.add (new Adw.ActionRow () { title = _("Spec file not available") });
-        } else if (sa == sb) {
-            spec_grp.add (new Adw.ActionRow () { title = _("Spec files are identical") });
-        } else {
-            string diff = Business.TextDiff.only_differences (sa, sb);
-            string diff_head = _("Spec diff: %s ↔ %s").printf (branch_a, branch_b);
-            var srow = new Adw.ActionRow () {
-                title = _("Spec file"),
-                subtitle = _("Differences between %s and %s").printf (branch_a, branch_b),
-                activatable = true
-            };
-            var sbtn = new Gtk.Button.with_label (_("Show diff")) { valign = Gtk.Align.CENTER };
-            sbtn.add_css_class ("flat");
-            sbtn.clicked.connect (() => show_text_dialog (diff_head, diff));
-            srow.add_suffix (sbtn);
-            srow.activated.connect (() => show_text_dialog (diff_head, diff));
-            spec_grp.add (srow);
-        }
-        page.add (spec_grp);
-
-        only_diff.toggled.connect (() => {
-            bool on = only_diff.active;
-            foreach (var w in equal_widgets) w.visible = !on;
-        });
-        foreach (var w in equal_widgets) w.visible = false;
-
-        Adw.HeaderBar hb;
-        var dlg = new_dialog (_("Compare %s vs %s").printf (branch_a, branch_b),
-                              group.name, 820, 640, page, out hb);
-        hb.pack_start (only_diff);
-        dlg.present (this.get_root () as Gtk.Window);
-    }
-
-    private void add_compare_row (Adw.PreferencesGroup grp, Gee.ArrayList<Gtk.Widget> equal_widgets,
-                                  string title, string a, string b) {
-        var row = make_compare_text_row (title, a, b);
-        grp.add (row);
-        if (a == b) equal_widgets.add (row);
-    }
-
-    private Adw.ActionRow make_compare_text_row (string title, string a, string b) {
-        bool differ = (a != b);
-        var row = new Adw.ActionRow () { title = title };
-        var content = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12) {
-            valign = Gtk.Align.CENTER, hexpand = true
-        };
-        var la = new Gtk.Label (a) {
-            xalign = 0.0f, halign = Gtk.Align.START, hexpand = true,
-            wrap = true, wrap_mode = Pango.WrapMode.WORD_CHAR, max_width_chars = 36
-        };
-        var lb = new Gtk.Label (b) {
-            xalign = 0.0f, halign = Gtk.Align.START, hexpand = true,
-            wrap = true, wrap_mode = Pango.WrapMode.WORD_CHAR, max_width_chars = 36
-        };
-        if (!differ) {
-            la.add_css_class ("dim-label");
-            lb.add_css_class ("dim-label");
-        }
-        content.append (la);
-        content.append (lb);
-        row.add_suffix (content);
-        return row;
+        new VersionCompareDialog (group.name, branch_a, branch_b, a, b, spec_a, spec_b).present (this);
     }
 
     private void load_downloads () {
