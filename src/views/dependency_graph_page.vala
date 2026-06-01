@@ -162,7 +162,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
     }
 
     private async Gee.ArrayList<Data.DependencyPackage> fetch_deps (GNode n) {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.DependencyApi ();
         try {
             Gee.ArrayList<Data.DependencyPackage>? r;
             if (mode == Mode.BUILD)
@@ -560,7 +560,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
     private async void resolve_and_open (GNode n) {
         if (n.loading) return;
         n.loading = true;
-        var api = new Data.AltRepoClient ();
+        var api = new Data.DependencyApi ();
         string? real = null;
         try {
             real = yield api.resolve_capability_source (branch, n.name, cancel);

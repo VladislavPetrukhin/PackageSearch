@@ -48,7 +48,7 @@ public class MaintainerPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void load () {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.SearchApi ();
         try {
             var pkgs = yield api.search_by_maintainer (branch, nick, cancel);
             if (cancel.is_cancelled ()) return;

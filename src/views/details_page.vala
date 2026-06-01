@@ -156,7 +156,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     private async void load_details () {
         try {
-            var api = new Data.AltRepoClient ();
+            var api = new Data.PackageApi ();
             var d = yield api.get_source_details (branch, group.name);
 
             var vr = (d.version ?? "");
@@ -348,7 +348,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void load_changelog () {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.PackageApi ();
         clear_group (changelog_group);
         try {
             var log = yield api.get_changelog (branch, group.name, 50);
@@ -424,7 +424,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void fill_build_depends (LazyExpanderRow exp) {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.DependencyApi ();
         try {
             var builds = yield api.get_direct_build_depends (branch, group.name);
             if (cancel.is_cancelled ()) return;
@@ -448,7 +448,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void fill_reverse_depends (LazyExpanderRow exp) {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.DependencyApi ();
         try {
             var revs = yield api.get_reverse_depends (branch, group.name, "both");
             if (cancel.is_cancelled ()) return;
@@ -483,7 +483,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void fill_errata (LazyExpanderRow exp) {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.SecurityApi ();
         try {
             var erratas = yield api.get_errata_for_package (branch, group.name);
             if (cancel.is_cancelled ()) return;
@@ -565,7 +565,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void fill_bugs (LazyExpanderRow exp) {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.SecurityApi ();
         try {
             var bugs = yield api.get_bugs_by_package (group.name);
             if (cancel.is_cancelled ()) return;
@@ -611,7 +611,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void load_versions () {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.PackageApi ();
         clear_group (versions_group);
         selected_branches.clear ();
 
@@ -692,7 +692,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         compare_btn.sensitive = false;
         compare_btn.label = _("Loading…");
 
-        var api = new Data.AltRepoClient ();
+        var api = new Data.PackageApi ();
         Data.PackageDetails? a = null;
         Data.PackageDetails? b = null;
         try {
@@ -731,7 +731,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void fill_src_downloads (LazyExpanderRow exp) {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.DownloadApi ();
         try {
             var src_links = yield api.get_source_downloads (branch, group.name);
             if (cancel.is_cancelled ()) return;
@@ -748,7 +748,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void fill_bin_downloads (LazyExpanderRow exp) {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.DownloadApi ();
         try {
             var bin_links = yield api.get_binary_downloads (branch, group.name);
             if (cancel.is_cancelled ()) return;
@@ -804,7 +804,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         string orig = btn.label;
         btn.label = _("Loading…");
 
-        var api = new Data.AltRepoClient ();
+        var api = new Data.PackageApi ();
         try {
             var spec = yield api.get_specfile (branch, group.name);
             btn.label = orig;

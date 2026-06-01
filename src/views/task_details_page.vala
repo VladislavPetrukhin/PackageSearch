@@ -56,7 +56,7 @@ public class TaskDetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void load () {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.TaskApi ();
         try {
             var d = yield api.get_task_details (task_id, cancel);
             if (cancel.is_cancelled ()) return;

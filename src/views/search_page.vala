@@ -277,7 +277,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         if (current_repo == "all") branches = REPOS;
         else branches = { current_repo };
 
-        var api = new Data.AltRepoClient ();
+        var api = new Data.SearchApi ();
         try {
             if (mode == Data.SearchMode.TASK) {
                 string? tb = (current_repo == "all") ? null : current_repo;
@@ -322,7 +322,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async Gee.ArrayList<Data.SourceGroup> search_one (
-        Data.AltRepoClient api, Data.SearchMode mode, string branch,
+        Data.SearchApi api, Data.SearchMode mode, string branch,
         string term, GLib.Cancellable? cancellable
     ) throws GLib.Error {
         switch (mode) {
@@ -361,7 +361,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
             show_empty ();
             run_suggestions.begin (term, current_mode, branch, query_seq);
         } else {
-            if (current_mode == Data.SearchMode.PACKAGE && n >= Data.AltRepoClient.SEARCH_RESULT_LIMIT)
+            if (current_mode == Data.SearchMode.PACKAGE && n >= Data.SearchApi.SEARCH_RESULT_LIMIT)
                 results_header.label = _("More than %d found in repository %s").printf (n, branch);
             else
                 results_header.label = _("Found %d in repository %s").printf (n, branch);
@@ -382,7 +382,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     ) {
         verify_cancel = new GLib.Cancellable ();
         var cancel = verify_cancel;
-        var api = new Data.AltRepoClient ();
+        var api = new Data.SearchApi ();
         for (int i = 0; i < rows.size; i++) {
             if (cancel.is_cancelled () || my_seq != query_seq) return;
             try {
@@ -452,7 +452,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void resolve_and_open (Data.SourceGroup sg, string branch) {
-        var api = new Data.AltRepoClient ();
+        var api = new Data.SearchApi ();
         string name = sg.bin_name;
         try {
             var src = yield api.find_source_by_binary (branch, sg.bin_name, null);
@@ -581,7 +581,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         var status = make_probe_status (_("Looking in other search sections…"));
         suggestions_box.append (status);
 
-        var api = new Data.AltRepoClient ();
+        var api = new Data.SearchApi ();
         int found_modes = 0;
         foreach (var m in probe_order (term)) {
             if (m == original_mode) continue;
@@ -618,7 +618,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         if (repo_status.parent == suggestions_box) suggestions_box.remove (repo_status);
     }
 
-    private async int probe_mode (Data.AltRepoClient api, Data.SearchMode mode,
+    private async int probe_mode (Data.SearchApi api, Data.SearchMode mode,
                                   string term, string branch, GLib.Cancellable? cancel) {
         try {
             switch (mode) {
