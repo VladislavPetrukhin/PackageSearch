@@ -20,7 +20,6 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     [GtkChild] private unowned Adw.ToastOverlay   toast_overlay;
     [GtkChild] private unowned Adw.WindowTitle    header_title;
     [GtkChild] private unowned Gtk.Box            header_actions;
-    [GtkChild] private unowned Adw.Banner         banner;
     [GtkChild] private unowned Gtk.Revealer       loading_revealer;
     [GtkChild] private unowned Adw.StatusPage     error_status;
     [GtkChild] private unowned Gtk.ScrolledWindow content_scroll;
@@ -259,11 +258,14 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         var sys_branch  = yield pkg_mgr.get_system_branch ();
         bool can_install = yield pkg_mgr.is_system_branch (branch);
 
+        bins_group.set_header_suffix (null);
         if (sys_branch.length > 0 && !can_install) {
-            banner.title = _("Install is available only for the system repository (%s)").printf (sys_branch);
-            banner.revealed = true;
-        } else {
-            banner.revealed = false;
+            var info = new Gtk.Image.from_icon_name ("dialog-information-symbolic") {
+                valign = Gtk.Align.CENTER,
+                tooltip_text = _("Install is available only for the system repository (%s)").printf (sys_branch)
+            };
+            info.add_css_class ("dim-label");
+            bins_group.set_header_suffix (info);
         }
 
         Gee.HashMap<string, string>? installed = null;

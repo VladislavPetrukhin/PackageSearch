@@ -53,6 +53,29 @@ private static void t_looks_like_stale_index () {
     assert (!PackageManager.looks_like_stale_index ("All packages are up to date"));
 }
 
+private static void t_detect_branch () {
+    string sisyphus_with_task =
+        "rpm https://git.altlinux.org repo/417218/x86_64 task\n"
+      + "rpm [alt] http://ftp.altlinux.org/pub/distributions/ALTLinux Sisyphus/x86_64 classic\n"
+      + "rpm [alt] http://ftp.altlinux.org/pub/distributions/ALTLinux Sisyphus/x86_64-i586 classic\n"
+      + "rpm [alt] http://ftp.altlinux.org/pub/distributions/ALTLinux Sisyphus/noarch classic\n";
+    assert (PackageManager.detect_branch (sisyphus_with_task) == "sisyphus");
+
+    string p10 =
+        "rpm [p10] http://ftp.altlinux.org/pub/distributions/ALTLinux/p10/branch/x86_64 classic\n";
+    assert (PackageManager.detect_branch (p10) == "p10");
+
+    string c10f2 =
+        "rpm [c10f2] http://ftp.altlinux.org/pub/distributions/c10f2/x86_64 classic\n";
+    assert (PackageManager.detect_branch (c10f2) == "c10f2");
+
+    string task_only =
+        "rpm https://git.altlinux.org repo/417218/x86_64 task\n";
+    assert (PackageManager.detect_branch (task_only) == "");
+
+    assert (PackageManager.detect_branch ("") == "");
+}
+
 private static void t_install_result_enum () {
     assert (InstallResult.SUCCESS   != InstallResult.CANCELLED);
     assert (InstallResult.CANCELLED != InstallResult.FAILED);
@@ -65,6 +88,7 @@ public static int main (string[] args) {
     GLib.Test.add_func ("/business/package_manager/parse/sections", t_parse_sections);
     GLib.Test.add_func ("/business/package_manager/parse/empty",    t_parse_empty);
     GLib.Test.add_func ("/business/package_manager/stale_index",    t_looks_like_stale_index);
+    GLib.Test.add_func ("/business/package_manager/detect_branch",  t_detect_branch);
     GLib.Test.add_func ("/business/package_manager/install_result", t_install_result_enum);
 
     return GLib.Test.run ();

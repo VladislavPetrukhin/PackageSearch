@@ -40,28 +40,27 @@ namespace Business {
                 );
                 string? stdout_buf = null;
                 yield sp.communicate_utf8_async (null, null, out stdout_buf, null);
-                if (stdout_buf != null) {
-                    foreach (var line in stdout_buf.split ("\n")) {
-                        var t = line.strip ();
-                        if (t.length == 0) continue;
-                        var parts = t.split (" ");
-                        foreach (var p in parts) {
-                            if (p.index_of_char ('/') < 0) continue;
-                            if (p.contains ("://")) continue;
-                            var segs = p.split ("/");
-                            if (segs.length >= 2 && segs[0].length > 0) {
-                                detected = segs[0].down ();
-                                break;
-                            }
-                        }
-                        if (detected.length > 0) break;
-                    }
-                }
+                if (stdout_buf != null)
+                    detected = detect_branch (stdout_buf);
             } catch (Error e) {
                 warning ("[PackageManager] apt-repo failed: %s", e.message);
             }
             _system_branch = detected;
             return _system_branch;
+        }
+
+        public static string detect_branch (string apt_repo_output) {
+            foreach (var line in apt_repo_output.split ("\n")) {
+                var t = line.strip ();
+                if (t.length == 0 || t.has_prefix ("#")) continue;
+                foreach (var tok in t.split (" ")) {
+                    foreach (var seg in tok.split ("/")) {
+                        var s = seg.replace ("[", "").replace ("]", "").strip ().down ();
+                        if (Data.Validation.branch_allowed (s)) return s;
+                    }
+                }
+            }
+            return "";
         }
 
         public async bool is_system_branch (string branch) {
