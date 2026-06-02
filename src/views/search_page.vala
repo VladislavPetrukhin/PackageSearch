@@ -38,10 +38,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
 
     private GLib.Cancellable? in_flight           = null;
     private GLib.Cancellable? suggestions_cancel   = null;
-    private GLib.Cancellable? verify_cancel        = null;
     private uint64            query_seq            = 0;
-
-    private const int VERIFY_LIMIT = 10;
 
     private const string[] MODE_LABELS = {
         N_("Package"), N_("Binary"), N_("File"), N_("Maintainer"), N_("Task")
@@ -178,7 +175,6 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         results_list.row_activated.connect ((row) => {
             if (row is SourceResultRow) {
                 var sg = ((SourceResultRow) row).group;
-                cancel_verify ();
                 if (sg.bin_name != null) {
                     resolve_and_open.begin (sg, result_branch);
                 } else {
@@ -251,7 +247,6 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         if (current_query.length == 0) { reset_search (); show_idle (); return; }
 
         if (in_flight != null) { in_flight.cancel (); in_flight = null; }
-        cancel_verify ();
         cancel_suggestions ();
         in_flight = new GLib.Cancellable ();
         query_seq++;
@@ -352,17 +347,10 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     private void apply_results (Gee.ArrayList<Data.SourceGroup>? results, string branch, string term) {
         clear_results ();
         int n = 0;
-        var verify_rows = new Gee.ArrayList<SourceResultRow> ();
-        var verify_names = new Gee.ArrayList<string> ();
         if (results != null) {
             foreach (var g in results) {
                 if (g == null) continue;
-                var row = new SourceResultRow (g);
-                results_list.append (row);
-                if (verify_rows.size < VERIFY_LIMIT && Ui.is_nonempty (g.name)) {
-                    verify_rows.add (row);
-                    verify_names.add (g.name);
-                }
+                results_list.append (new SourceResultRow (g));
                 n++;
             }
         }
@@ -376,32 +364,6 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
                 results_header.label = _("Found %d in repository %s").printf (n, branch);
             show_results ();
             reapply_find ();
-            if (current_mode == Data.SearchMode.PACKAGE && verify_rows.size > 0)
-                verify_removed.begin (verify_rows, verify_names, branch, query_seq);
-        }
-    }
-
-    private void cancel_verify () {
-        if (verify_cancel != null) { verify_cancel.cancel (); verify_cancel = null; }
-    }
-
-    private async void verify_removed (
-        Gee.ArrayList<SourceResultRow> rows, Gee.ArrayList<string> names,
-        string branch, uint64 my_seq
-    ) {
-        verify_cancel = new GLib.Cancellable ();
-        var cancel = verify_cancel;
-        var api = new Data.SearchApi ();
-        for (int i = 0; i < rows.size; i++) {
-            if (cancel.is_cancelled () || my_seq != query_seq) return;
-            try {
-                bool deleted = yield api.is_source_deleted (branch, names[i], cancel);
-                if (cancel.is_cancelled () || my_seq != query_seq) return;
-                if (deleted) rows[i].mark_removed ();
-            } catch (Error e) {
-                if (cancel.is_cancelled ()) return;
-                warning ("[SearchPage] verify_removed: %s", e.message);
-            }
         }
     }
 

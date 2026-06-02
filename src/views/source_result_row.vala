@@ -21,10 +21,4 @@ public class SourceResultRow : Adw.ActionRow {
             version_label.visible = true;
         }
     }
-
-    public void mark_removed () {
-        add_css_class ("removed-row");
-        subtitle = _("Removed from the repository");
-        subtitle_lines = 1;
-    }
 }
