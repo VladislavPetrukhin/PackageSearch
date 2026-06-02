@@ -1,4 +1,5 @@
 src = files(
+  'config.vapi',
   'application.vala',
   'window.vala',
   'views/find.vala',

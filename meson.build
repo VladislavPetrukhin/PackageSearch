@@ -1,5 +1,5 @@
 project('PackageSearch', 'vala',
-  version: '0.1.0',
+  version: '0.2.0',
   license: 'GPL-3.0-or-later',
   meson_version: '>= 0.61',
   default_options: ['warning_level=0'],
@@ -9,6 +9,10 @@ gnome = import('gnome')
 i18n = import('i18n')
 
 app_id = 'space.altlinux.PackageSearch'
+
+conf = configuration_data()
+conf.set_quoted('PACKAGE_VERSION', meson.project_version())
+config_h = configure_file(output: 'config.h', configuration: conf)
 
 gtk4_dep = dependency('gtk4', version: '>=4.12')
 adw_dep  = dependency('libadwaita-1', version: '>=1.4')
@@ -48,6 +52,7 @@ executable(
   resources,
   dependencies: [gtk4_dep, adw_dep, json_dep, soup_dep, gee_dep, alt_repo_dep],
   vala_args: vala_extra_args,
+  include_directories: include_directories('.'),
   install: true
 )
 gnome.post_install(
