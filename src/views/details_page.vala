@@ -131,6 +131,10 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
         Ui.attach_find_bar (find_bar, find_entry, this, (q) => run_find (q));
 
+        this.showing.connect (() => {
+            if (cancel.is_cancelled ()) cancel = new GLib.Cancellable ();
+        });
+
         load_details.begin ();
     }
 

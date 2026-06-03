@@ -56,6 +56,9 @@ public class DependencyGraphPage : Adw.NavigationPage {
         this.hidden.connect (() => {
             if (!cancel.is_cancelled ()) cancel.cancel ();
         });
+        this.showing.connect (() => {
+            if (cancel.is_cancelled ()) cancel = new GLib.Cancellable ();
+        });
         load_root.begin ();
     }
 
