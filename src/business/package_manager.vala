@@ -226,8 +226,7 @@ namespace Business {
                 }
 
                 if (res == InstallResult.SUCCESS) {
-                    if (_installed_cache != null && repo_evr != null && repo_evr.length > 0)
-                        _installed_cache.set (pkg_name, repo_evr);
+                    _installed_cache = null;
                     return InstallResult.SUCCESS;
                 }
 
