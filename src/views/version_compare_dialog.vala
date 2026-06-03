@@ -62,6 +62,38 @@ public class VersionCompareDialog : Adw.Dialog {
         page.add (meta_grp);
     }
 
+    private void add_compare_row (Adw.PreferencesGroup grp, string title, string a, string b) {
+        var row = make_compare_text_row (title, a, b);
+        grp.add (row);
+        if (a == b) equal_widgets.add (row);
+    }
+
+    private Adw.ActionRow make_compare_text_row (string title, string a, string b) {
+        bool differ = (a != b);
+        var row = new Adw.ActionRow () { title = title };
+        var content = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 18) {
+            valign = Gtk.Align.CENTER
+        };
+        var la = new Gtk.Label (a) {
+            xalign = 0.0f, halign = Gtk.Align.START,
+            wrap = true, wrap_mode = Pango.WrapMode.WORD_CHAR,
+            width_chars = 16, max_width_chars = 16
+        };
+        var lb = new Gtk.Label (b) {
+            xalign = 0.0f, halign = Gtk.Align.START,
+            wrap = true, wrap_mode = Pango.WrapMode.WORD_CHAR,
+            width_chars = 16, max_width_chars = 16
+        };
+        if (!differ) {
+            la.add_css_class ("dim-label");
+            lb.add_css_class ("dim-label");
+        }
+        content.append (la);
+        content.append (lb);
+        row.add_suffix (content);
+        return row;
+    }
+
     private void build_binaries (Data.PackageDetails a, Data.PackageDetails b) {
         var names_a = new Gee.HashSet<string> ();
         var names_b = new Gee.HashSet<string> ();
@@ -111,6 +143,8 @@ public class VersionCompareDialog : Adw.Dialog {
         }
         if (only_a.size == 0 && only_b.size == 0 && common.size == 0)
             bins_grp.add (new Adw.ActionRow () { title = _("No binary packages reported") });
+        if (only_a.size == 0 && only_b.size == 0)
+            equal_widgets.add (bins_grp);
         page.add (bins_grp);
     }
 
@@ -144,33 +178,4 @@ public class VersionCompareDialog : Adw.Dialog {
         new TextDialog (head, body).present (this);
     }
 
-    private void add_compare_row (Adw.PreferencesGroup grp, string title, string a, string b) {
-        var row = make_compare_text_row (title, a, b);
-        grp.add (row);
-        if (a == b) equal_widgets.add (row);
-    }
-
-    private Adw.ActionRow make_compare_text_row (string title, string a, string b) {
-        bool differ = (a != b);
-        var row = new Adw.ActionRow () { title = title };
-        var content = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12) {
-            valign = Gtk.Align.CENTER, hexpand = true
-        };
-        var la = new Gtk.Label (a) {
-            xalign = 0.0f, halign = Gtk.Align.START, hexpand = true,
-            wrap = true, wrap_mode = Pango.WrapMode.WORD_CHAR, max_width_chars = 36
-        };
-        var lb = new Gtk.Label (b) {
-            xalign = 0.0f, halign = Gtk.Align.START, hexpand = true,
-            wrap = true, wrap_mode = Pango.WrapMode.WORD_CHAR, max_width_chars = 36
-        };
-        if (!differ) {
-            la.add_css_class ("dim-label");
-            lb.add_css_class ("dim-label");
-        }
-        content.append (la);
-        content.append (lb);
-        row.add_suffix (content);
-        return row;
-    }
 }

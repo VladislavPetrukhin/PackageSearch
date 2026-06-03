@@ -15,6 +15,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private Business.PackageManager pkg_mgr = new Business.PackageManager ();
     private InstallController installer;
     private Gee.HashMap<string, Gtk.Button> install_buttons = new Gee.HashMap<string, Gtk.Button> ();
+    private Gtk.SizeGroup install_size = new Gtk.SizeGroup (Gtk.SizeGroupMode.HORIZONTAL);
     private string repo_evr = "";
 
     [GtkChild] private unowned Adw.ToastOverlay   toast_overlay;
@@ -294,6 +295,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 tooltip_text = _("Install via apt-get (requires authentication)")
             };
             install_hero.add_css_class ("suggested-action");
+            install_size.add_widget (install_hero);
             install_buttons.set (group.name, install_hero);
 
             bool is_installed = installed.has_key (group.name);
@@ -332,6 +334,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     tooltip_text = _("Install via apt-get (requires authentication)")
                 };
                 install_btn.add_css_class ("suggested-action");
+                install_size.add_widget (install_btn);
                 install_buttons.set (name, install_btn);
 
                 bool is_installed = installed.has_key (name);

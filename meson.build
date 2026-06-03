@@ -15,7 +15,7 @@ conf.set_quoted('PACKAGE_VERSION', meson.project_version())
 config_h = configure_file(output: 'config.h', configuration: conf)
 
 gtk4_dep = dependency('gtk4', version: '>=4.12')
-adw_dep  = dependency('libadwaita-1', version: '>=1.4')
+adw_dep  = dependency('libadwaita-1', version: '>=1.5')
 json_dep = dependency('json-glib-1.0')
 soup_dep = dependency('libsoup-3.0')
 gee_dep  = dependency('gee-0.8')
