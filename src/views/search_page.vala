@@ -88,21 +88,24 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
                  Data.SearchMode.PACKAGE, Data.SearchMode.FILE, Data.SearchMode.TASK };
     }
 
-    private static string repo_display (string r, bool abbrev) {
-        if (r == "all") return _("All");
-        if (abbrev && r == "sisyphus") return "sis";
-        return r;
+    private static string repo_display (string r) {
+        return (r == "all") ? _("All") : r;
     }
 
-    private Gtk.SignalListItemFactory make_repo_factory (bool abbrev) {
+    private Gtk.SignalListItemFactory make_repo_factory (bool compact) {
         var f = new Gtk.SignalListItemFactory ();
         f.setup.connect ((o) => {
-            ((Gtk.ListItem) o).child = new Gtk.Label ("") { xalign = 0 };
+            var l = new Gtk.Label ("") { xalign = 0 };
+            if (compact) {
+                l.ellipsize = Pango.EllipsizeMode.END;
+                l.max_width_chars = 8;
+            }
+            ((Gtk.ListItem) o).child = l;
         });
         f.bind.connect ((o) => {
             var li = (Gtk.ListItem) o;
             var s = ((Gtk.StringObject) li.item).string;
-            ((Gtk.Label) li.child).label = repo_display (s, abbrev);
+            ((Gtk.Label) li.child).label = repo_display (s);
         });
         return f;
     }
