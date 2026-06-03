@@ -260,12 +260,21 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
         bins_group.set_header_suffix (null);
         if (sys_branch.length > 0 && !can_install) {
-            var info = new Gtk.Image.from_icon_name ("dialog-information-symbolic") {
-                valign = Gtk.Align.CENTER,
-                tooltip_text = _("Install is available only for the system repository (%s)").printf (sys_branch)
+            string hint = _("Install is available only for the system repository (%s)").printf (sys_branch);
+            var info_lbl = new Gtk.Label (hint) {
+                wrap = true, max_width_chars = 32, xalign = 0.0f,
+                margin_top = 8, margin_bottom = 8, margin_start = 8, margin_end = 8
             };
-            info.add_css_class ("dim-label");
-            bins_group.set_header_suffix (info);
+            var pop = new Gtk.Popover ();
+            pop.set_child (info_lbl);
+            var info_btn = new Gtk.MenuButton () {
+                icon_name = "dialog-information-symbolic",
+                valign = Gtk.Align.CENTER,
+                tooltip_text = hint,
+                popover = pop
+            };
+            info_btn.add_css_class ("flat");
+            bins_group.set_header_suffix (info_btn);
         }
 
         Gee.HashMap<string, string>? installed = null;
