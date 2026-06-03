@@ -18,7 +18,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
 
     [GtkChild] private unowned Gtk.Button    retry_btn;
     [GtkChild] private unowned Gtk.Box       suggestions_box;
-    [GtkChild] private unowned Gtk.MenuButton history_btn;
+    [GtkChild] private unowned Gtk.Button history_btn;
 
     private HistoryPopover history_popover;
 
@@ -138,7 +138,8 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
             set_query (q);
             trigger_search_now ();
         });
-        history_btn.set_popover (history_popover);
+        history_popover.set_parent (history_btn);
+        history_btn.clicked.connect (() => history_popover.popup ());
         rebuild_history_popover ();
 
         var mode_model = new Gtk.StringList (null);
