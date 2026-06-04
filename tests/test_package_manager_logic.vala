@@ -114,6 +114,20 @@ private static void t_looks_untrusted_message () {
     assert (!PackageManager.looks_untrusted_message (null));
 }
 
+private static void t_has_debuginfo_source () {
+    string with_debug =
+        "rpm [alt] http://ftp.altlinux.org/pub/distributions/ALTLinux Sisyphus/x86_64 classic\n"
+      + "rpm [alt] http://ftp.altlinux.org/pub/distributions/ALTLinux Sisyphus/x86_64 debuginfo\n";
+    assert (PackageManager.has_debuginfo_source (with_debug));
+
+    string no_debug =
+        "rpm [alt] http://ftp.altlinux.org/pub/distributions/ALTLinux Sisyphus/x86_64 classic\n"
+      + "rpm [alt] http://ftp.altlinux.org/pub/distributions/ALTLinux Sisyphus/noarch classic\n";
+    assert (!PackageManager.has_debuginfo_source (no_debug));
+
+    assert (!PackageManager.has_debuginfo_source (""));
+}
+
 private static void t_install_result_enum () {
     assert (InstallResult.SUCCESS   != InstallResult.CANCELLED);
     assert (InstallResult.CANCELLED != InstallResult.FAILED);
@@ -131,6 +145,7 @@ public static int main (string[] args) {
     GLib.Test.add_func ("/business/package_manager/stale_cache",    t_stale_cache_error);
     GLib.Test.add_func ("/business/package_manager/stale_message",  t_looks_stale_message);
     GLib.Test.add_func ("/business/package_manager/untrusted_msg",  t_looks_untrusted_message);
+    GLib.Test.add_func ("/business/package_manager/debuginfo_repo", t_has_debuginfo_source);
     GLib.Test.add_func ("/business/package_manager/install_result", t_install_result_enum);
 
     return GLib.Test.run ();

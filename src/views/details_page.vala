@@ -285,9 +285,11 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         }
 
         Gee.HashMap<string, string>? installed = null;
+        bool debug_avail = false;
         repo_evr = "";
         if (can_install) {
             installed = yield pkg_mgr.get_installed_packages ();
+            debug_avail = yield pkg_mgr.has_debuginfo_repo ();
             if (Ui.is_nonempty (d.version)) {
                 repo_evr = "0:" + d.version;
                 if (Ui.is_nonempty (d.release)) repo_evr += "-" + d.release;
@@ -298,7 +300,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         if (can_install && names.contains (group.name)) {
             var install_hero = new Gtk.Button.with_label (_("Install")) {
                 valign = Gtk.Align.CENTER,
-                tooltip_text = _("Install via apt-get (requires authentication)")
+                tooltip_text = _("Install (requires authentication)")
             };
             install_hero.add_css_class ("suggested-action");
             install_size.add_widget (install_hero);
@@ -316,7 +318,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 bool is_update = needs_update;
                 if (is_update) {
                     install_hero.label = _("Update");
-                    install_hero.tooltip_text = _("Update via apt-get (requires authentication)");
+                    install_hero.tooltip_text = _("Update (requires authentication)");
                 }
                 install_hero.clicked.connect (() => {
                     installer.install.begin (group.name, install_hero, captured_evr, is_update);
@@ -334,10 +336,18 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             foreach (var a in arches) arch_str = (arch_str == "") ? a : arch_str + ", " + a;
             if (arch_str != "") row.add_suffix (dim_label (arch_str));
 
-            if (can_install) {
+            if (can_install && name.has_suffix ("-debuginfo") && !debug_avail) {
+                var dbg_btn = new Gtk.Button.with_label (_("Install")) {
+                    valign = Gtk.Align.CENTER,
+                    sensitive = false,
+                    tooltip_text = _("Requires the debuginfo repository, which is not enabled")
+                };
+                install_size.add_widget (dbg_btn);
+                row.add_suffix (dbg_btn);
+            } else if (can_install) {
                 var install_btn = new Gtk.Button.with_label (_("Install")) {
                     valign = Gtk.Align.CENTER,
-                    tooltip_text = _("Install via apt-get (requires authentication)")
+                    tooltip_text = _("Install (requires authentication)")
                 };
                 install_btn.add_css_class ("suggested-action");
                 install_size.add_widget (install_btn);
@@ -355,7 +365,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     string captured_evr = repo_evr;
                     if (is_update) {
                         install_btn.label = _("Update");
-                        install_btn.tooltip_text = _("Update via apt-get (requires authentication)");
+                        install_btn.tooltip_text = _("Update (requires authentication)");
                     }
                     install_btn.clicked.connect (() => {
                         installer.install.begin (name, install_btn, captured_evr, is_update);

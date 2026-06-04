@@ -17,8 +17,9 @@ namespace Business {
         public string  summary  { get; set; default = ""; }
         public string  download { get; set; default = ""; }
         public string  disk     { get; set; default = ""; }
-        public bool    ok       { get; set; default = false; }
-        public string? error    { get; set; default = null; }
+        public bool    ok            { get; set; default = false; }
+        public bool    not_available { get; set; default = false; }
+        public string? error         { get; set; default = null; }
 
         public bool is_empty () {
             return install.size == 0 && upgrade.size == 0 && remove.size == 0;
@@ -28,12 +29,13 @@ namespace Business {
     public class PackageManager : GLib.Object {
 
         private static string? _system_branch = null;
+        private static string? _apt_repo_output = null;
 
         private static Gee.HashMap<string, string>? _installed_cache = null;
 
-        public async string get_system_branch () {
-            if (_system_branch != null) return _system_branch;
-            string detected = "";
+        private async string get_apt_repo_output () {
+            if (_apt_repo_output != null) return _apt_repo_output;
+            string output = "";
             try {
                 var sp = new Subprocess.newv (
                     { "apt-repo" },
@@ -41,13 +43,33 @@ namespace Business {
                 );
                 string? stdout_buf = null;
                 yield sp.communicate_utf8_async (null, null, out stdout_buf, null);
-                if (stdout_buf != null)
-                    detected = detect_branch (stdout_buf);
+                if (stdout_buf != null) output = stdout_buf;
             } catch (Error e) {
                 warning ("[PackageManager] apt-repo failed: %s", e.message);
             }
-            _system_branch = detected;
+            _apt_repo_output = output;
+            return _apt_repo_output;
+        }
+
+        public async string get_system_branch () {
+            if (_system_branch != null) return _system_branch;
+            var output = yield get_apt_repo_output ();
+            _system_branch = detect_branch (output);
             return _system_branch;
+        }
+
+        public async bool has_debuginfo_repo () {
+            var output = yield get_apt_repo_output ();
+            return has_debuginfo_source (output);
+        }
+
+        public static bool has_debuginfo_source (string apt_repo_output) {
+            foreach (var line in apt_repo_output.split ("\n")) {
+                var t = line.strip ();
+                if (t.length == 0 || t.has_prefix ("#")) continue;
+                if (t.down ().contains ("debuginfo")) return true;
+            }
+            return false;
         }
 
         public static string detect_branch (string apt_repo_output) {
@@ -136,6 +158,7 @@ namespace Business {
                 string? pid = yield resolve_package_id (client, pkg_name, null);
                 if (pid == null) {
                     plan.ok = false;
+                    plan.not_available = true;
                     plan.error = _("Package %s not found").printf (pkg_name);
                     return plan;
                 }

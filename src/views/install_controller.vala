@@ -40,7 +40,9 @@ public class InstallController : GLib.Object {
         if (!plan.ok) {
             btn.sensitive = true;
             warning ("[InstallController] simulate failed for %s:\n%s", pkg_name, plan.error ?? "(no output)");
-            toast (_("Could not compute changes for %s").printf (pkg_name));
+            toast (plan.not_available
+                ? _("%s is not available in the enabled repositories").printf (pkg_name)
+                : _("Could not compute changes for %s").printf (pkg_name));
             return;
         }
         if (plan.is_empty ()) {
