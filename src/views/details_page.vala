@@ -123,6 +123,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         header_title.set_subtitle (branch);
 
         loading_revealer.reveal_child = true;
+        content_scroll.visible = false;
 
         installer = new InstallController (this, toast_overlay, pkg_mgr);
         installer.install_finished.connect ((ok) => {
@@ -207,9 +208,14 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
             yield populate_binaries (d);
 
-            loading_revealer.reveal_child = false;
-
             yield load_versions ();
+
+            yield load_changelog ();
+
+            load_dependencies ();
+            load_security ();
+            load_downloads ();
+            load_specfile ();
         } catch (Error e) {
             if (cancel.is_cancelled ()) return;
             loading_revealer.reveal_child = false;
@@ -219,12 +225,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         }
 
         if (cancel.is_cancelled ()) return;
-        yield load_changelog ();
-
-        load_dependencies ();
-        load_security ();
-        load_downloads ();
-        load_specfile ();
+        loading_revealer.reveal_child = false;
+        content_scroll.visible = true;
     }
 
     private void show_load_error (Error e) {
