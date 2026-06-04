@@ -39,6 +39,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     private Gee.HashSet<string> selected_branches = new Gee.HashSet<string> ();
     private Gtk.Button?         compare_btn = null;
+    private bool                versions_updating = false;
 
     private GLib.Cancellable cancel = new GLib.Cancellable ();
 
@@ -718,6 +719,13 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 version_checks.add (chk);
                 string captured_branch = v.branch;
                 chk.toggled.connect (() => {
+                    if (versions_updating) return;
+                    if (chk.active && selected_branches.size >= 2) {
+                        versions_updating = true;
+                        chk.active = false;
+                        versions_updating = false;
+                        return;
+                    }
                     if (chk.active)
                         selected_branches.add (captured_branch);
                     else
@@ -725,7 +733,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
                     bool at_limit = selected_branches.size >= 2;
                     foreach (var c in version_checks)
-                        if (!c.active) c.sensitive = !at_limit;
+                        c.opacity = (at_limit && !c.active) ? 0.4 : 1.0;
 
                     if (compare_btn != null)
                         compare_btn.sensitive = (selected_branches.size == 2);

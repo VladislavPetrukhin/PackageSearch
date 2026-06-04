@@ -8,10 +8,12 @@ public class InstallController : GLib.Object {
     private Adw.ToastOverlay      toast_overlay;
     private Business.PackageManager pkg_mgr;
     private GLib.Cancellable?     active_cancellable = null;
+    private Adw.Dialog?           active_dialog = null;
 
     public signal void install_finished (bool success);
 
     public void cancel_active () {
+        if (active_dialog != null) active_dialog.force_close ();
         if (active_cancellable != null && !active_cancellable.is_cancelled ())
             active_cancellable.cancel ();
     }
@@ -49,6 +51,11 @@ public class InstallController : GLib.Object {
     public async void install (string pkg_name, Gtk.Button btn,
                                string? repo_evr, bool is_update,
                                Gee.List<Gtk.Button>? siblings = null) {
+        if (active_cancellable != null) return;
+
+        var flow = new GLib.Cancellable ();
+        active_cancellable = flow;
+
         var group = new Gee.ArrayList<Gtk.Button> ();
         group.add (btn);
         if (siblings != null)
@@ -60,9 +67,11 @@ public class InstallController : GLib.Object {
         group_label (group, _("Checking…"));
 
         var plan = yield pkg_mgr.simulate_install (pkg_name);
+        if (flow.is_cancelled ()) { active_cancellable = null; return; }
         group_label (group, orig_label);
 
         if (!plan.ok) {
+            active_cancellable = null;
             group_sensitive (group, true);
             warning ("[InstallController] simulate failed for %s:\n%s", pkg_name, plan.error ?? "(no output)");
             toast (plan.not_available
@@ -71,20 +80,24 @@ public class InstallController : GLib.Object {
             return;
         }
         if (plan.is_empty ()) {
+            active_cancellable = null;
             group_mark_installed (group);
             toast (_("Already up to date"));
             return;
         }
 
         bool confirmed = yield confirm_plan (pkg_name, is_update, plan);
+        if (flow.is_cancelled ()) { active_cancellable = null; return; }
         if (!confirmed) {
+            active_cancellable = null;
             group_sensitive (group, true);
             toast (_("Installation cancelled"));
             return;
         }
 
         group_label (group, is_update ? _("Updating…") : _("Installing…"));
-        var result = yield run_with_progress (pkg_name, repo_evr, is_update);
+        var result = yield run_with_progress (pkg_name, repo_evr, is_update, flow);
+        active_cancellable = null;
 
         switch (result) {
         case Business.InstallResult.SUCCESS:
@@ -129,7 +142,9 @@ public class InstallController : GLib.Object {
         dlg.set_default_response ("ok");
         dlg.set_close_response ("cancel");
 
+        active_dialog = dlg;
         string resp = yield dlg.choose (parent, null);
+        active_dialog = null;
         return resp == "ok";
     }
 
@@ -168,9 +183,8 @@ public class InstallController : GLib.Object {
     }
 
     private async Business.InstallResult run_with_progress (string pkg_name,
-                                                            string? repo_evr, bool is_update) {
-        var cancellable = new GLib.Cancellable ();
-        active_cancellable = cancellable;
+                                                            string? repo_evr, bool is_update,
+                                                            GLib.Cancellable cancellable) {
         bool user_cancelled = false;
 
         var pdlg = new InstallProgressDialog ();
@@ -180,6 +194,7 @@ public class InstallController : GLib.Object {
             user_cancelled = true;
             cancellable.cancel ();
         });
+        active_dialog = pdlg;
         pdlg.present (parent);
 
         bool determinate = false;
@@ -200,7 +215,7 @@ public class InstallController : GLib.Object {
         pkg_mgr.disconnect (sig_id);
         pkg_mgr.disconnect (pct_id);
         pdlg.force_close ();
-        active_cancellable = null;
+        active_dialog = null;
 
         if (user_cancelled || cancellable.is_cancelled ())
             return Business.InstallResult.CANCELLED;
