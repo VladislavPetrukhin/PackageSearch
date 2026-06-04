@@ -6,7 +6,7 @@ using Intl;
 [GtkTemplate (ui = "/space/altlinux/PackageSearch/ui/search_page.ui")]
 public class SearchPage : Adw.NavigationPage, Ui.Findable {
     [GtkChild] private unowned Adw.ToastOverlay toast_overlay;
-    [GtkChild] private unowned Adw.ViewStack    content_stack;
+    [GtkChild] private unowned Gtk.Stack        content_stack;
     [GtkChild] private unowned Gtk.ListBox      results_list;
     [GtkChild] private unowned Gtk.Label        results_header;
     [GtkChild] private unowned Gtk.SearchBar    find_bar;

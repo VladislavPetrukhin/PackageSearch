@@ -61,10 +61,13 @@ template $SearchPage : Adw.NavigationPage {
     }
 
     content: Adw.ToastOverlay toast_overlay {
-      child: Adw.ViewStack content_stack {
+      child: Gtk.Stack content_stack {
         vexpand: true;
+        hhomogeneous: false;
+        vhomogeneous: false;
+        transition-type: crossfade;
 
-        Adw.ViewStackPage {
+        Gtk.StackPage {
           name: "idle";
           child: Adw.StatusPage idle_status {
             icon-name: "system-search-symbolic";
@@ -73,7 +76,7 @@ template $SearchPage : Adw.NavigationPage {
           };
         }
 
-        Adw.ViewStackPage {
+        Gtk.StackPage {
           name: "loading";
           child: Gtk.CenterBox {
             valign: center;
@@ -87,7 +90,7 @@ template $SearchPage : Adw.NavigationPage {
           };
         }
 
-        Adw.ViewStackPage {
+        Gtk.StackPage {
           name: "results";
           child: Gtk.ScrolledWindow {
             hscrollbar-policy: never;
@@ -121,7 +124,7 @@ template $SearchPage : Adw.NavigationPage {
           };
         }
 
-        Adw.ViewStackPage {
+        Gtk.StackPage {
           name: "empty";
           child: Adw.StatusPage empty_status {
             icon-name: "edit-find-replace-symbolic";
@@ -137,7 +140,7 @@ template $SearchPage : Adw.NavigationPage {
           };
         }
 
-        Adw.ViewStackPage {
+        Gtk.StackPage {
           name: "error";
           child: Adw.StatusPage {
             icon-name: "network-error-symbolic";
