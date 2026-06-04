@@ -57,7 +57,17 @@ public class InstallController : GLib.Object {
         }
 
         btn.label = is_update ? _("Updating…") : _("Installing…");
-        var result = yield run_with_progress (pkg_name, repo_evr, is_update);
+        var result = yield run_with_progress (pkg_name, repo_evr, is_update, false);
+
+        if (result == Business.InstallResult.UNTRUSTED) {
+            if (!(yield confirm_untrusted (pkg_name))) {
+                btn.label = orig_label;
+                btn.sensitive = true;
+                toast (_("Installation cancelled"));
+                return;
+            }
+            result = yield run_with_progress (pkg_name, repo_evr, is_update, true);
+        }
 
         switch (result) {
         case Business.InstallResult.SUCCESS:
@@ -71,11 +81,26 @@ public class InstallController : GLib.Object {
             toast (_("Installation cancelled"));
             break;
         case Business.InstallResult.FAILED:
+        case Business.InstallResult.UNTRUSTED:
             btn.label = orig_label;
             btn.sensitive = true;
             toast ((is_update ? _("Failed to update %s") : _("Failed to install %s")).printf (pkg_name));
             break;
         }
+    }
+
+    private async bool confirm_untrusted (string pkg_name) {
+        var dlg = new Adw.AlertDialog (
+            _("Install untrusted package?"),
+            _("%s could not be verified — its repository is unsigned or the signing key is missing. Install it anyway?").printf (pkg_name));
+        dlg.add_response ("cancel", _("Cancel"));
+        dlg.add_response ("ok", _("Install anyway"));
+        dlg.set_response_appearance ("ok", Adw.ResponseAppearance.DESTRUCTIVE);
+        dlg.set_default_response ("cancel");
+        dlg.set_close_response ("cancel");
+
+        string resp = yield dlg.choose (parent, null);
+        return resp == "ok";
     }
 
     private async bool confirm_plan (string pkg_name, bool is_update, Business.InstallPlan plan) {
@@ -136,7 +161,8 @@ public class InstallController : GLib.Object {
     }
 
     private async Business.InstallResult run_with_progress (string pkg_name,
-                                                            string? repo_evr, bool is_update) {
+                                                            string? repo_evr, bool is_update,
+                                                            bool allow_untrusted) {
         var cancellable = new GLib.Cancellable ();
 
         var pdlg = new InstallProgressDialog ();
@@ -145,14 +171,23 @@ public class InstallController : GLib.Object {
         pdlg.cancel_requested.connect (() => cancellable.cancel ());
         pdlg.present (parent);
 
-        uint pulse_id = Timeout.add (120, () => { pdlg.pulse (); return Source.CONTINUE; });
+        bool determinate = false;
+        uint pulse_id = Timeout.add (120, () => {
+            if (!determinate) pdlg.pulse ();
+            return Source.CONTINUE;
+        });
         ulong sig_id = pkg_mgr.install_progress.connect ((line) => pdlg.set_status (line));
+        ulong pct_id = pkg_mgr.install_percentage.connect ((pct) => {
+            determinate = true;
+            pdlg.set_fraction (pct / 100.0);
+        });
 
         string? err = null;
-        var result = yield pkg_mgr.run_install (pkg_name, repo_evr, cancellable, out err);
+        var result = yield pkg_mgr.run_install (pkg_name, repo_evr, allow_untrusted, cancellable, out err);
 
         Source.remove (pulse_id);
         pkg_mgr.disconnect (sig_id);
+        pkg_mgr.disconnect (pct_id);
         pdlg.force_close ();
 
         if (result == Business.InstallResult.FAILED)

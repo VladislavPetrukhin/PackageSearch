@@ -20,6 +20,7 @@ json_dep = dependency('json-glib-1.0')
 soup_dep = dependency('libsoup-3.0')
 gee_dep  = dependency('gee-0.8')
 alt_repo_dep = dependency('libalt-repo-1', required: true)
+packagekit_dep = dependency('packagekit-glib2')
 
 # blueprint-compiler
 bp = find_program('blueprint-compiler', required: true)
@@ -44,13 +45,14 @@ vala_extra_args = [
   '--pkg=libsoup-3.0',
   '--pkg=gee-0.8',
   '--pkg=libalt-repo-1',
+  '--pkg=packagekit-glib2',
 ]
 
 executable(
   'packagesearch',
   src,
   resources,
-  dependencies: [gtk4_dep, adw_dep, json_dep, soup_dep, gee_dep, alt_repo_dep],
+  dependencies: [gtk4_dep, adw_dep, json_dep, soup_dep, gee_dep, alt_repo_dep, packagekit_dep],
   vala_args: vala_extra_args,
   include_directories: include_directories('.'),
   install: true

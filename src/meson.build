@@ -49,11 +49,13 @@ lib_testable = static_library(
   dependencies: [
     dependency('gio-2.0'),
     gee_dep,
+    packagekit_dep,
   ],
   vala_args: [
     '--target-glib=2.74',
     '--pkg=gio-2.0',
     '--pkg=gee-0.8',
+    '--pkg=packagekit-glib2',
   ],
   install: false,
 )

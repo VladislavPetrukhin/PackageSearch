@@ -6,7 +6,8 @@ namespace Business {
     public enum InstallResult {
         SUCCESS,
         CANCELLED,
-        FAILED
+        FAILED,
+        UNTRUSTED
     }
 
     public class InstallPlan : GLib.Object {
@@ -110,75 +111,59 @@ namespace Business {
         }
 
         public signal void install_progress (string line);
+        public signal void install_percentage (int percent);
 
-        public static InstallPlan parse_apt_simulation (string output) {
-            var plan = new InstallPlan ();
-            string mode = "";
-            foreach (var raw in output.split ("\n")) {
-                if (raw.length == 0) continue;
-                bool indented = (raw[0] == ' ' || raw[0] == '\t');
-                var line = raw.strip ();
-                if (line.length == 0) continue;
-
-                if (line.has_prefix ("The following NEW packages")) { mode = "install"; continue; }
-                if (line.has_prefix ("The following extra packages")) { mode = "skip"; continue; }
-                if (line.contains ("will be upgraded")) { mode = "upgrade"; continue; }
-                if (line.contains ("will be REMOVED")) { mode = "remove"; continue; }
-
-                if (indented && mode != "") {
-                    foreach (var tok in line.split (" ")) {
-                        var t = tok.strip ();
-                        if (t.length == 0) continue;
-                        if (mode == "install" && !plan.install.contains (t)) plan.install.add (t);
-                        else if (mode == "upgrade" && !plan.upgrade.contains (t)) plan.upgrade.add (t);
-                        else if (mode == "remove" && !plan.remove.contains (t)) plan.remove.add (t);
-                    }
-                    continue;
-                }
-
-                mode = "";
-                if (line.has_prefix ("Need to get")) plan.download = line;
-                else if (line.has_prefix ("After unpacking") || line.contains ("disk space")) plan.disk = line;
-                else if (line.contains ("newly installed") || line.contains ("upgraded,")) plan.summary = line;
+        private async string? resolve_package_id (Pk.Client client, string pkg_name,
+                                                  GLib.Cancellable? cancellable) throws GLib.Error {
+            var filters = Pk.Bitfield.from_enums (Pk.Filter.NEWEST, Pk.Filter.ARCH);
+            string[] names = { pkg_name, null };
+            var res = yield client.resolve_async (filters, names, cancellable, (p, t) => {});
+            if (res.get_exit_code () != Pk.Exit.SUCCESS) return null;
+            var arr = res.get_package_array ();
+            string? any = null;
+            for (uint i = 0; i < arr.length; i++) {
+                var pkg = arr.get (i);
+                any = pkg.get_id ();
+                if (pkg.get_info () == Pk.Info.AVAILABLE) return pkg.get_id ();
             }
-            plan.ok = true;
-            return plan;
+            return any;
         }
 
         public async InstallPlan simulate_install (string pkg_name) {
             var plan = new InstallPlan ();
-            string? cache_dir = null;
             try {
-                try {
-                    cache_dir = DirUtils.make_tmp ("packagesearch-apt-XXXXXX");
-                } catch (Error e) {
-                    cache_dir = null;
-                }
-
-                var launcher = new SubprocessLauncher (
-                    SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_PIPE);
-                launcher.setenv ("LC_ALL", "C", true);
-                var sp = (cache_dir != null)
-                    ? launcher.spawnv ({ "apt-get", "-o", "Dir::Cache=" + cache_dir,
-                                         "--simulate", "install", pkg_name })
-                    : launcher.spawnv ({ "apt-get", "--simulate", "install", pkg_name });
-
-                string? out_buf = null;
-                string? err_buf = null;
-                yield sp.communicate_utf8_async (null, null, out out_buf, out err_buf);
-
-                if (cache_dir != null) { rm_rf (cache_dir); cache_dir = null; }
-
-                if (!sp.get_successful () && (out_buf == null || out_buf.strip ().length == 0)) {
+                var client = new Pk.Client ();
+                string? pid = yield resolve_package_id (client, pkg_name, null);
+                if (pid == null) {
                     plan.ok = false;
-                    plan.error = (err_buf != null && err_buf.strip ().length > 0)
-                        ? err_buf.strip () : "apt-get simulation failed";
+                    plan.error = _("Package %s not found").printf (pkg_name);
                     return plan;
                 }
 
-                return parse_apt_simulation (out_buf ?? "");
+                string[] ids = { pid, null };
+                var flags = Pk.Bitfield.from_enums (Pk.TransactionFlag.SIMULATE);
+                var res = yield client.install_packages_async (flags, ids, null, (p, t) => {});
+
+                if (res.get_exit_code () != Pk.Exit.SUCCESS) {
+                    plan.ok = false;
+                    var err = res.get_error_code ();
+                    plan.error = (err != null) ? err.get_details () : "simulation failed";
+                    return plan;
+                }
+
+                var arr = res.get_package_array ();
+                var dl_ids = new Gee.ArrayList<string> ();
+                for (uint i = 0; i < arr.length; i++) {
+                    var pkg = arr.get (i);
+                    if (classify_package (pkg.get_info (), pkg.get_name (), plan))
+                        dl_ids.add (pkg.get_id ());
+                }
+
+                yield fill_download_size (client, dl_ids, plan);
+                plan.summary = build_summary (plan);
+                plan.ok = true;
+                return plan;
             } catch (Error e) {
-                if (cache_dir != null) rm_rf (cache_dir);
                 warning ("[PackageManager] simulate failed: %s", e.message);
                 plan.ok = false;
                 plan.error = e.message;
@@ -186,107 +171,214 @@ namespace Business {
             }
         }
 
-        private static void rm_rf (string path) {
+        private async void fill_download_size (Pk.Client client, Gee.ArrayList<string> ids,
+                                               InstallPlan plan) {
+            if (ids.size == 0) return;
+            var arr = new string[ids.size + 1];
+            for (int i = 0; i < ids.size; i++) arr[i] = ids[i];
+            arr[ids.size] = null;
             try {
-                var dir = Dir.open (path);
-                string? name;
-                while ((name = dir.read_name ()) != null) {
-                    var child = Path.build_filename (path, name);
-                    if (FileUtils.test (child, FileTest.IS_DIR))
-                        rm_rf (child);
-                    else
-                        FileUtils.unlink (child);
-                }
+                var res = yield client.get_details_async (arr, null, (p, t) => {});
+                if (res.get_exit_code () != Pk.Exit.SUCCESS) return;
+                var darr = res.get_details_array ();
+                uint64 dl = 0;
+                for (uint i = 0; i < darr.length; i++) dl += darr.get (i).get_download_size ();
+                if (dl > 0) plan.download = _("Download size: %s").printf (format_size (dl));
             } catch (Error e) {
+                warning ("[PackageManager] details failed: %s", e.message);
             }
-            DirUtils.remove (path);
+        }
+
+        public static bool classify_package (Pk.Info info, string name, InstallPlan plan) {
+            switch (info) {
+            case Pk.Info.INSTALLING:
+            case Pk.Info.REINSTALLING:
+                if (!plan.install.contains (name)) plan.install.add (name);
+                return true;
+            case Pk.Info.UPDATING:
+            case Pk.Info.DOWNGRADING:
+                if (!plan.upgrade.contains (name)) plan.upgrade.add (name);
+                return true;
+            case Pk.Info.REMOVING:
+            case Pk.Info.OBSOLETING:
+                if (!plan.remove.contains (name)) plan.remove.add (name);
+                return false;
+            default:
+                return false;
+            }
+        }
+
+        public static string build_summary (InstallPlan plan) {
+            string s = "";
+            if (plan.install.size > 0)
+                s = _("%d to install").printf (plan.install.size);
+            if (plan.upgrade.size > 0)
+                s += (s == "" ? "" : ", ") + _("%d to upgrade").printf (plan.upgrade.size);
+            if (plan.remove.size > 0)
+                s += (s == "" ? "" : ", ") + _("%d to remove").printf (plan.remove.size);
+            return s;
+        }
+
+        public static bool is_untrusted_error (Pk.Exit exit, Pk.ErrorEnum code) {
+            if (exit == Pk.Exit.NEED_UNTRUSTED || exit == Pk.Exit.KEY_REQUIRED)
+                return true;
+            switch (code) {
+            case Pk.ErrorEnum.GPG_FAILURE:
+            case Pk.ErrorEnum.BAD_GPG_SIGNATURE:
+            case Pk.ErrorEnum.MISSING_GPG_SIGNATURE:
+            case Pk.ErrorEnum.CANNOT_INSTALL_REPO_UNSIGNED:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        public static bool is_stale_cache_error (Pk.ErrorEnum code) {
+            switch (code) {
+            case Pk.ErrorEnum.PACKAGE_DOWNLOAD_FAILED:
+            case Pk.ErrorEnum.PACKAGE_NOT_FOUND:
+            case Pk.ErrorEnum.NO_CACHE:
+            case Pk.ErrorEnum.FILE_NOT_FOUND:
+            case Pk.ErrorEnum.NO_MORE_MIRRORS_TO_TRY:
+            case Pk.ErrorEnum.UPDATE_NOT_FOUND:
+            case Pk.ErrorEnum.CANNOT_FETCH_SOURCES:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        public static bool looks_stale_message (string? msg) {
+            if (msg == null) return false;
+            var m = msg.down ();
+            return m.contains ("not (yet) available")
+                || m.contains ("unable to fetch")
+                || m.contains ("failed to fetch")
+                || m.contains ("failed to open file")
+                || m.contains ("404")
+                || m.contains ("not found")
+                || m.contains ("no more mirrors")
+                || m.contains ("hash sum mismatch")
+                || m.contains ("size mismatch");
+        }
+
+        public static bool looks_untrusted_message (string? msg) {
+            if (msg == null) return false;
+            var m = msg.down ();
+            return m.contains ("untrusted")
+                || m.contains ("not trusted")
+                || m.contains ("nopubkey")
+                || m.contains ("no_pubkey")
+                || m.contains ("gpg error")
+                || m.contains ("not signed")
+                || m.contains ("unsigned")
+                || m.contains ("missing signature")
+                || m.contains ("bad signature");
         }
 
         public async InstallResult run_install (string pkg_name,
                                                 string? repo_evr,
+                                                bool allow_untrusted,
                                                 GLib.Cancellable cancellable,
                                                 out string? error_output) {
             error_output = null;
-            try {
-                string output;
-                var res = yield run_apt_stream (
-                    { "pkexec", "sh", "-c",
-                      "LC_ALL=C apt-get install -y \"$1\"", "sh", pkg_name },
-                    cancellable, out output);
+            var client = new Pk.Client ();
+            client.set_cache_age (86400);
+            bool refreshed = false;
 
-                if (res == InstallResult.FAILED
-                    && !cancellable.is_cancelled ()
-                    && looks_like_stale_index (output)) {
-                    install_progress (_("Package lists are out of date, refreshing…"));
-                    res = yield run_apt_stream (
-                        { "pkexec", "sh", "-c",
-                          "LC_ALL=C apt-get update && LC_ALL=C apt-get install -y \"$1\"",
-                          "sh", pkg_name },
-                        cancellable, out output);
-                }
-
-                if (res == InstallResult.SUCCESS) {
-                    _installed_cache = null;
-                    return InstallResult.SUCCESS;
-                }
-
-                if (res == InstallResult.FAILED)
-                    error_output = output.strip ();
-                return res;
-            } catch (Error e) {
-                warning ("[PackageManager] install spawn failed: %s", e.message);
-                error_output = e.message;
-                return InstallResult.FAILED;
-            }
-        }
-
-        private async InstallResult run_apt_stream (string[] argv,
-                                                    GLib.Cancellable cancellable,
-                                                    out string output) throws GLib.Error {
-            var collected = new StringBuilder ();
-            var launcher = new SubprocessLauncher (
-                SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_MERGE);
-            launcher.setenv ("LC_ALL", "C", true);
-            var sp = launcher.spawnv (argv);
-
-            ulong cancel_id = cancellable.connect (() => {
-                sp.force_exit ();
-            });
-
-            var dis = new DataInputStream (sp.get_stdout_pipe ());
-            try {
-                string? line;
-                while ((line = yield dis.read_line_async (Priority.DEFAULT, cancellable)) != null) {
-                    var t = line.strip ();
-                    if (t.length > 0) {
-                        collected.append (t);
-                        collected.append_c ('\n');
-                        install_progress (t);
+            while (true) {
+                try {
+                    string? pid = yield resolve_package_id (client, pkg_name, cancellable);
+                    if (cancellable.is_cancelled ()) return InstallResult.CANCELLED;
+                    if (pid == null) {
+                        if (!refreshed) {
+                            install_progress (_("Package lists are out of date, refreshing…"));
+                            yield client.refresh_cache_async (true, cancellable, on_progress);
+                            refreshed = true;
+                            continue;
+                        }
+                        error_output = _("Package %s not found").printf (pkg_name);
+                        return InstallResult.FAILED;
                     }
+
+                    string[] ids = { pid, null };
+                    var flags = allow_untrusted
+                        ? Pk.Bitfield.from_enums (Pk.TransactionFlag.NONE)
+                        : Pk.Bitfield.from_enums (Pk.TransactionFlag.ONLY_TRUSTED);
+                    var res = yield client.install_packages_async (flags, ids, cancellable, on_progress);
+
+                    if (cancellable.is_cancelled ()) return InstallResult.CANCELLED;
+
+                    var exit = res.get_exit_code ();
+                    if (exit == Pk.Exit.SUCCESS) {
+                        _installed_cache = null;
+                        return InstallResult.SUCCESS;
+                    }
+                    if (exit == Pk.Exit.CANCELLED) return InstallResult.CANCELLED;
+
+                    var err = res.get_error_code ();
+                    var code = (err != null) ? err.get_code () : Pk.ErrorEnum.UNKNOWN;
+
+                    if (!allow_untrusted && is_untrusted_error (exit, code))
+                        return InstallResult.UNTRUSTED;
+
+                    if (!refreshed && is_stale_cache_error (code)) {
+                        install_progress (_("Package lists are out of date, refreshing…"));
+                        yield client.refresh_cache_async (true, cancellable, on_progress);
+                        refreshed = true;
+                        continue;
+                    }
+
+                    error_output = (err != null) ? err.get_details () : "install failed";
+                    return InstallResult.FAILED;
+                } catch (Error e) {
+                    if (cancellable.is_cancelled ()) return InstallResult.CANCELLED;
+
+                    if (!allow_untrusted && looks_untrusted_message (e.message))
+                        return InstallResult.UNTRUSTED;
+
+                    if (!refreshed && looks_stale_message (e.message)) {
+                        refreshed = true;
+                        install_progress (_("Package lists are out of date, refreshing…"));
+                        try {
+                            yield client.refresh_cache_async (true, cancellable, on_progress);
+                            continue;
+                        } catch (Error re) {
+                            if (cancellable.is_cancelled ()) return InstallResult.CANCELLED;
+                            warning ("[PackageManager] refresh failed: %s", re.message);
+                            error_output = e.message;
+                            return InstallResult.FAILED;
+                        }
+                    }
+
+                    warning ("[PackageManager] install failed: %s", e.message);
+                    error_output = e.message;
+                    return InstallResult.FAILED;
                 }
-            } catch (IOError.CANCELLED ce) {
             }
-
-            yield sp.wait_async (null);
-            cancellable.disconnect (cancel_id);
-            output = collected.str;
-
-            if (cancellable.is_cancelled ())
-                return InstallResult.CANCELLED;
-            if (sp.get_successful ())
-                return InstallResult.SUCCESS;
-            if (sp.get_if_exited () && sp.get_exit_status () == 126)
-                return InstallResult.CANCELLED;
-            return InstallResult.FAILED;
         }
 
-        public static bool looks_like_stale_index (string output) {
-            var o = output.down ();
-            return o.contains ("404")
-                || o.contains ("not found")
-                || o.contains ("failed to fetch")
-                || o.contains ("hash sum mismatch")
-                || o.contains ("size mismatch");
+        private void on_progress (Pk.Progress progress, Pk.ProgressType type) {
+            switch (type) {
+            case Pk.ProgressType.PACKAGE:
+                var pkg = progress.get_package ();
+                if (pkg != null) {
+                    unowned string? verb = pkg.get_info ().to_localised_present ();
+                    install_progress ((verb != null)
+                        ? "%s %s".printf (verb, pkg.get_name ())
+                        : pkg.get_name ());
+                }
+                break;
+            case Pk.ProgressType.STATUS:
+                install_progress (progress.get_status ().to_localised_text ());
+                break;
+            case Pk.ProgressType.PERCENTAGE:
+                int pct = progress.get_percentage ();
+                if (pct >= 0 && pct <= 100) install_percentage (pct);
+                break;
+            default:
+                break;
+            }
         }
     }
 }

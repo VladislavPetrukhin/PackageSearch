@@ -24,4 +24,10 @@ public class InstallProgressDialog : Adw.Dialog {
     public void set_status (string text) { status_label.label = text; }
 
     public void pulse () { progress_bar.pulse (); }
+
+    public void set_fraction (double f) {
+        if (f < 0.0) f = 0.0;
+        if (f > 1.0) f = 1.0;
+        progress_bar.fraction = f;
+    }
 }
