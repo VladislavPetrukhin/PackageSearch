@@ -28,17 +28,36 @@ public class InstallController : GLib.Object {
         toast_overlay.add_toast (new Adw.Toast (Ui.trim_toast (s)));
     }
 
+    private static void group_label (Gee.List<Gtk.Button> group, string label) {
+        foreach (var b in group) b.label = label;
+    }
+
+    private static void group_sensitive (Gee.List<Gtk.Button> group, bool sensitive) {
+        foreach (var b in group) b.sensitive = sensitive;
+    }
+
+    private static void group_mark_installed (Gee.List<Gtk.Button> group) {
+        foreach (var b in group) mark_installed (b);
+    }
+
     public async void install (string pkg_name, Gtk.Button btn,
-                               string? repo_evr, bool is_update) {
+                               string? repo_evr, bool is_update,
+                               Gee.List<Gtk.Button>? siblings = null) {
+        var group = new Gee.ArrayList<Gtk.Button> ();
+        group.add (btn);
+        if (siblings != null)
+            foreach (var s in siblings)
+                if (s != btn) group.add (s);
+
         string orig_label = btn.label;
-        btn.sensitive = false;
-        btn.label = _("Checking…");
+        group_sensitive (group, false);
+        group_label (group, _("Checking…"));
 
         var plan = yield pkg_mgr.simulate_install (pkg_name);
-        btn.label = orig_label;
+        group_label (group, orig_label);
 
         if (!plan.ok) {
-            btn.sensitive = true;
+            group_sensitive (group, true);
             warning ("[InstallController] simulate failed for %s:\n%s", pkg_name, plan.error ?? "(no output)");
             toast (plan.not_available
                 ? _("%s is not available in the enabled repositories").printf (pkg_name)
@@ -46,25 +65,25 @@ public class InstallController : GLib.Object {
             return;
         }
         if (plan.is_empty ()) {
-            mark_installed (btn);
+            group_mark_installed (group);
             toast (_("Already up to date"));
             return;
         }
 
         bool confirmed = yield confirm_plan (pkg_name, is_update, plan);
         if (!confirmed) {
-            btn.sensitive = true;
+            group_sensitive (group, true);
             toast (_("Installation cancelled"));
             return;
         }
 
-        btn.label = is_update ? _("Updating…") : _("Installing…");
+        group_label (group, is_update ? _("Updating…") : _("Installing…"));
         var result = yield run_with_progress (pkg_name, repo_evr, is_update, false);
 
         if (result == Business.InstallResult.UNTRUSTED) {
             if (!(yield confirm_untrusted (pkg_name))) {
-                btn.label = orig_label;
-                btn.sensitive = true;
+                group_label (group, orig_label);
+                group_sensitive (group, true);
                 toast (_("Installation cancelled"));
                 return;
             }
@@ -73,19 +92,19 @@ public class InstallController : GLib.Object {
 
         switch (result) {
         case Business.InstallResult.SUCCESS:
-            mark_installed (btn);
+            group_mark_installed (group);
             toast ((is_update ? _("Updated %s") : _("Installed %s")).printf (pkg_name));
             install_finished (true);
             break;
         case Business.InstallResult.CANCELLED:
-            btn.label = orig_label;
-            btn.sensitive = true;
+            group_label (group, orig_label);
+            group_sensitive (group, true);
             toast (_("Installation cancelled"));
             break;
         case Business.InstallResult.FAILED:
         case Business.InstallResult.UNTRUSTED:
-            btn.label = orig_label;
-            btn.sensitive = true;
+            group_label (group, orig_label);
+            group_sensitive (group, true);
             toast ((is_update ? _("Failed to update %s") : _("Failed to install %s")).printf (pkg_name));
             break;
         }

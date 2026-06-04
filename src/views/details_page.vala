@@ -244,9 +244,18 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         error_status.visible = true;
     }
 
+    private void register_button (Gee.HashMap<string, Gee.ArrayList<Gtk.Button>> map,
+                                  string name, Gtk.Button btn) {
+        var list = map.get (name);
+        if (list == null) { list = new Gee.ArrayList<Gtk.Button> (); map.set (name, list); }
+        list.add (btn);
+    }
+
     private async void populate_binaries (Data.PackageDetails d) {
         clear_group (bins_group);
         install_buttons.clear ();
+
+        var name_buttons = new Gee.HashMap<string, Gee.ArrayList<Gtk.Button>> ();
 
         var by_name = new Gee.HashMap<string, Gee.ArrayList<string>> ();
         foreach (var bp in d.binaries) {
@@ -305,6 +314,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             install_hero.add_css_class ("suggested-action");
             install_size.add_widget (install_hero);
             install_buttons.set (group.name, install_hero);
+            register_button (name_buttons, group.name, install_hero);
 
             bool is_installed = installed.has_key (group.name);
             bool needs_update = false;
@@ -321,7 +331,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     install_hero.tooltip_text = _("Update (requires authentication)");
                 }
                 install_hero.clicked.connect (() => {
-                    installer.install.begin (group.name, install_hero, captured_evr, is_update);
+                    installer.install.begin (group.name, install_hero, captured_evr, is_update,
+                                             name_buttons.get (group.name));
                 });
             }
             header_actions.append (install_hero);
@@ -352,6 +363,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 install_btn.add_css_class ("suggested-action");
                 install_size.add_widget (install_btn);
                 install_buttons.set (name, install_btn);
+                register_button (name_buttons, name, install_btn);
 
                 bool is_installed = installed.has_key (name);
                 bool needs_update = false;
@@ -368,7 +380,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                         install_btn.tooltip_text = _("Update (requires authentication)");
                     }
                     install_btn.clicked.connect (() => {
-                        installer.install.begin (name, install_btn, captured_evr, is_update);
+                        installer.install.begin (name, install_btn, captured_evr, is_update,
+                                                 name_buttons.get (name));
                     });
                 }
                 row.add_suffix (install_btn);
