@@ -301,7 +301,6 @@ namespace Business {
 
         public async InstallResult run_install (string pkg_name,
                                                 string? repo_evr,
-                                                bool allow_untrusted,
                                                 GLib.Cancellable cancellable,
                                                 out string? error_output) {
             error_output = null;
@@ -325,9 +324,7 @@ namespace Business {
                     }
 
                     string[] ids = { pid, null };
-                    var flags = allow_untrusted
-                        ? Pk.Bitfield.from_enums (Pk.TransactionFlag.NONE)
-                        : Pk.Bitfield.from_enums (Pk.TransactionFlag.ONLY_TRUSTED);
+                    var flags = Pk.Bitfield.from_enums (Pk.TransactionFlag.ONLY_TRUSTED);
                     var res = yield client.install_packages_async (flags, ids, cancellable, on_progress);
 
                     if (cancellable.is_cancelled ()) return InstallResult.CANCELLED;
@@ -342,7 +339,7 @@ namespace Business {
                     var err = res.get_error_code ();
                     var code = (err != null) ? err.get_code () : Pk.ErrorEnum.UNKNOWN;
 
-                    if (!allow_untrusted && is_untrusted_error (exit, code))
+                    if (is_untrusted_error (exit, code))
                         return InstallResult.UNTRUSTED;
 
                     if (!refreshed && is_stale_cache_error (code)) {
@@ -357,7 +354,7 @@ namespace Business {
                 } catch (Error e) {
                     if (cancellable.is_cancelled ()) return InstallResult.CANCELLED;
 
-                    if (!allow_untrusted && looks_untrusted_message (e.message))
+                    if (looks_untrusted_message (e.message))
                         return InstallResult.UNTRUSTED;
 
                     if (!refreshed && looks_stale_message (e.message)) {
