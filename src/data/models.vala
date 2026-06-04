@@ -147,6 +147,13 @@ public class DownloadLink : GLib.Object {
     public string? md5  { get; set; }
 }
 
+public class ImageEdition : GLib.Object {
+    public string  edition { get; set; default = ""; }
+    public string  arches  { get; set; default = ""; }
+    public string? version { get; set; }
+    public string? date    { get; set; }
+}
+
 public class SpecFileInfo : GLib.Object {
     public string? name    { get; set; }
     public string? date    { get; set; }

@@ -34,6 +34,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     [GtkChild] private unowned Adw.PreferencesGroup security_group;
     [GtkChild] private unowned Adw.PreferencesGroup versions_group;
     [GtkChild] private unowned Adw.PreferencesGroup downloads_group;
+    [GtkChild] private unowned Adw.PreferencesGroup images_group;
     [GtkChild] private unowned Adw.PreferencesGroup spec_group;
     [GtkChild] private unowned Adw.PreferencesGroup changelog_group;
 
@@ -153,6 +154,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         Ui.filter_group (deps_group, q);
         Ui.filter_group (security_group, q);
         Ui.filter_group (downloads_group, q);
+        Ui.filter_group (images_group, q);
         Ui.filter_group (spec_group, q);
         Ui.filter_group (changelog_group, q);
     }
@@ -217,6 +219,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             load_dependencies ();
             load_security ();
             load_downloads ();
+            load_images ();
             load_specfile ();
         } catch (Error e) {
             if (cancel.is_cancelled ()) return;
@@ -868,6 +871,62 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             row.add_suffix (copy_btn);
         }
         exp.add_row (row);
+    }
+
+    private void load_images () {
+        clear_group (images_group);
+
+        if (branch.down () == "sisyphus") {
+            images_group.visible = false;
+            return;
+        }
+        images_group.visible = true;
+
+        var exp = new LazyExpanderRow () {
+            title = _("Distribution images"),
+            subtitle = _("Active %s images that ship this package").printf (branch)
+        };
+        exp.load_requested.connect (() => fill_images.begin (exp));
+        images_group.add (exp);
+    }
+
+    private async void fill_images (LazyExpanderRow exp) {
+        var api = new Data.ImageApi ();
+        try {
+            var eds = yield api.get_images_for_source (branch, group.name, cancel);
+            if (cancel.is_cancelled ()) return;
+            exp.clear_placeholder ();
+            if (eds == null || eds.size == 0) {
+                exp.show_message (_("Not included in any image"));
+                return;
+            }
+            exp.set_subtitle (_("%d image editions").printf (eds.size));
+            foreach (var ed in eds) {
+                var row = new Adw.ActionRow () { title = ed.edition };
+
+                string sub = ed.arches;
+                if (Ui.is_nonempty (ed.date)) {
+                    string d = _("latest image: %s").printf (ed.date);
+                    sub = (sub == "") ? d : sub + " · " + d;
+                }
+                if (sub != "") {
+                    row.subtitle = sub;
+                    row.subtitle_selectable = true;
+                }
+
+                if (Ui.is_nonempty (ed.version)) {
+                    var ver = new Gtk.Label (ed.version) { valign = Gtk.Align.CENTER };
+                    ver.add_css_class ("dim-label");
+                    row.add_suffix (ver);
+                }
+
+                exp.add_row (row);
+            }
+        } catch (Error e) {
+            if (cancel.is_cancelled ()) return;
+            warning ("[DetailsPage] images failed: %s", e.message);
+            exp.show_message (_("Images unavailable"), e.message);
+        }
     }
 
     private void load_specfile () {
