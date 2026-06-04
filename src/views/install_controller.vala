@@ -7,8 +7,14 @@ public class InstallController : GLib.Object {
     private Gtk.Widget            parent;
     private Adw.ToastOverlay      toast_overlay;
     private Business.PackageManager pkg_mgr;
+    private GLib.Cancellable?     active_cancellable = null;
 
     public signal void install_finished (bool success);
+
+    public void cancel_active () {
+        if (active_cancellable != null && !active_cancellable.is_cancelled ())
+            active_cancellable.cancel ();
+    }
 
     public InstallController (Gtk.Widget parent, Adw.ToastOverlay toast_overlay,
                               Business.PackageManager pkg_mgr) {
@@ -164,11 +170,16 @@ public class InstallController : GLib.Object {
     private async Business.InstallResult run_with_progress (string pkg_name,
                                                             string? repo_evr, bool is_update) {
         var cancellable = new GLib.Cancellable ();
+        active_cancellable = cancellable;
+        bool user_cancelled = false;
 
         var pdlg = new InstallProgressDialog ();
         pdlg.set_package_label (
             (is_update ? _("Updating %s…") : _("Installing %s…")).printf (pkg_name));
-        pdlg.cancel_requested.connect (() => cancellable.cancel ());
+        pdlg.cancel_requested.connect (() => {
+            user_cancelled = true;
+            cancellable.cancel ();
+        });
         pdlg.present (parent);
 
         bool determinate = false;
@@ -189,6 +200,10 @@ public class InstallController : GLib.Object {
         pkg_mgr.disconnect (sig_id);
         pkg_mgr.disconnect (pct_id);
         pdlg.force_close ();
+        active_cancellable = null;
+
+        if (user_cancelled || cancellable.is_cancelled ())
+            return Business.InstallResult.CANCELLED;
 
         if (result == Business.InstallResult.FAILED)
             warning ("[InstallController] install failed for %s:\n%s", pkg_name, err ?? "(no output)");

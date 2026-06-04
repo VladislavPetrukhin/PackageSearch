@@ -31,6 +31,11 @@ public class MainWindow : Adw.ApplicationWindow {
         search_page.open_task.connect ((id, b) => show_task_details (id, b));
         nav_view.add (search_page);
 
+        nav_view.popped.connect ((page) => {
+            var d = page as DetailsPage;
+            if (d != null) d.cancel_loading ();
+        });
+
         install_accels ();
 
         initial_focus_handler = this.map.connect (() => {

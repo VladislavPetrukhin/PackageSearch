@@ -46,6 +46,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     public void cancel_loading () {
         if (!cancel.is_cancelled ()) cancel.cancel ();
+        if (installer != null) installer.cancel_active ();
     }
 
     private void copy_to_clipboard (string text) {
@@ -341,13 +342,18 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         foreach (var name in names) {
             var arches = by_name.get (name);
             var row = new Adw.ActionRow () { title = name };
-            make_name_copyable (row, name);
+
+            bool dbg_disabled = can_install && name.has_suffix ("-debuginfo") && !debug_avail;
+            if (dbg_disabled)
+                make_row_clickable (row, () => toast (_("Requires the debuginfo repository, which is not enabled")));
+            else
+                make_name_copyable (row, name);
 
             var arch_str = "";
             foreach (var a in arches) arch_str = (arch_str == "") ? a : arch_str + ", " + a;
             if (arch_str != "") row.add_suffix (dim_label (arch_str));
 
-            if (can_install && name.has_suffix ("-debuginfo") && !debug_avail) {
+            if (dbg_disabled) {
                 var dbg_btn = new Gtk.Button.with_label (_("Install")) {
                     valign = Gtk.Align.CENTER,
                     sensitive = false,
@@ -692,6 +698,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         versions_group.set_header_suffix (compare_btn);
         versions_group.set_description (_("Open a repository to view the package there, or tick two to compare"));
 
+        var version_checks = new Gee.ArrayList<Gtk.CheckButton> ();
+
         try {
             var vs = yield api.get_package_versions_all (group.name, cancel);
             if (vs == null || vs.size == 0) {
@@ -707,18 +715,18 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 if (is_current) row.subtitle = _("current");
 
                 var chk = new Gtk.CheckButton () { valign = Gtk.Align.CENTER };
+                version_checks.add (chk);
                 string captured_branch = v.branch;
                 chk.toggled.connect (() => {
-                    if (chk.active) {
-                        if (selected_branches.size >= 2) {
-                            chk.active = false;
-                            toast (_("Only two branches can be compared at a time"));
-                            return;
-                        }
+                    if (chk.active)
                         selected_branches.add (captured_branch);
-                    } else {
+                    else
                         selected_branches.remove (captured_branch);
-                    }
+
+                    bool at_limit = selected_branches.size >= 2;
+                    foreach (var c in version_checks)
+                        if (!c.active) c.sensitive = !at_limit;
+
                     if (compare_btn != null)
                         compare_btn.sensitive = (selected_branches.size == 2);
                 });
@@ -752,6 +760,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void show_compare_dialog (string branch_a, string branch_b) {
+        compare_btn.set_size_request (compare_btn.get_width (), -1);
         compare_btn.sensitive = false;
         compare_btn.label = _("Loading…");
 
@@ -766,10 +775,12 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             warning ("[DetailsPage] compare failed: %s", e.message);
             toast (_("Compare failed: %s").printf (e.message));
             compare_btn.label = _("Compare selected");
+            compare_btn.set_size_request (-1, -1);
             compare_btn.sensitive = (selected_branches.size == 2);
             return;
         }
         compare_btn.label = _("Compare selected");
+        compare_btn.set_size_request (-1, -1);
         compare_btn.sensitive = (selected_branches.size == 2);
 
         Data.SpecFileInfo? spec_a = null;
