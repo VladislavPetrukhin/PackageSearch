@@ -58,7 +58,6 @@ public class VersionCompareDialog : Adw.Dialog {
         add_compare_row (meta_grp, _("Maintainer"), a.maintainer ?? "—", b.maintainer ?? "—");
         add_compare_row (meta_grp, _("License"), a.license ?? "—", b.license ?? "—");
         add_compare_row (meta_grp, _("Group"), a.group ?? "—", b.group ?? "—");
-        add_compare_row (meta_grp, _("Summary"), a.summary ?? "—", b.summary ?? "—");
         page.add (meta_grp);
     }
 
