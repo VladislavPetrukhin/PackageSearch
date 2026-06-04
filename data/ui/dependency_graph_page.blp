@@ -8,18 +8,9 @@ template $DependencyGraphPage : Adw.NavigationPage {
       title-widget: Adw.WindowTitle title_widget {};
 
       [start]
-      Gtk.Box {
-        styles ["linked"]
-
-        Gtk.ToggleButton mode_build {
-          label: _("Requires");
-          active: true;
-        }
-
-        Gtk.ToggleButton mode_reverse {
-          label: _("Depended on by");
-          group: mode_build;
-        }
+      Gtk.Label legend_label {
+        use-markup: true;
+        styles ["caption"]
       }
 
       [end]

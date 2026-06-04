@@ -45,14 +45,19 @@ public class GraphRenderer : GLib.Object {
 
     private struct Palette {
         Gdk.RGBA text; Gdk.RGBA dim; Gdk.RGBA card; Gdk.RGBA brd;
-        Gdk.RGBA accent; Gdk.RGBA accent_brd; Gdk.RGBA edge;
+        Gdk.RGBA accent; Gdk.RGBA accent_brd;
+        Gdk.RGBA edge_build; Gdk.RGBA edge_reverse;
     }
 
     private static Gdk.RGBA rgb (double r, double g, double b, double a = 1.0) {
         return { (float) r, (float) g, (float) b, (float) a };
     }
 
-    private Palette palette (GraphMode mode) {
+    private static Gdk.RGBA edge_color (Palette p, GraphDir dir) {
+        return (dir == GraphDir.REVERSE) ? p.edge_reverse : p.edge_build;
+    }
+
+    private Palette palette () {
         bool dark = Adw.StyleManager.get_default ().dark;
         var p = Palette ();
         if (dark) {
@@ -70,14 +75,14 @@ public class GraphRenderer : GLib.Object {
             p.accent     = rgb (0.11, 0.44, 0.85);
             p.accent_brd = rgb (0.21, 0.52, 0.89);
         }
-        p.edge = (mode == GraphMode.BUILD)
-            ? rgb (0.16, 0.74, 0.46) : rgb (0.76, 0.45, 0.82);
+        p.edge_build   = rgb (0.16, 0.74, 0.46);
+        p.edge_reverse = rgb (0.76, 0.45, 0.82);
         return p;
     }
 
-    public void render (Cairo.Context cr, Gee.ArrayList<GraphNode> nodes, GraphMode mode,
+    public void render (Cairo.Context cr, Gee.ArrayList<GraphNode> nodes,
                         double scale, double offset_x, double offset_y, int width, int height) {
-        var p = palette (mode);
+        var p = palette ();
 
         cr.save ();
         cr.translate (width / 2.0 + offset_x, height / 2.0 + offset_y);
@@ -85,14 +90,16 @@ public class GraphRenderer : GLib.Object {
 
         foreach (var n in nodes) {
             if (n.is_root) continue;
-            cr.set_source_rgba (p.edge.red, p.edge.green, p.edge.blue, 0.5);
+            var ec = edge_color (p, n.dir);
             if (n.is_more && n.more_parent != null) {
+                cr.set_line_width (1.4);
+                cr.set_source_rgba (ec.red, ec.green, ec.blue, 0.5);
                 draw_edge (cr, n.more_parent, n);
             } else {
                 foreach (var par in n.parents) {
                     bool hub = n.parents.size >= 2;
                     cr.set_line_width (hub ? 2.0 : 1.4);
-                    cr.set_source_rgba (p.edge.red, p.edge.green, p.edge.blue, hub ? 0.8 : 0.45);
+                    cr.set_source_rgba (ec.red, ec.green, ec.blue, hub ? 0.8 : 0.45);
                     draw_edge (cr, par, n);
                 }
             }
@@ -107,8 +114,9 @@ public class GraphRenderer : GLib.Object {
     }
 
     private void draw_edge (Cairo.Context cr, GraphNode from, GraphNode to) {
-        double x1 = from.gx + from.w / 2.0, y1 = from.gy;
-        double x2 = to.gx - to.w / 2.0,     y2 = to.gy;
+        bool to_right = to.gx >= from.gx;
+        double x1 = from.gx + (to_right ? from.w / 2.0 : -from.w / 2.0), y1 = from.gy;
+        double x2 = to.gx   + (to_right ? -to.w / 2.0  : to.w / 2.0),    y2 = to.gy;
         double mx = (x1 + x2) / 2.0;
         cr.move_to (x1, y1);
         cr.curve_to (mx, y1, mx, y2, x2, y2);
@@ -117,6 +125,10 @@ public class GraphRenderer : GLib.Object {
 
     private void draw_node (Cairo.Context cr, GraphNode n, Palette p) {
         bool hub = n.parents.size >= 2;
+        bool rev = (n.dir == GraphDir.REVERSE);
+        bool has_dot = !n.is_root && !n.virtual;
+        bool has_btn = !n.is_root && n.expandable && !n.expanded;
+        var ec = edge_color (p, n.dir);
         double x = n.gx - n.w / 2.0, y = n.gy - n.h / 2.0;
 
         rounded_rect (cr, x, y, n.w, n.h, 9.0);
@@ -135,18 +147,19 @@ public class GraphRenderer : GLib.Object {
         }
         cr.stroke ();
 
-        double tx = x + 12.0;
-        if (!n.is_root && !n.virtual) {
-            cr.set_source_rgba (p.edge.red, p.edge.green, p.edge.blue, 1.0);
-            cr.arc (x + 11.0, n.gy, 3.5, 0, 2 * Math.PI);
+        if (has_dot) {
+            double dot_cx = rev ? (x + n.w - 11.0) : (x + 11.0);
+            cr.set_source_rgba (ec.red, ec.green, ec.blue, 1.0);
+            cr.arc (dot_cx, n.gy, 3.5, 0, 2 * Math.PI);
             cr.fill ();
-            tx = x + 22.0;
         }
 
-        double right_reserve = 10.0
-            + (!n.is_root && n.expandable && !n.expanded ? 20.0 : 0.0)
-            + (hub ? 24.0 : 0.0);
-        double avail = n.w - (tx - x) - right_reserve;
+        double root_side = has_dot ? 22.0 : 12.0;
+        double out_side  = 10.0 + (has_btn ? 20.0 : 0.0) + (hub ? 24.0 : 0.0);
+        double left_reserve  = rev ? out_side  : root_side;
+        double right_reserve = rev ? root_side : out_side;
+        double tx = x + left_reserve;
+        double avail = n.w - left_reserve - right_reserve;
 
         var layout = new Pango.Layout (pango ());
         var fd = pango ().get_font_description ().copy ();
@@ -174,14 +187,15 @@ public class GraphRenderer : GLib.Object {
             deg.set_text ("×%d".printf (n.parents.size), -1);
             int dw, dh;
             deg.get_pixel_size (out dw, out dh);
-            double dx = x + n.w - (n.expandable && !n.expanded ? 22.0 : 8.0) - dw;
+            double dx = rev ? (x + (has_btn ? 22.0 : 8.0))
+                            : (x + n.w - (has_btn ? 22.0 : 8.0) - dw);
             cr.set_source_rgba (p.accent.red, p.accent.green, p.accent.blue, 1.0);
             cr.move_to (dx, n.gy - dh / 2.0);
             Pango.cairo_show_layout (cr, deg);
         }
 
-        if (!n.is_root && n.expandable && !n.expanded) {
-            double bx = x + n.w - 13.0;
+        if (has_btn) {
+            double bx = rev ? (x + 13.0) : (x + n.w - 13.0);
             cr.set_source_rgba (p.text.red, p.text.green, p.text.blue, 0.10);
             cr.arc (bx, n.gy, 8.0, 0, 2 * Math.PI);
             cr.fill ();

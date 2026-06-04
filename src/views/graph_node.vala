@@ -1,11 +1,12 @@
 using GLib;
 
-public enum GraphMode { BUILD, REVERSE }
+public enum GraphDir { ROOT, BUILD, REVERSE }
 
 public class GraphNode : GLib.Object {
-    public string  name;
-    public string  branch;
-    public int     depth;
+    public string   name;
+    public string   branch;
+    public int      depth;
+    public GraphDir dir;
     public bool    is_root;
     public bool    is_more;
     public bool    expandable;

@@ -16,16 +16,14 @@ public class DependencyGraphPage : Adw.NavigationPage {
     private MainWindow win;
     private string root_name;
     private string branch;
-    private GraphMode   mode = GraphMode.BUILD;
 
     private Gee.ArrayList<GraphNode>           nodes   = new Gee.ArrayList<GraphNode> ();
     private Gee.HashMap<string, GraphNode>     present = new Gee.HashMap<string, GraphNode> ();
 
     [GtkChild] private unowned Adw.WindowTitle  title_widget;
+    [GtkChild] private unowned Gtk.Label        legend_label;
     [GtkChild] private unowned Adw.ViewStack    stack;
     [GtkChild] private unowned Gtk.DrawingArea  canvas;
-    [GtkChild] private unowned Gtk.ToggleButton mode_build;
-    [GtkChild] private unowned Gtk.ToggleButton mode_reverse;
     [GtkChild] private unowned Gtk.Button       zoom_out;
     [GtkChild] private unowned Gtk.Button       zoom_in;
     [GtkChild] private unowned Gtk.Button       fit_btn;
@@ -69,12 +67,9 @@ public class DependencyGraphPage : Adw.NavigationPage {
         title_widget.subtitle = root_name + " · " + branch;
         empty_status.description = _("Could not build a graph for %s.").printf (root_name);
 
-        mode_build.toggled.connect (() => {
-            if (mode_build.active && mode != GraphMode.BUILD) { mode = GraphMode.BUILD; reset_and_load (); }
-        });
-        mode_reverse.toggled.connect (() => {
-            if (mode_reverse.active && mode != GraphMode.REVERSE) { mode = GraphMode.REVERSE; reset_and_load (); }
-        });
+        legend_label.label =
+            "<span foreground=\"#C273D1\">%s</span>   ·   <span foreground=\"#29BD75\">%s</span>"
+            .printf (_("← depended on by"), _("requires →"));
 
         fit_btn.clicked.connect (() => { fit_to_content (); });
         zoom_out.clicked.connect (() => zoom_by (1.0 / 1.2));
@@ -110,14 +105,12 @@ public class DependencyGraphPage : Adw.NavigationPage {
         canvas.queue_draw ();
     }
 
-    private void reset_and_load () {
-        generation++;
-        nodes.clear ();
-        present.clear ();
-        probe_queue.clear ();
-        fitted = false;
-        stack.set_visible_child_name ("loading");
-        load_root.begin ();
+    private static int dir_step (GraphDir d) {
+        return (d == GraphDir.REVERSE) ? -1 : 1;
+    }
+
+    private static string pkey (GraphDir d, string name) {
+        return ((int) d).to_string () + "\t" + name;
     }
 
     private async void load_root () {
@@ -126,12 +119,22 @@ public class DependencyGraphPage : Adw.NavigationPage {
         root.name    = root_name;
         root.branch  = branch;
         root.depth   = 0;
+        root.dir     = GraphDir.ROOT;
         root.is_root = true;
         nodes.add (root);
-        present.set (root_name, root);
+        present.set (pkey (GraphDir.ROOT, root_name), root);
 
-        yield expand_into (root);
-        if (g != generation) return;
+        root.loading = true;
+        canvas.queue_draw ();
+        var build_kids = yield fetch_deps (root, GraphDir.BUILD);
+        if (cancel.is_cancelled () || g != generation) return;
+        var rev_kids = yield fetch_deps (root, GraphDir.REVERSE);
+        root.loading = false;
+        if (cancel.is_cancelled () || g != generation) return;
+        root.probed = true;
+        root.expanded = true;
+        materialize (root, build_kids, GraphDir.BUILD);
+        materialize (root, rev_kids, GraphDir.REVERSE);
 
         if (nodes.size <= 1) {
             stack.set_visible_child_name ("empty");
@@ -142,11 +145,11 @@ public class DependencyGraphPage : Adw.NavigationPage {
         relayout ();
     }
 
-    private async Gee.ArrayList<Data.DependencyPackage> fetch_deps (GraphNode n) {
+    private async Gee.ArrayList<Data.DependencyPackage> fetch_deps (GraphNode n, GraphDir dir) {
         var api = new Data.DependencyApi ();
         try {
             Gee.ArrayList<Data.DependencyPackage>? r;
-            if (mode == GraphMode.BUILD)
+            if (dir == GraphDir.BUILD)
                 r = yield api.get_direct_build_depends (branch, n.name, cancel);
             else
                 r = yield api.get_reverse_depends (branch, n.name, "both", cancel);
@@ -166,7 +169,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
         } else {
             n.loading = true;
             canvas.queue_draw ();
-            kids = yield fetch_deps (n);
+            kids = yield fetch_deps (n, n.dir);
             n.loading = false;
             if (cancel.is_cancelled () || g != generation) return;
             n.probed = true;
@@ -174,17 +177,17 @@ public class DependencyGraphPage : Adw.NavigationPage {
         }
 
         n.expanded = true;
-        materialize (n, kids);
+        materialize (n, kids, n.dir);
         relayout ();
     }
 
-    private void materialize (GraphNode n, Gee.ArrayList<Data.DependencyPackage> kids) {
+    private void materialize (GraphNode n, Gee.ArrayList<Data.DependencyPackage> kids, GraphDir dir) {
         int shown = 0;
         var overflow = new Gee.ArrayList<Data.DependencyPackage> ();
         foreach (var d in kids) {
             if (!Ui.is_nonempty (d.name)) continue;
             if (shown < CHILD_LIMIT) {
-                add_child (n, d.name, d.branch ?? branch);
+                add_child (n, d.name, d.branch ?? branch, dir);
                 shown++;
             } else {
                 overflow.add (d);
@@ -193,16 +196,18 @@ public class DependencyGraphPage : Adw.NavigationPage {
         if (overflow.size > 0) {
             var more = new GraphNode ();
             more.is_more = true;
-            more.depth = n.depth + 1;
+            more.dir = dir;
+            more.depth = n.depth + dir_step (dir);
             more.more_parent = n;
             more.pending = overflow;
             nodes.add (more);
         }
     }
 
-    private void add_child (GraphNode parent, string name, string br) {
-        if (present.has_key (name)) {
-            var existing = present.get (name);
+    private void add_child (GraphNode parent, string name, string br, GraphDir dir) {
+        var key = pkey (dir, name);
+        if (present.has_key (key)) {
+            var existing = present.get (key);
             if (existing != parent && !existing.parents.contains (parent))
                 existing.parents.add (parent);
             return;
@@ -210,12 +215,13 @@ public class DependencyGraphPage : Adw.NavigationPage {
         var n = new GraphNode ();
         n.name       = name;
         n.branch     = br;
-        n.depth      = parent.depth + 1;
+        n.dir        = dir;
+        n.depth      = parent.depth + dir_step (dir);
         n.virtual    = !Data.Validation.is_valid_package_name (name);
         n.expandable = false;
         n.parents.add (parent);
         nodes.add (n);
-        present.set (name, n);
+        present.set (key, n);
         enqueue_probe (n);
     }
 
@@ -232,7 +238,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
             var n = probe_queue.remove_at (0);
             if (n.probed || n.expanded || n.loading) continue;
             int g = generation;
-            var kids = yield fetch_deps (n);
+            var kids = yield fetch_deps (n, n.dir);
             if (cancel.is_cancelled () || g != generation) break;
             n.cached_children = kids;
             n.probed = true;
@@ -251,7 +257,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
     private void reveal_more (GraphNode more) {
         foreach (var d in more.pending) {
             if (Ui.is_nonempty (d.name))
-                add_child (more.more_parent, d.name, d.branch ?? branch);
+                add_child (more.more_parent, d.name, d.branch ?? branch, more.dir);
         }
         nodes.remove (more);
         relayout ();
@@ -259,15 +265,23 @@ public class DependencyGraphPage : Adw.NavigationPage {
 
     private void relayout () {
         var by_depth = new Gee.HashMap<int, Gee.ArrayList<GraphNode>> ();
-        int max_depth = 0;
+        int max_depth = 0, min_depth = 0;
         foreach (var n in nodes) {
             renderer.measure_node (n);
             if (!by_depth.has_key (n.depth)) by_depth.set (n.depth, new Gee.ArrayList<GraphNode> ());
             by_depth.get (n.depth).add (n);
             if (n.depth > max_depth) max_depth = n.depth;
+            if (n.depth < min_depth) min_depth = n.depth;
         }
 
-        for (int depth = 0; depth <= max_depth; depth++) {
+        var order = new Gee.ArrayList<int> ();
+        order.add (0);
+        for (int k = 1; k <= int.max (max_depth, -min_depth); k++) {
+            if (k <= max_depth)   order.add (k);
+            if (-k >= min_depth)  order.add (-k);
+        }
+
+        foreach (int depth in order) {
             if (!by_depth.has_key (depth)) continue;
             var list = by_depth.get (depth);
 
@@ -302,7 +316,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
             fit_to_content_in (width, height);
             fitted = true;
         }
-        renderer.render (cr, nodes, mode, scale, offset_x, offset_y, width, height);
+        renderer.render (cr, nodes, scale, offset_x, offset_y, width, height);
     }
 
     private void on_click (Gtk.GestureClick g, int n_press, double px, double py) {
@@ -321,7 +335,7 @@ public class DependencyGraphPage : Adw.NavigationPage {
             if (n.virtual) { resolve_and_open.begin (n); return; }
 
             if (!n.is_root && n.expandable && !n.expanded && !n.loading) {
-                double bx = x + n.w - 13.0;
+                double bx = (n.dir == GraphDir.REVERSE) ? x + 13.0 : x + n.w - 13.0;
                 if ((gx - bx) * (gx - bx) + (gy - n.gy) * (gy - n.gy) <= 12.0 * 12.0) {
                     expand_into.begin (n);
                     return;
