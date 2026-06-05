@@ -127,9 +127,25 @@ msgstr "Фильтр результатов…"
 msgid "Search packages"
 msgstr "Поиск пакетов"
 
-#: data/ui/search_page.blp:75
+#: data/ui/search_page.blp:75 src/views/search_page.vala
 msgid "Start typing a source package name, then pick it from the results."
 msgstr "Начните вводить имя исходного пакета и выберите его из результатов."
+
+#: src/views/search_page.vala
+msgid "Start typing a binary package name, then pick it from the results."
+msgstr "Начните вводить имя бинарного пакета и выберите его из результатов."
+
+#: src/views/search_page.vala
+msgid "Start typing a file name or path to find the packages that contain it."
+msgstr "Начните вводить имя файла или путь, чтобы найти пакеты, которые его содержат."
+
+#: src/views/search_page.vala
+msgid "Start typing a maintainer nickname to see the packages they maintain."
+msgstr "Начните вводить ник сопровождающего, чтобы увидеть его пакеты."
+
+#: src/views/search_page.vala
+msgid "Enter a task ID or a package name to open a build task."
+msgstr "Введите ID задания или имя пакета, чтобы открыть задание сборки."
 
 #: data/ui/search_page.blp:131
 msgid "No results"

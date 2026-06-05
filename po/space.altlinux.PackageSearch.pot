@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: space.altlinux.PackageSearch\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-04 15:13+0000\n"
+"POT-Creation-Date: 2026-06-05 13:47+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -66,7 +66,7 @@ msgstr ""
 msgid "Images"
 msgstr ""
 
-#: data/ui/details_page.blp:78 src/views/details_page.vala:935
+#: data/ui/details_page.blp:78 src/views/details_page.vala:964
 #: src/views/version_compare_dialog.vala:151
 #: src/views/version_compare_dialog.vala:162
 msgid "Spec file"
@@ -88,12 +88,11 @@ msgstr ""
 msgid "No recent searches yet"
 msgstr ""
 
-#: data/ui/install_progress_dialog.blp:38 src/views/install_controller.vala:138
+#: data/ui/install_progress_dialog.blp:38 src/views/install_controller.vala:159
 msgid "Cancel"
 msgstr ""
 
-#: data/ui/lazy_expander_row.blp:6 src/views/details_page.vala:776
-#: src/views/details_page.vala:949
+#: data/ui/lazy_expander_row.blp:6 src/views/details_page.vala:978
 msgid "Loading…"
 msgstr ""
 
@@ -113,7 +112,7 @@ msgstr ""
 msgid "Repository"
 msgstr ""
 
-#: data/ui/search_page.blp:24 src/views/search_page.vala:47
+#: data/ui/search_page.blp:24 src/views/search_page.vala:48
 msgid "Type a package name…"
 msgstr ""
 
@@ -133,7 +132,7 @@ msgstr ""
 msgid "Search packages"
 msgstr ""
 
-#: data/ui/search_page.blp:75
+#: data/ui/search_page.blp:75 src/views/search_page.vala:55
 msgid "Start typing a source package name, then pick it from the results."
 msgstr ""
 
@@ -193,7 +192,7 @@ msgstr ""
 msgid "Quit"
 msgstr ""
 
-#: data/ui/task_details_page.blp:47 src/views/search_page.vala:44
+#: data/ui/task_details_page.blp:47 src/views/search_page.vala:45
 msgid "Task"
 msgstr ""
 
@@ -217,163 +216,308 @@ msgstr ""
 msgid "Only differences"
 msgstr ""
 
-#: src/business/package_manager.vala:162 src/business/package_manager.vala:322
+#: src/business/package_manager.vala:166 src/business/package_manager.vala:326
 #, c-format
 msgid "Package %s not found"
 msgstr ""
 
-#: src/business/package_manager.vala:209
+#: src/business/package_manager.vala:213
 #, c-format
 msgid "Download size: %s"
 msgstr ""
 
-#: src/business/package_manager.vala:237
+#: src/business/package_manager.vala:241
 #, c-format
 msgid "%d to install"
 msgstr ""
 
-#: src/business/package_manager.vala:239
+#: src/business/package_manager.vala:243
 #, c-format
 msgid "%d to upgrade"
 msgstr ""
 
-#: src/business/package_manager.vala:241
+#: src/business/package_manager.vala:245
 #, c-format
 msgid "%d to remove"
 msgstr ""
 
-#: src/business/package_manager.vala:317 src/business/package_manager.vala:346
-#: src/business/package_manager.vala:362
+#: src/business/package_manager.vala:321 src/business/package_manager.vala:348
+#: src/business/package_manager.vala:364
 msgid "Package lists are out of date, refreshing…"
 msgstr ""
 
-#: src/views/details_page.vala:57 src/views/text_dialog.vala:24
+#: src/business/package_manager.vala:385
+msgid "Waiting"
+msgstr ""
+
+#: src/business/package_manager.vala:386
+msgid "Setting up"
+msgstr ""
+
+#: src/business/package_manager.vala:387
+msgid "Running"
+msgstr ""
+
+#: src/business/package_manager.vala:388
+msgid "Querying"
+msgstr ""
+
+#: src/business/package_manager.vala:389
+msgid "Getting information"
+msgstr ""
+
+#: src/business/package_manager.vala:390
+msgid "Removing packages"
+msgstr ""
+
+#: src/business/package_manager.vala:391
+msgid "Refreshing package lists"
+msgstr ""
+
+#: src/business/package_manager.vala:392
+msgid "Downloading packages"
+msgstr ""
+
+#: src/business/package_manager.vala:393
+msgid "Installing packages"
+msgstr ""
+
+#: src/business/package_manager.vala:394
+msgid "Updating packages"
+msgstr ""
+
+#: src/business/package_manager.vala:395
+msgid "Cleaning up"
+msgstr ""
+
+#: src/business/package_manager.vala:396
+msgid "Obsoleting packages"
+msgstr ""
+
+#: src/business/package_manager.vala:397
+msgid "Resolving dependencies"
+msgstr ""
+
+#: src/business/package_manager.vala:398
+msgid "Verifying signatures"
+msgstr ""
+
+#: src/business/package_manager.vala:399
+msgid "Testing changes"
+msgstr ""
+
+#: src/business/package_manager.vala:400
+msgid "Applying changes"
+msgstr ""
+
+#: src/business/package_manager.vala:401
+msgid "Requesting data"
+msgstr ""
+
+#: src/business/package_manager.vala:402
+msgid "Finished"
+msgstr ""
+
+#: src/business/package_manager.vala:403
+msgid "Cancelling"
+msgstr ""
+
+#: src/business/package_manager.vala:404
+msgid "Loading cache"
+msgstr ""
+
+#: src/business/package_manager.vala:405
+msgid "Waiting for package manager lock"
+msgstr ""
+
+#: src/business/package_manager.vala:406
+msgid "Waiting for authentication"
+msgstr ""
+
+#: src/business/package_manager.vala:407
+msgid "Copying files"
+msgstr ""
+
+#: src/business/package_manager.vala:408
+msgid "Running hooks"
+msgstr ""
+
+#: src/business/package_manager.vala:409
+msgid "Repackaging"
+msgstr ""
+
+#: src/business/package_manager.vala:416
+msgid "Downloading"
+msgstr ""
+
+#: src/business/package_manager.vala:417
+msgid "Updating"
+msgstr ""
+
+#: src/business/package_manager.vala:418
+msgid "Installing"
+msgstr ""
+
+#: src/business/package_manager.vala:419
+msgid "Removing"
+msgstr ""
+
+#: src/business/package_manager.vala:420
+msgid "Obsoleting"
+msgstr ""
+
+#: src/business/package_manager.vala:421
+msgid "Reinstalling"
+msgstr ""
+
+#: src/business/package_manager.vala:422
+msgid "Downgrading"
+msgstr ""
+
+#: src/business/package_manager.vala:423
+msgid "Preparing"
+msgstr ""
+
+#: src/business/package_manager.vala:424
+msgid "Decompressing"
+msgstr ""
+
+#: src/views/details_page.vala:61 src/views/text_dialog.vala:24
 msgid "Copied"
 msgstr ""
 
-#: src/views/details_page.vala:182 src/views/version_compare_dialog.vala:49
+#: src/views/details_page.vala:191 src/views/version_compare_dialog.vala:49
 msgid "Version"
 msgstr ""
 
-#: src/views/details_page.vala:183
+#: src/views/details_page.vala:192
 msgid "Release"
 msgstr ""
 
-#: src/views/details_page.vala:187 src/views/search_page.vala:44
+#: src/views/details_page.vala:196 src/views/search_page.vala:45
 #: src/views/version_compare_dialog.vala:58
 msgid "Maintainer"
 msgstr ""
 
-#: src/views/details_page.vala:195 src/views/version_compare_dialog.vala:59
+#: src/views/details_page.vala:204 src/views/version_compare_dialog.vala:59
 msgid "License"
 msgstr ""
 
-#: src/views/details_page.vala:201
+#: src/views/details_page.vala:210
 msgid "Homepage"
 msgstr ""
 
-#: src/views/details_page.vala:211
+#: src/views/details_page.vala:220
 msgid "Description"
 msgstr ""
 
-#: src/views/details_page.vala:239
+#: src/views/details_page.vala:248
 msgid "Package not found"
 msgstr ""
 
-#: src/views/details_page.vala:241
+#: src/views/details_page.vala:250
 #, c-format
 msgid ""
 "%s is not available in %s. It may have been removed from the repository."
 msgstr ""
 
-#: src/views/details_page.vala:244
+#: src/views/details_page.vala:253
 msgid "Failed to load"
 msgstr ""
 
-#: src/views/details_page.vala:246
+#: src/views/details_page.vala:255
 msgid "Could not load package details. Check your connection and try again."
 msgstr ""
 
-#: src/views/details_page.vala:284
+#: src/views/details_page.vala:291
 #, c-format
 msgid "Install is available only for the system repository (%s)"
 msgstr ""
 
-#: src/views/details_page.vala:315 src/views/details_page.vala:361
-#: src/views/details_page.vala:369 src/views/install_controller.vala:139
+#: src/views/details_page.vala:322 src/views/details_page.vala:398
+#: src/views/details_page.vala:407 src/views/install_controller.vala:160
 msgid "Install"
 msgstr ""
 
-#: src/views/details_page.vala:317 src/views/details_page.vala:371
+#: src/views/details_page.vala:324 src/views/details_page.vala:409
 msgid "Install (requires authentication)"
 msgstr ""
 
-#: src/views/details_page.vala:335 src/views/details_page.vala:389
-#: src/views/install_controller.vala:139
+#: src/views/details_page.vala:339 src/views/details_page.vala:419
+#: src/views/install_controller.vala:160
 msgid "Update"
 msgstr ""
 
-#: src/views/details_page.vala:336 src/views/details_page.vala:390
+#: src/views/details_page.vala:340 src/views/details_page.vala:420
 msgid "Update (requires authentication)"
 msgstr ""
 
-#: src/views/details_page.vala:352 src/views/details_page.vala:364
+#: src/views/details_page.vala:347 src/views/details_page.vala:427
+#: src/views/install_controller.vala:47
+msgid "Package is already installed"
+msgstr ""
+
+#: src/views/details_page.vala:363 src/views/details_page.vala:403
 msgid "Requires the debuginfo repository, which is not enabled"
 msgstr ""
 
-#: src/views/details_page.vala:404
+#: src/views/details_page.vala:376
+msgid "Copy name"
+msgstr ""
+
+#: src/views/details_page.vala:441
 msgid "No binary packages"
 msgstr ""
 
-#: src/views/details_page.vala:436
+#: src/views/details_page.vala:471
 msgid "Change"
 msgstr ""
 
-#: src/views/details_page.vala:449
+#: src/views/details_page.vala:484
 msgid "No changes found"
 msgstr ""
 
-#: src/views/details_page.vala:454
+#: src/views/details_page.vala:489
 msgid "Changelog unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:464 src/views/dependency_graph_page.vala:51
+#: src/views/details_page.vala:499 src/views/dependency_graph_page.vala:51
 #: src/views/dependency_graph_page.vala:66
 msgid "Dependency graph"
 msgstr ""
 
-#: src/views/details_page.vala:465
+#: src/views/details_page.vala:500
 #, c-format
 msgid "Visualize what %s needs and what depends on it"
 msgstr ""
 
-#: src/views/details_page.vala:469
+#: src/views/details_page.vala:504
 msgid "Open graph"
 msgstr ""
 
-#: src/views/details_page.vala:480
+#: src/views/details_page.vala:515
 msgid "Build dependencies"
 msgstr ""
 
-#: src/views/details_page.vala:481
+#: src/views/details_page.vala:516
 #, c-format
 msgid "Packages required to build %s"
 msgstr ""
 
-#: src/views/details_page.vala:487
+#: src/views/details_page.vala:522
 msgid "Reverse dependencies"
 msgstr ""
 
-#: src/views/details_page.vala:488
+#: src/views/details_page.vala:523
 #, c-format
 msgid "Source packages that depend on %s"
 msgstr ""
 
-#: src/views/details_page.vala:501
+#: src/views/details_page.vala:536
 msgid "No dependencies found"
 msgstr ""
 
-#: src/views/details_page.vala:503 src/views/details_page.vala:528
+#: src/views/details_page.vala:538 src/views/details_page.vala:563
 #: src/views/version_compare_dialog.vala:121
 #: src/views/version_compare_dialog.vala:129
 #: src/views/version_compare_dialog.vala:137
@@ -381,156 +525,155 @@ msgstr ""
 msgid "%d packages"
 msgstr ""
 
-#: src/views/details_page.vala:515
+#: src/views/details_page.vala:550
 msgid "Build dependencies unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:526
+#: src/views/details_page.vala:561
 msgid "No reverse dependencies"
 msgstr ""
 
-#: src/views/details_page.vala:539
+#: src/views/details_page.vala:574
 msgid "Reverse dependencies unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:546
+#: src/views/details_page.vala:581
 msgid "Security advisories"
 msgstr ""
 
-#: src/views/details_page.vala:550
+#: src/views/details_page.vala:585
 msgid "Bugzilla"
 msgstr ""
 
-#: src/views/details_page.vala:569
+#: src/views/details_page.vala:604
 msgid "No security advisories"
 msgstr ""
 
-#: src/views/details_page.vala:571
+#: src/views/details_page.vala:606
 #, c-format
 msgid "%d advisories"
 msgstr ""
 
-#: src/views/details_page.vala:575
+#: src/views/details_page.vala:610
 msgid "Advisories unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:614
+#: src/views/details_page.vala:649
 #, c-format
 msgid "%d CVE"
 msgstr ""
 
-#: src/views/details_page.vala:615 src/views/details_page.vala:616
+#: src/views/details_page.vala:650 src/views/details_page.vala:651
 #, c-format
 msgid "%d BDU"
 msgstr ""
 
-#: src/views/details_page.vala:645
+#: src/views/details_page.vala:680
 msgid "No bugs found"
 msgstr ""
 
-#: src/views/details_page.vala:648
+#: src/views/details_page.vala:683
 #, c-format
 msgid "%d bug(s) found"
 msgstr ""
 
-#: src/views/details_page.vala:663
+#: src/views/details_page.vala:698
 msgid "All statuses"
 msgstr ""
 
-#: src/views/details_page.vala:681
+#: src/views/details_page.vala:716
 msgid "Bugzilla unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:690 src/views/details_page.vala:788
-#: src/views/details_page.vala:793
+#: src/views/details_page.vala:725
 msgid "Compare selected"
 msgstr ""
 
-#: src/views/details_page.vala:703
+#: src/views/details_page.vala:738
 msgid "Open a repository to view the package there, or tick two to compare"
 msgstr ""
 
-#: src/views/details_page.vala:710
+#: src/views/details_page.vala:745
 msgid "No versions found"
 msgstr ""
 
-#: src/views/details_page.vala:719
+#: src/views/details_page.vala:754
 msgid "current"
 msgstr ""
 
-#: src/views/details_page.vala:767
+#: src/views/details_page.vala:802
 msgid "Versions unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:787
+#: src/views/details_page.vala:820
 #, c-format
 msgid "Compare failed: %s"
 msgstr ""
 
-#: src/views/details_page.vala:810
+#: src/views/details_page.vala:839
 msgid "Source (.src.rpm)"
 msgstr ""
 
-#: src/views/details_page.vala:814
+#: src/views/details_page.vala:843
 msgid "Binaries (.rpm)"
 msgstr ""
 
-#: src/views/details_page.vala:826
+#: src/views/details_page.vala:855
 msgid "No source downloads"
 msgstr ""
 
-#: src/views/details_page.vala:833
+#: src/views/details_page.vala:862
 msgid "Source downloads unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:844
+#: src/views/details_page.vala:873
 msgid "No binary downloads"
 msgstr ""
 
-#: src/views/details_page.vala:851
+#: src/views/details_page.vala:880
 msgid "Binary downloads unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:867
+#: src/views/details_page.vala:896
 msgid "Copy download URL"
 msgstr ""
 
-#: src/views/details_page.vala:886
+#: src/views/details_page.vala:915
 msgid "Distribution images"
 msgstr ""
 
-#: src/views/details_page.vala:887
+#: src/views/details_page.vala:916
 #, c-format
 msgid "Active %s images that ship this package"
 msgstr ""
 
-#: src/views/details_page.vala:900
+#: src/views/details_page.vala:929
 msgid "Not included in any image"
 msgstr ""
 
-#: src/views/details_page.vala:903
+#: src/views/details_page.vala:932
 #, c-format
 msgid "%d image editions"
 msgstr ""
 
-#: src/views/details_page.vala:909
+#: src/views/details_page.vala:938
 #, c-format
 msgid "latest image: %s"
 msgstr ""
 
-#: src/views/details_page.vala:928
+#: src/views/details_page.vala:957
 msgid "Images unavailable"
 msgstr ""
 
-#: src/views/details_page.vala:936
+#: src/views/details_page.vala:965
 msgid "Open"
 msgstr ""
 
-#: src/views/details_page.vala:957 src/views/version_compare_dialog.vala:155
+#: src/views/details_page.vala:986 src/views/version_compare_dialog.vala:155
 msgid "Spec file not available"
 msgstr ""
 
-#: src/views/details_page.vala:967
+#: src/views/details_page.vala:996
 msgid "Spec file unavailable"
 msgstr ""
 
@@ -552,97 +695,93 @@ msgstr ""
 msgid "show %d more"
 msgstr ""
 
-#: src/views/install_controller.vala:30
+#: src/views/install_controller.vala:46
 msgid "Installed"
 msgstr ""
 
-#: src/views/install_controller.vala:31
-msgid "Package is already installed"
-msgstr ""
-
-#: src/views/install_controller.vala:67
+#: src/views/install_controller.vala:85
 msgid "Checking…"
 msgstr ""
 
-#: src/views/install_controller.vala:78
+#: src/views/install_controller.vala:96
 #, c-format
 msgid "%s is not available in the enabled repositories"
 msgstr ""
 
-#: src/views/install_controller.vala:79
+#: src/views/install_controller.vala:97
 #, c-format
 msgid "Could not compute changes for %s"
 msgstr ""
 
-#: src/views/install_controller.vala:85
+#: src/views/install_controller.vala:104
 msgid "Already up to date"
 msgstr ""
 
-#: src/views/install_controller.vala:94 src/views/install_controller.vala:111
+#: src/views/install_controller.vala:113 src/views/install_controller.vala:132
 msgid "Installation cancelled"
 msgstr ""
 
-#: src/views/install_controller.vala:98
+#: src/views/install_controller.vala:117
 msgid "Updating…"
 msgstr ""
 
-#: src/views/install_controller.vala:98
+#: src/views/install_controller.vala:117
 msgid "Installing…"
 msgstr ""
 
-#: src/views/install_controller.vala:105
+#: src/views/install_controller.vala:126
 #, c-format
 msgid "Updated %s"
 msgstr ""
 
-#: src/views/install_controller.vala:105
+#: src/views/install_controller.vala:126
 #, c-format
 msgid "Installed %s"
 msgstr ""
 
-#: src/views/install_controller.vala:116
+#: src/views/install_controller.vala:137
 #, c-format
 msgid "%s is not signed — installation refused"
 msgstr ""
 
-#: src/views/install_controller.vala:121
+#: src/views/install_controller.vala:142
 #, c-format
 msgid "Failed to update %s"
 msgstr ""
 
-#: src/views/install_controller.vala:121
+#: src/views/install_controller.vala:142
 #, c-format
 msgid "Failed to install %s"
 msgstr ""
 
-#: src/views/install_controller.vala:128
+#: src/views/install_controller.vala:149
 #, c-format
 msgid "Update %s?"
 msgstr ""
 
-#: src/views/install_controller.vala:128
+#: src/views/install_controller.vala:149
 #, c-format
 msgid "Install %s?"
 msgstr ""
 
-#: src/views/install_controller.vala:153
+#: src/views/install_controller.vala:174
 msgid "New packages"
 msgstr ""
 
-#: src/views/install_controller.vala:154
+#: src/views/install_controller.vala:175
 msgid "Will be upgraded"
 msgstr ""
 
-#: src/views/install_controller.vala:155
+#: src/views/install_controller.vala:176
 msgid "Will be REMOVED"
 msgstr ""
 
-#: src/views/install_controller.vala:192
+#: src/views/install_controller.vala:213
 #, c-format
 msgid "Updating %s…"
 msgstr ""
 
-#: src/views/install_controller.vala:192
+#: src/views/install_controller.vala:213
 #, c-format
 msgid "Installing %s…"
 msgstr ""
@@ -657,66 +796,82 @@ msgstr ""
 msgid "%d packages by %s"
 msgstr ""
 
-#: src/views/search_page.vala:44
+#: src/views/search_page.vala:45
 msgid "Package"
 msgstr ""
 
-#: src/views/search_page.vala:44
+#: src/views/search_page.vala:45
 msgid "Binary"
 msgstr ""
 
-#: src/views/search_page.vala:44
+#: src/views/search_page.vala:45
 msgid "File"
 msgstr ""
 
-#: src/views/search_page.vala:48
+#: src/views/search_page.vala:49
 msgid "Type a binary package name…"
 msgstr ""
 
-#: src/views/search_page.vala:49
+#: src/views/search_page.vala:50
 msgid "Type a file name or path…"
 msgstr ""
 
-#: src/views/search_page.vala:50
+#: src/views/search_page.vala:51
 msgid "Type a maintainer nickname…"
 msgstr ""
 
-#: src/views/search_page.vala:51
+#: src/views/search_page.vala:52
 msgid "Type a package name or task ID…"
 msgstr ""
 
-#: src/views/search_page.vala:92
+#: src/views/search_page.vala:56
+msgid "Start typing a binary package name, then pick it from the results."
+msgstr ""
+
+#: src/views/search_page.vala:57
+msgid "Start typing a file name or path to find the packages that contain it."
+msgstr ""
+
+#: src/views/search_page.vala:58
+msgid "Start typing a maintainer nickname to see the packages they maintain."
+msgstr ""
+
+#: src/views/search_page.vala:59
+msgid "Enter a task ID or a package name to open a build task."
+msgstr ""
+
+#: src/views/search_page.vala:100
 msgid "All"
 msgstr ""
 
-#: src/views/search_page.vala:221
+#: src/views/search_page.vala:230
 msgid "Search history cleared"
 msgstr ""
 
-#: src/views/search_page.vala:366
+#: src/views/search_page.vala:375
 #, c-format
 msgid "More than %d found in repository %s"
 msgstr ""
 
-#: src/views/search_page.vala:368 src/views/search_page.vala:393
+#: src/views/search_page.vala:377 src/views/search_page.vala:402
 #, c-format
 msgid "Found %d in repository %s"
 msgstr ""
 
-#: src/views/search_page.vala:463
+#: src/views/search_page.vala:472
 msgid "Looking in other search sections…"
 msgstr ""
 
-#: src/views/search_page.vala:483
+#: src/views/search_page.vala:492
 msgid "Looking in other repositories…"
 msgstr ""
 
-#: src/views/search_page.vala:531
+#: src/views/search_page.vala:540
 #, c-format
 msgid "Search as %s (%d)"
 msgstr ""
 
-#: src/views/search_page.vala:544
+#: src/views/search_page.vala:553
 #, c-format
 msgid "Search in %s (%d)"
 msgstr ""
@@ -824,7 +979,7 @@ msgstr ""
 msgid "Show diff"
 msgstr ""
 
-#: src/window.vala:118
+#: src/window.vala:120
 msgid ""
 "PackageSearch is an app for searching, browsing and installing packages from "
 "the ALT Linux repositories (Sisyphus, p11, p10, p9, c10f2, c9f2).\n"
@@ -836,6 +991,6 @@ msgid ""
 "You can also install and update packages."
 msgstr ""
 
-#: src/window.vala:122
+#: src/window.vala:124
 msgid "translator-credits"
 msgstr ""

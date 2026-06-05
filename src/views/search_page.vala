@@ -19,6 +19,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
     [GtkChild] private unowned Gtk.Button    retry_btn;
     [GtkChild] private unowned Gtk.Box       suggestions_box;
     [GtkChild] private unowned Gtk.Button history_btn;
+    [GtkChild] private unowned Adw.StatusPage idle_status;
 
     private HistoryPopover history_popover;
 
@@ -49,6 +50,13 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         N_("Type a file name or path…"),
         N_("Type a maintainer nickname…"),
         N_("Type a package name or task ID…")
+    };
+    private const string[] MODE_IDLE_HINTS = {
+        N_("Start typing a source package name, then pick it from the results."),
+        N_("Start typing a binary package name, then pick it from the results."),
+        N_("Start typing a file name or path to find the packages that contain it."),
+        N_("Start typing a maintainer nickname to see the packages they maintain."),
+        N_("Enter a task ID or a package name to open a build task.")
     };
 
     public signal void open_details (Data.SourceGroup group, string branch);
@@ -149,6 +157,7 @@ public class SearchPage : Adw.NavigationPage, Ui.Findable {
         mode_dropdown.notify["selected"].connect (() => {
             current_mode = (Data.SearchMode) mode_dropdown.selected;
             search_entry.set_placeholder_text (_(MODE_PLACEHOLDERS[(int) current_mode]));
+            idle_status.description = _(MODE_IDLE_HINTS[(int) current_mode]);
             reset_search ();
             trigger_search_now ();
         });
