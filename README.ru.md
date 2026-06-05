@@ -4,6 +4,22 @@
 
 **PackageSearch** — десктопное приложение на GTK4/Libadwaita для ALT Linux, позволяющее искать, просматривать и устанавливать пакеты репозиториев **Sisyphus**, **p11**, **p10**, **p9**, **c10f2** и **c9f2**.
 
+<div align="center">
+  <img width="922" src="data/screenshots/1.png">
+</div>
+<div align="center">
+  <img width="922" src="data/screenshots/2.png">
+</div>
+<div align="center">
+  <img width="922" src="data/screenshots/3.png">
+</div>
+<div align="center">
+  <img width="922" src="data/screenshots/4.png">
+</div>
+<div align="center">
+  <img width="922" src="data/screenshots/5.png">
+</div>
+
 ## Возможности
 
 - **Поиск** по всем поддерживаемым веткам в пяти режимах:
@@ -23,35 +39,16 @@
   - Разворачиваемый **changelog**
   - Просмотр **spec-файла**
   - **Загрузка** исходных и бинарных RPM
-- Раздел **Безопасность**: закрытые уязвимости (CVE, BDU, GHSA) и известные баги Bugzilla с фильтром по статусу
-- **Установка и обновление** пакетов из системного репозитория напрямую через `apt-get`
+  - **Дистрибутивы**, в состав которых входит пакет
+- Раздел **Безопасность**: закрытые уязвимости и известные баги Bugzilla с фильтром по статусу
+- **Установка и обновление** пакетов из системного репозитория
 - Нативный интерфейс **GNOME/Adwaita** с быстрой и чистой навигацией
-- Локализация (включая русский)
-
-## Технологии
-
-- [Vala](https://wiki.gnome.org/Projects/Vala)
-- [GTK 4](https://www.gtk.org/) + [Libadwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/)
-- [Blueprint](https://jwestman.pages.gitlab.gnome.org/blueprint-compiler/) для описания интерфейса
-- [libalt-repo](https://altlinux.space/alt-gnome/libalt-repo) (привязки для Vala)
-- Данные из [API репозиториев ALT Linux](https://rdb.altlinux.org/api/)
 
 ## Установка
 
 ```bash
-# apt-get install -y meson ninja-build pkg-config vala gettext libadwaita-devel libjson-glib-devel libsoup3.0-devel libgee0.8-devel blueprint-compiler libgtk4-devel libgee0.8-gir-devel libjson-glib-gir-devel clang cmake gettext gettext-tools gobject-introspection-devel libalt-repo-vala-1-devel libpackagekit-glib-devel
-$ git clone https://altlinux.space/vladislavpetrukhin/PackageSearch
-$ cd PackageSearch
-$ meson setup build --prefix=/usr
-$ meson compile -C build
-# meson install -C build
-```
-
-## Разработка
-
-Запуск набора модульных тестов (чистая логика слоёв business/data — без UI и сети):
-
-```bash
-$ meson setup build-test
-$ meson test -C build-test
+apt-get install -y meson ninja-build pkg-config vala gettext libadwaita-devel libjson-glib-devel libsoup3.0-devel libgee0.8-devel blueprint-compiler libgtk4-devel libgee0.8-gir-devel libjson-glib-gir-devel clang cmake gettext gettext-tools gobject-introspection-devel libalt-repo-vala-1-devel libpackagekit-glib-devel
+git clone https://altlinux.space/vladislavpetrukhin/PackageSearch PackageSearch
+meson setup build --prefix=/usr
+meson install -C build
 ```

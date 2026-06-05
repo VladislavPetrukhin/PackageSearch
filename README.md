@@ -4,6 +4,22 @@
 
 **PackageSearch** is a GTK4/Libadwaita desktop application for ALT Linux that lets you search, inspect and install packages across the **Sisyphus**, **p11**, **p10**, **p9**, **c10f2** and **c9f2** repositories.
 
+<div align="center">
+  <img width="922" src="data/screenshots/1.png">
+</div>
+<div align="center">
+  <img width="922" src="data/screenshots/2.png">
+</div>
+<div align="center">
+  <img width="922" src="data/screenshots/3.png">
+</div>
+<div align="center">
+  <img width="922" src="data/screenshots/4.png">
+</div>
+<div align="center">
+  <img width="922" src="data/screenshots/5.png">
+</div>
+
 ## Features
 
 - **Search** across all supported branches, with five modes:
@@ -23,35 +39,16 @@
   - Expandable **changelog**
   - **Spec file** viewer
   - **Downloads** for source and binary RPMs
-- **Security** section: closed vulnerabilities (CVE, BDU, GHSA) and known Bugzilla bugs, with a status filter
-- **Install and update** packages from the system repository directly via `apt-get`
+  - **Distributions** that include the package
+- **Security** section: closed vulnerabilities and known Bugzilla bugs, with a status filter
+- **Install and update** packages from the system repository
 - Native **GNOME/Adwaita UI** with fast, clean navigation
-- Localization (Russian included)
-
-## Tech stack
-
-- [Vala](https://wiki.gnome.org/Projects/Vala)
-- [GTK 4](https://www.gtk.org/) + [Libadwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/)
-- [Blueprint](https://jwestman.pages.gitlab.gnome.org/blueprint-compiler/) for UI definitions
-- [libalt-repo](https://altlinux.space/alt-gnome/libalt-repo) (Vala bindings)
-- Data from the [ALT Linux Repositories API](https://rdb.altlinux.org/api/)
 
 ## Installation
 
 ```bash
-# apt-get install -y meson ninja-build pkg-config vala gettext libadwaita-devel libjson-glib-devel libsoup3.0-devel libgee0.8-devel blueprint-compiler libgtk4-devel libgee0.8-gir-devel libjson-glib-gir-devel clang cmake gettext gettext-tools gobject-introspection-devel libalt-repo-vala-1-devel libpackagekit-glib-devel
-$ git clone https://altlinux.space/vladislavpetrukhin/PackageSearch
-$ cd PackageSearch
-$ meson setup build --prefix=/usr
-$ meson compile -C build
-# meson install -C build
-```
-
-## Development
-
-Run the unit test suite (pure business/data logic — no UI or network):
-
-```bash
-$ meson setup build-test
-$ meson test -C build-test
+apt-get install -y meson ninja-build pkg-config vala gettext libadwaita-devel libjson-glib-devel libsoup3.0-devel libgee0.8-devel blueprint-compiler libgtk4-devel libgee0.8-gir-devel libjson-glib-gir-devel clang cmake gettext gettext-tools gobject-introspection-devel libalt-repo-vala-1-devel libpackagekit-glib-devel
+git clone https://altlinux.space/vladislavpetrukhin/PackageSearch PackageSearch
+meson setup build --prefix=/usr
+meson install -C build
 ```
