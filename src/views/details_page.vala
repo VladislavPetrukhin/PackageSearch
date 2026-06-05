@@ -324,6 +324,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 tooltip_text = _("Install (requires authentication)")
             };
             install_hero.add_css_class ("suggested-action");
+            InstallController.fix_install_width (install_hero);
             install_size.add_widget (install_hero);
             register_button (name_buttons, group.name, install_hero);
             win.installer.watch_button (install_hero);
@@ -409,6 +410,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     tooltip_text = _("Install (requires authentication)")
                 };
                 install_btn.add_css_class ("suggested-action");
+                InstallController.fix_install_width (install_btn);
                 install_size.add_widget (install_btn);
                 register_button (name_buttons, name, install_btn);
                 win.installer.watch_button (install_btn);

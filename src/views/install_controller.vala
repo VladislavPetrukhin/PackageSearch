@@ -40,6 +40,27 @@ public class InstallController : GLib.Object {
             active_cancellable.cancel ();
     }
 
+    public static void fix_install_width (Gtk.Button btn) {
+        ulong id = 0;
+        id = btn.map.connect (() => {
+            btn.disconnect (id);
+            string cur = btn.label;
+            int widest = 0;
+            string[] labels = {
+                _("Install"), _("Update"), _("Checking…"),
+                _("Installing…"), _("Updating…"), _("Installed")
+            };
+            foreach (var s in labels) {
+                btn.label = s;
+                int min, nat, mb, nb;
+                btn.measure (Gtk.Orientation.HORIZONTAL, -1, out min, out nat, out mb, out nb);
+                if (nat > widest) widest = nat;
+            }
+            btn.label = cur;
+            btn.width_request = widest;
+        });
+    }
+
     public static void mark_installed (Gtk.Button btn) {
         btn.remove_css_class ("suggested-action");
         btn.add_css_class ("ps-installed");

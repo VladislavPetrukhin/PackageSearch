@@ -209,7 +209,11 @@ namespace Business {
                 if (res.get_exit_code () != Pk.Exit.SUCCESS) return;
                 var darr = res.get_details_array ();
                 uint64 dl = 0;
-                for (uint i = 0; i < darr.length; i++) dl += darr.get (i).get_download_size ();
+                for (uint i = 0; i < darr.length; i++) {
+                    uint64 s = darr.get (i).get_download_size ();
+                    if (s == uint64.MAX) continue;
+                    dl += s;
+                }
                 if (dl > 0) plan.download = _("Download size: %s").printf (format_size (dl));
             } catch (Error e) {
                 warning ("[PackageManager] details failed: %s", e.message);
