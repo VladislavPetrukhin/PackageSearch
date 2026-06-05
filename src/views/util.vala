@@ -28,7 +28,7 @@ namespace Ui {
     public static string trim_toast (string s) {
         const int LIMIT = 80;
         var clean = s.replace ("\n", " ").strip ();
-        if (clean.length <= LIMIT) return clean;
+        if (clean.char_count () <= LIMIT) return clean;
         return clean.substring (0, LIMIT) + "…";
     }
 

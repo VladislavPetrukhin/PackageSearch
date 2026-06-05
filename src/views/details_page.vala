@@ -366,7 +366,6 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             var card_bp = pick_arch (bps);
             string captured_card_evr = repo_evr;
             bool   card_can_install = can_install;
-            bool   card_installed = b_installed, card_update = b_update;
             string? card_block = block_reason;
             var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
                 valign = Gtk.Align.CENTER,
@@ -379,7 +378,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             if (Ui.is_nonempty (card_bp.pkghash))
                 make_row_clickable (row, () => {
                     new BinaryCardDialog (win, branch, card_bp, card_can_install, captured_card_evr,
-                                          card_installed, card_update, card_block).present (this);
+                                          card_block).present (this);
                 });
 
             var arch_str = "";
@@ -394,9 +393,10 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             if (dbg_disabled) {
                 var dbg_btn = new Gtk.Button.with_label (_("Install")) {
                     valign = Gtk.Align.CENTER,
-                    sensitive = false,
-                    tooltip_text = block_reason
+                    tooltip_text = block_reason,
+                    opacity = 0.55
                 };
+                dbg_btn.clicked.connect (() => toast (_("Requires the debuginfo repository, which is not enabled")));
                 install_size.add_widget (dbg_btn);
                 row.add_suffix (dbg_btn);
             } else if (can_install) {
@@ -456,10 +456,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 if (Ui.is_nonempty (it.date)) head = it.date;
                 if (Ui.is_nonempty (it.nick)) head = (head == "") ? it.nick : head + " — " + it.nick;
 
-                string preview = (it.message ?? "").strip ();
-                int nl = preview.index_of_char ('\n');
-                if (nl >= 0) preview = preview.substring (0, nl);
-                if (preview.length > MAX_CHANGE_PREVIEW)
+                string preview = (it.message ?? "").strip ().split ("\n", 2)[0];
+                if (preview.char_count () > MAX_CHANGE_PREVIEW)
                     preview = preview.substring (0, MAX_CHANGE_PREVIEW) + "…";
 
                 var row = new Adw.ActionRow () {

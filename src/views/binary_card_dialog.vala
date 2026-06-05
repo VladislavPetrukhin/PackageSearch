@@ -10,9 +10,9 @@ public class BinaryCardDialog : Adw.Dialog {
 
     private bool    can_install;
     private string  repo_evr;
-    private bool    is_installed;
-    private bool    needs_update;
     private string? install_block_reason;
+
+    private Business.PackageManager pkg_mgr = new Business.PackageManager ();
 
     private Adw.ToastOverlay   toast_overlay = new Adw.ToastOverlay ();
     private Adw.HeaderBar       header = new Adw.HeaderBar ();
@@ -31,15 +31,12 @@ public class BinaryCardDialog : Adw.Dialog {
 
     public BinaryCardDialog (MainWindow win, string branch, Data.BinaryPackage bp,
                              bool can_install, string repo_evr,
-                             bool is_installed, bool needs_update,
                              string? install_block_reason) {
         this.win          = win;
         this.branch       = branch;
         this.bp           = bp;
         this.can_install  = can_install;
         this.repo_evr     = repo_evr;
-        this.is_installed = is_installed;
-        this.needs_update = needs_update;
         this.install_block_reason = install_block_reason;
 
         build_ui ();
@@ -54,7 +51,7 @@ public class BinaryCardDialog : Adw.Dialog {
         var ver = Ui.evr (bp.version, bp.release);
         header.title_widget = new Adw.WindowTitle (bp.name, ver);
 
-        build_install_action ();
+        setup_install_action.begin ();
 
         var search_btn = new Gtk.ToggleButton () {
             icon_name = "system-search-symbolic",
@@ -114,8 +111,15 @@ public class BinaryCardDialog : Adw.Dialog {
         ((Gtk.Widget) this).add_controller (sc);
     }
 
-    private void build_install_action () {
+    private async void setup_install_action () {
         if (!can_install) return;
+
+        var installed = yield pkg_mgr.get_installed_packages ();
+        if (cancel.is_cancelled ()) return;
+
+        bool is_installed = installed.has_key (bp.name);
+        bool needs_update = is_installed && repo_evr.length > 0
+            && Business.VersionCompare.compare_evr (installed.get (bp.name), repo_evr) < 0;
 
         var btn = new Gtk.Button () { valign = Gtk.Align.CENTER };
 
