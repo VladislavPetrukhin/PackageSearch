@@ -22,7 +22,7 @@ public class BinaryCardDialog : Adw.Dialog {
     private Gtk.SearchBar       search_bar = new Gtk.SearchBar ();
     private Gtk.SearchEntry     search_entry = new Gtk.SearchEntry ();
     private Gtk.Stack           files_stack = new Gtk.Stack ();
-    private Gtk.ListView        files_view;
+    private Gtk.ListBox         files_view = new Gtk.ListBox ();
     private GLib.ListStore      files_store = new GLib.ListStore (typeof (Data.BinaryFile));
     private Gtk.CustomFilter    files_filter;
     private string              files_query = "";
@@ -72,7 +72,6 @@ public class BinaryCardDialog : Adw.Dialog {
             files_query = q.down ();
             files_filter.changed (Gtk.FilterChange.DIFFERENT);
             update_files_title ();
-            if (files_view != null) files_view.queue_draw ();
         });
         toolbar.add_top_bar (search_bar);
 
@@ -152,59 +151,45 @@ public class BinaryCardDialog : Adw.Dialog {
     }
 
     private void build_files_view () {
+        files_view.selection_mode = Gtk.SelectionMode.NONE;
+        files_view.add_css_class ("boxed-list");
+        files_view.valign = Gtk.Align.START;
+
         files_filter = new Gtk.CustomFilter ((obj) => {
             if (files_query.length == 0) return true;
             var f = obj as Data.BinaryFile;
             return f != null && f.name.down ().contains (files_query);
         });
         var filtered = new Gtk.FilterListModel (files_store, files_filter);
-        var selection = new Gtk.NoSelection (filtered);
 
-        var factory = new Gtk.SignalListItemFactory ();
-        factory.setup.connect ((item) => {
-            var li = item as Gtk.ListItem;
-            var name_lbl = new Gtk.Label (null) {
+        files_view.bind_model (filtered, (obj) => {
+            var f = obj as Data.BinaryFile;
+            var name_lbl = new Gtk.Label (f.name) {
                 xalign = 0.0f, hexpand = true,
                 ellipsize = Pango.EllipsizeMode.MIDDLE,
-                selectable = false
+                tooltip_text = f.name
             };
             name_lbl.add_css_class ("monospace");
-            var size_lbl = new Gtk.Label (null) { xalign = 1.0f };
+            var size_lbl = new Gtk.Label ((f.size > 0) ? format_size (f.size) : "") {
+                xalign = 1.0f
+            };
             size_lbl.add_css_class ("dim-label");
             size_lbl.add_css_class ("numeric");
-            var row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12) {
+            var box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12) {
                 margin_start = 12, margin_end = 12, margin_top = 6, margin_bottom = 6
             };
-            row.append (name_lbl);
-            row.append (size_lbl);
+            box.append (name_lbl);
+            box.append (size_lbl);
 
+            var row = new Gtk.ListBoxRow ();
+            row.set_child (box);
+            string captured = f.name;
             var click = new Gtk.GestureClick ();
-            click.released.connect (() => {
-                copy_to_clipboard (name_lbl.label);
-            });
+            click.released.connect (() => copy_to_clipboard (captured));
             row.add_controller (click);
             row.set_cursor (new Gdk.Cursor.from_name ("pointer", null));
-            li.set_child (row);
+            return row;
         });
-        factory.bind.connect ((item) => {
-            var li = item as Gtk.ListItem;
-            var f = li.get_item () as Data.BinaryFile;
-            var row = li.get_child () as Gtk.Box;
-            var name_lbl = row.get_first_child () as Gtk.Label;
-            var size_lbl = row.get_last_child () as Gtk.Label;
-            name_lbl.label = f.name;
-            name_lbl.tooltip_text = f.name;
-            size_lbl.label = (f.size > 0) ? format_size (f.size) : "";
-        });
-        factory.unbind.connect ((item) => {
-            var li = item as Gtk.ListItem;
-            var row = li.get_child () as Gtk.Box;
-            (row.get_first_child () as Gtk.Label).label = "";
-            (row.get_last_child () as Gtk.Label).label = "";
-        });
-
-        files_view = new Gtk.ListView (selection, factory);
-        files_view.add_css_class ("card");
 
         var scroll = new Gtk.ScrolledWindow () {
             hscrollbar_policy = Gtk.PolicyType.NEVER,
