@@ -4,13 +4,33 @@ using GLib;
 using Intl;
 
 public class InstallController : GLib.Object {
-    private Gtk.Widget            parent;
-    private Adw.ToastOverlay      toast_overlay;
-    private Business.PackageManager pkg_mgr;
+    private Gtk.Widget?           parent = null;
+    private Adw.ToastOverlay?     toast_overlay = null;
+    private Business.PackageManager pkg_mgr = new Business.PackageManager ();
     private GLib.Cancellable?     active_cancellable = null;
     private Adw.Dialog?           active_dialog = null;
 
+    public bool busy { get; private set; default = false; }
+
     public signal void install_finished (bool success);
+
+    public void set_context (Gtk.Widget parent, Adw.ToastOverlay toast_overlay) {
+        this.parent        = parent;
+        this.toast_overlay = toast_overlay;
+    }
+
+    public void watch_button (Gtk.Button btn) {
+        this.bind_property ("busy", btn, "sensitive", GLib.BindingFlags.SYNC_CREATE,
+            (b, src, ref tgt) => {
+                tgt.set_boolean (!src.get_boolean () && !btn.has_css_class ("ps-installed"));
+                return true;
+            });
+    }
+
+    private void set_active (GLib.Cancellable? c) {
+        active_cancellable = c;
+        busy = (c != null);
+    }
 
     public void cancel_active () {
         if (active_dialog != null) active_dialog.force_close ();
@@ -18,22 +38,17 @@ public class InstallController : GLib.Object {
             active_cancellable.cancel ();
     }
 
-    public InstallController (Gtk.Widget parent, Adw.ToastOverlay toast_overlay,
-                              Business.PackageManager pkg_mgr) {
-        this.parent        = parent;
-        this.toast_overlay = toast_overlay;
-        this.pkg_mgr       = pkg_mgr;
-    }
-
     public static void mark_installed (Gtk.Button btn) {
         btn.remove_css_class ("suggested-action");
+        btn.add_css_class ("ps-installed");
         btn.label = _("Installed");
         btn.tooltip_text = _("Package is already installed");
         btn.sensitive = false;
     }
 
     private void toast (string s) {
-        toast_overlay.add_toast (new Adw.Toast (Ui.trim_toast (s)));
+        if (toast_overlay != null)
+            toast_overlay.add_toast (new Adw.Toast (Ui.trim_toast (s)));
     }
 
     private static void group_label (Gee.List<Gtk.Button> group, string label) {
@@ -52,9 +67,10 @@ public class InstallController : GLib.Object {
                                string? repo_evr, bool is_update,
                                Gee.List<Gtk.Button>? siblings = null) {
         if (active_cancellable != null) return;
+        if (parent == null) return;
 
         var flow = new GLib.Cancellable ();
-        active_cancellable = flow;
+        set_active (flow);
 
         var group = new Gee.ArrayList<Gtk.Button> ();
         group.add (btn);
@@ -67,11 +83,11 @@ public class InstallController : GLib.Object {
         group_label (group, _("Checking…"));
 
         var plan = yield pkg_mgr.simulate_install (pkg_name);
-        if (flow.is_cancelled ()) { active_cancellable = null; return; }
+        if (flow.is_cancelled ()) { set_active (null); return; }
         group_label (group, orig_label);
 
         if (!plan.ok) {
-            active_cancellable = null;
+            set_active (null);
             group_sensitive (group, true);
             warning ("[InstallController] simulate failed for %s:\n%s", pkg_name, plan.error ?? "(no output)");
             toast (plan.not_available
@@ -80,16 +96,16 @@ public class InstallController : GLib.Object {
             return;
         }
         if (plan.is_empty ()) {
-            active_cancellable = null;
+            set_active (null);
             group_mark_installed (group);
             toast (_("Already up to date"));
             return;
         }
 
         bool confirmed = yield confirm_plan (pkg_name, is_update, plan);
-        if (flow.is_cancelled ()) { active_cancellable = null; return; }
+        if (flow.is_cancelled ()) { set_active (null); return; }
         if (!confirmed) {
-            active_cancellable = null;
+            set_active (null);
             group_sensitive (group, true);
             toast (_("Installation cancelled"));
             return;
@@ -97,7 +113,7 @@ public class InstallController : GLib.Object {
 
         group_label (group, is_update ? _("Updating…") : _("Installing…"));
         var result = yield run_with_progress (pkg_name, repo_evr, is_update, flow);
-        active_cancellable = null;
+        set_active (null);
 
         switch (result) {
         case Business.InstallResult.SUCCESS:

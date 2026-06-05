@@ -13,8 +13,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     private MainWindow win;
 
     private Business.PackageManager pkg_mgr = new Business.PackageManager ();
-    private InstallController installer;
-    private Gee.HashMap<string, Gtk.Button> install_buttons = new Gee.HashMap<string, Gtk.Button> ();
+    private ulong install_finished_id = 0;
+    private Gee.HashMap<string, Gee.ArrayList<Gtk.Button>> name_buttons = new Gee.HashMap<string, Gee.ArrayList<Gtk.Button>> ();
     private Gtk.SizeGroup install_size = new Gtk.SizeGroup (Gtk.SizeGroupMode.HORIZONTAL);
     private string repo_evr = "";
 
@@ -48,7 +48,11 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     public void cancel_loading () {
         if (!cancel.is_cancelled ()) cancel.cancel ();
-        if (installer != null) installer.cancel_active ();
+        win.installer.cancel_active ();
+        if (install_finished_id != 0) {
+            win.installer.disconnect (install_finished_id);
+            install_finished_id = 0;
+        }
     }
 
     private void copy_to_clipboard (string text) {
@@ -68,6 +72,11 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     private void make_name_copyable (Adw.ActionRow row, string name) {
         make_row_clickable (row, () => copy_to_clipboard (name));
+    }
+
+    private static Data.BinaryPackage pick_arch (Gee.ArrayList<Data.BinaryPackage> bps) {
+        foreach (var b in bps) if (b.arch == "x86_64") return b;
+        return bps[0];
     }
 
     private void toast (string s) {
@@ -128,8 +137,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
         loading_revealer.reveal_child = true;
         content_scroll.visible = false;
 
-        installer = new InstallController (this, toast_overlay, pkg_mgr);
-        installer.install_finished.connect ((ok) => {
+        install_finished_id = win.installer.install_finished.connect ((ok) => {
             if (ok) refresh_install_states.begin ();
         });
 
@@ -258,18 +266,16 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     private async void populate_binaries (Data.PackageDetails d) {
         clear_group (bins_group);
-        install_buttons.clear ();
+        name_buttons.clear ();
 
-        var name_buttons = new Gee.HashMap<string, Gee.ArrayList<Gtk.Button>> ();
-
-        var by_name = new Gee.HashMap<string, Gee.ArrayList<string>> ();
+        var by_name = new Gee.HashMap<string, Gee.ArrayList<Data.BinaryPackage>> ();
         foreach (var bp in d.binaries) {
             if (bp == null || bp.name == null) continue;
             var arch = bp.arch ?? "";
             if (arch.strip ().length == 0) continue;
             var list = by_name.get (bp.name);
-            if (list == null) { list = new Gee.ArrayList<string> (); by_name.set (bp.name, list); }
-            if (!list.contains (arch)) list.add (arch);
+            if (list == null) { list = new Gee.ArrayList<Data.BinaryPackage> (); by_name.set (bp.name, list); }
+            list.add (bp);
         }
 
         var names = new Gee.ArrayList<string> ();
@@ -318,8 +324,8 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             };
             install_hero.add_css_class ("suggested-action");
             install_size.add_widget (install_hero);
-            install_buttons.set (group.name, install_hero);
             register_button (name_buttons, group.name, install_hero);
+            win.installer.watch_button (install_hero);
 
             bool is_installed = installed.has_key (group.name);
             bool needs_update = false;
@@ -336,32 +342,60 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                     install_hero.tooltip_text = _("Update (requires authentication)");
                 }
                 install_hero.clicked.connect (() => {
-                    installer.install.begin (group.name, install_hero, captured_evr, is_update,
-                                             name_buttons.get (group.name));
+                    win.installer.set_context (this, toast_overlay);
+                    win.installer.install.begin (group.name, install_hero, captured_evr, is_update,
+                                                 name_buttons.get (group.name));
                 });
             }
             header_actions.append (install_hero);
         }
 
         foreach (var name in names) {
-            var arches = by_name.get (name);
+            var bps = by_name.get (name);
             var row = new Adw.ActionRow () { title = name };
 
             bool dbg_disabled = can_install && name.has_suffix ("-debuginfo") && !debug_avail;
-            if (dbg_disabled)
-                make_row_clickable (row, () => toast (_("Requires the debuginfo repository, which is not enabled")));
-            else
-                make_name_copyable (row, name);
+            string? block_reason = dbg_disabled
+                ? _("Requires the debuginfo repository, which is not enabled") : null;
+
+            bool b_installed = (installed != null) && installed.has_key (name);
+            bool b_update = false;
+            if (b_installed && repo_evr.length > 0)
+                b_update = Business.VersionCompare.compare_evr (installed.get (name), repo_evr) < 0;
+
+            var card_bp = pick_arch (bps);
+            string captured_card_evr = repo_evr;
+            bool   card_can_install = can_install;
+            bool   card_installed = b_installed, card_update = b_update;
+            string? card_block = block_reason;
+            var copy_btn = new Gtk.Button.from_icon_name ("edit-copy-symbolic") {
+                valign = Gtk.Align.CENTER,
+                tooltip_text = _("Copy name")
+            };
+            copy_btn.add_css_class ("flat");
+            copy_btn.clicked.connect (() => copy_to_clipboard (name));
+            row.add_prefix (copy_btn);
+
+            if (Ui.is_nonempty (card_bp.pkghash))
+                make_row_clickable (row, () => {
+                    new BinaryCardDialog (win, branch, card_bp, card_can_install, captured_card_evr,
+                                          card_installed, card_update, card_block).present (this);
+                });
 
             var arch_str = "";
-            foreach (var a in arches) arch_str = (arch_str == "") ? a : arch_str + ", " + a;
+            var seen_arch = new Gee.HashSet<string> ();
+            foreach (var b in bps) {
+                if (b.arch == null || seen_arch.contains (b.arch)) continue;
+                seen_arch.add (b.arch);
+                arch_str = (arch_str == "") ? b.arch : arch_str + ", " + b.arch;
+            }
             if (arch_str != "") row.add_suffix (dim_label (arch_str));
 
             if (dbg_disabled) {
                 var dbg_btn = new Gtk.Button.with_label (_("Install")) {
                     valign = Gtk.Align.CENTER,
                     sensitive = false,
-                    tooltip_text = _("Requires the debuginfo repository, which is not enabled")
+                    tooltip_text = block_reason
                 };
                 install_size.add_widget (dbg_btn);
                 row.add_suffix (dbg_btn);
@@ -372,26 +406,22 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
                 };
                 install_btn.add_css_class ("suggested-action");
                 install_size.add_widget (install_btn);
-                install_buttons.set (name, install_btn);
                 register_button (name_buttons, name, install_btn);
+                win.installer.watch_button (install_btn);
 
-                bool is_installed = installed.has_key (name);
-                bool needs_update = false;
-                if (is_installed && repo_evr.length > 0)
-                    needs_update = Business.VersionCompare.compare_evr (installed.get (name), repo_evr) < 0;
-
-                if (is_installed && !needs_update) {
+                if (b_installed && !b_update) {
                     InstallController.mark_installed (install_btn);
                 } else {
-                    bool is_update = needs_update;
+                    bool is_update = b_update;
                     string captured_evr = repo_evr;
                     if (is_update) {
                         install_btn.label = _("Update");
                         install_btn.tooltip_text = _("Update (requires authentication)");
                     }
                     install_btn.clicked.connect (() => {
-                        installer.install.begin (name, install_btn, captured_evr, is_update,
-                                                 name_buttons.get (name));
+                        win.installer.set_context (this, toast_overlay);
+                        win.installer.install.begin (name, install_btn, captured_evr, is_update,
+                                                     name_buttons.get (name));
                     });
                 }
                 row.add_suffix (install_btn);
@@ -405,12 +435,12 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void refresh_install_states () {
-        if (repo_evr.length == 0 || install_buttons.size == 0) return;
+        if (repo_evr.length == 0 || name_buttons.size == 0) return;
         var installed = yield pkg_mgr.get_installed_packages ();
-        foreach (var e in install_buttons.entries) {
+        foreach (var e in name_buttons.entries) {
             if (!installed.has_key (e.key)) continue;
             if (Business.VersionCompare.compare_evr (installed.get (e.key), repo_evr) >= 0)
-                InstallController.mark_installed (e.value);
+                foreach (var b in e.value) InstallController.mark_installed (b);
         }
     }
 

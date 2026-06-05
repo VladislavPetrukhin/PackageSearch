@@ -11,6 +11,8 @@ public class MainWindow : Adw.ApplicationWindow {
     private DetailsPage? current_details = null;
     private ulong        initial_focus_handler = 0;
 
+    public InstallController installer { get; private set; default = new InstallController (); }
+
     private const GLib.ActionEntry[] WIN_ACTIONS = {
         { "about",         on_action_about         },
         { "quit",          on_action_quit          },

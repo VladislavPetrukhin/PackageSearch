@@ -31,21 +31,18 @@ public class PackageApi : RepoApiBase {
         details.group       = info.category;
 
         foreach (var pa in info.package_archs) {
-            var non_src_arches = new Gee.ArrayList<string> ();
-            foreach (var arch in pa.archs) {
-                if (arch != null && arch.down () != "src")
-                    non_src_arches.add (arch);
-            }
-
-            if (non_src_arches.size == 0)
-                continue;
-            foreach (var arch in non_src_arches) {
+            for (int i = 0; i < pa.archs.size; i++) {
+                var arch = pa.archs[i];
+                if (arch == null || arch.down () == "src")
+                    continue;
+                string? hash = (i < pa.pkghash.size) ? pa.pkghash[i] : null;
                 details.binaries.add (new BinaryPackage () {
                     name     = pa.name,
                     version  = info.version,
                     release  = info.release,
                     arch     = arch,
-                    src_name = src_name
+                    src_name = src_name,
+                    pkghash  = hash
                 });
             }
         }

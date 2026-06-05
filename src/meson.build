@@ -32,6 +32,8 @@ src = files(
   'data/task_api.vala',
   'data/download_api.vala',
   'data/image_api.vala',
+  'data/binary_api.vala',
+  'views/binary_card_dialog.vala',
   'business/version_compare.vala',
   'business/text_diff.vala',
   'business/package_manager.vala',

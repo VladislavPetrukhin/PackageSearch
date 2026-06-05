@@ -79,6 +79,25 @@ public class DependencyPackage : GLib.Object {
     public string? arch    { get; set; }
 }
 
+public class BinaryFile : GLib.Object {
+    public string  name     { get; set; default = ""; }
+    public int64   size     { get; set; default = 0; }
+    public string? file_class { get; set; }
+    public string? symlink  { get; set; }
+}
+
+public class BinaryDep : GLib.Object {
+    public string  name    { get; set; default = ""; }
+    public string? version { get; set; }
+    public string  dep_type { get; set; default = ""; }
+}
+
+public class BinaryInfo : GLib.Object {
+    public string? summary { get; set; }
+    public string? license { get; set; }
+    public Gee.ArrayList<BinaryDep> deps { get; set; default = new Gee.ArrayList<BinaryDep> (); }
+}
+
 public class VulnerabilityItem : GLib.Object {
     public string  id        { get; set; default = ""; }
     public string? summary   { get; set; }

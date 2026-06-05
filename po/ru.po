@@ -847,6 +847,52 @@ msgstr ""
 msgid "translator-credits"
 msgstr "Владислав Петрухин"
 
+#: src/views/details_page.vala
+msgid "Copy name"
+msgstr "Копировать имя"
+
+#: src/views/binary_card_dialog.vala
+msgid "Search files"
+msgstr "Поиск файлов"
+
+#: src/views/binary_card_dialog.vala
+msgid "Files"
+msgstr "Файлы"
+
+#: src/views/binary_card_dialog.vala
+#, c-format
+msgid "Files (%u)"
+msgstr "Файлы (%u)"
+
+#: src/views/binary_card_dialog.vala
+#, c-format
+msgid "Files (%u of %u)"
+msgstr "Файлы (%u из %u)"
+
+#: src/views/binary_card_dialog.vala
+msgid "No files"
+msgstr "Нет файлов"
+
+#: src/views/binary_card_dialog.vala
+msgid "Summary"
+msgstr "Краткое описание"
+
+#: src/views/binary_card_dialog.vala
+msgid "Requires"
+msgstr "Требует"
+
+#: src/views/binary_card_dialog.vala
+msgid "Provides"
+msgstr "Предоставляет"
+
+#: src/views/binary_card_dialog.vala
+msgid "Conflicts"
+msgstr "Конфликтует"
+
+#: src/views/binary_card_dialog.vala
+msgid "Obsoletes"
+msgstr "Замещает"
+
 #: data/app.desktop.in
 msgid "Search for packages in ALT Linux repositories"
 msgstr "Поиск пакетов в репозиториях ALT Linux"
