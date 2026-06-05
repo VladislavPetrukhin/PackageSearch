@@ -125,14 +125,17 @@ public class BinaryCardDialog : Adw.Dialog {
 
         if (is_installed && !needs_update) {
             InstallController.mark_installed (btn);
+            btn.clicked.connect (() => show_toast (_("Package is already installed")));
             header.pack_end (btn);
             return;
         }
 
         if (install_block_reason != null) {
+            string reason = install_block_reason;
             btn.label = _("Install");
-            btn.sensitive = false;
-            btn.tooltip_text = install_block_reason;
+            btn.opacity = 0.55;
+            btn.tooltip_text = reason;
+            btn.clicked.connect (() => show_toast (reason));
             header.pack_end (btn);
             return;
         }
@@ -328,6 +331,10 @@ public class BinaryCardDialog : Adw.Dialog {
         case "obsolete": return _("Obsoletes");
         default:         return t;
         }
+    }
+
+    private void show_toast (string s) {
+        toast_overlay.add_toast (new Adw.Toast (Ui.trim_toast (s)));
     }
 
     private void copy_to_clipboard (string text) {

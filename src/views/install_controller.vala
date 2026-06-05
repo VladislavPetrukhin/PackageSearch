@@ -22,7 +22,7 @@ public class InstallController : GLib.Object {
     public void watch_button (Gtk.Button btn) {
         this.bind_property ("busy", btn, "sensitive", GLib.BindingFlags.SYNC_CREATE,
             (b, src, ref tgt) => {
-                tgt.set_boolean (!src.get_boolean () && !btn.has_css_class ("ps-installed"));
+                tgt.set_boolean (btn.has_css_class ("ps-installed") || !src.get_boolean ());
                 return true;
             });
     }
@@ -43,7 +43,7 @@ public class InstallController : GLib.Object {
         btn.add_css_class ("ps-installed");
         btn.label = _("Installed");
         btn.tooltip_text = _("Package is already installed");
-        btn.sensitive = false;
+        btn.opacity = 0.55;
     }
 
     private void toast (string s) {

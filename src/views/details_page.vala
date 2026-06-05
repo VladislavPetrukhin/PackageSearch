@@ -334,19 +334,22 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
             if (is_installed && !needs_update) {
                 InstallController.mark_installed (install_hero);
-            } else {
-                string captured_evr = repo_evr;
-                bool is_update = needs_update;
-                if (is_update) {
-                    install_hero.label = _("Update");
-                    install_hero.tooltip_text = _("Update (requires authentication)");
-                }
-                install_hero.clicked.connect (() => {
-                    win.installer.set_context (this, toast_overlay);
-                    win.installer.install.begin (group.name, install_hero, captured_evr, is_update,
-                                                 name_buttons.get (group.name));
-                });
+            } else if (needs_update) {
+                install_hero.label = _("Update");
+                install_hero.tooltip_text = _("Update (requires authentication)");
             }
+
+            string captured_evr = repo_evr;
+            bool is_update = needs_update;
+            install_hero.clicked.connect (() => {
+                if (install_hero.has_css_class ("ps-installed")) {
+                    toast (_("Package is already installed"));
+                    return;
+                }
+                win.installer.set_context (this, toast_overlay);
+                win.installer.install.begin (group.name, install_hero, captured_evr, is_update,
+                                             name_buttons.get (group.name));
+            });
             header_actions.append (install_hero);
         }
 
@@ -411,19 +414,22 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
                 if (b_installed && !b_update) {
                     InstallController.mark_installed (install_btn);
-                } else {
-                    bool is_update = b_update;
-                    string captured_evr = repo_evr;
-                    if (is_update) {
-                        install_btn.label = _("Update");
-                        install_btn.tooltip_text = _("Update (requires authentication)");
-                    }
-                    install_btn.clicked.connect (() => {
-                        win.installer.set_context (this, toast_overlay);
-                        win.installer.install.begin (name, install_btn, captured_evr, is_update,
-                                                     name_buttons.get (name));
-                    });
+                } else if (b_update) {
+                    install_btn.label = _("Update");
+                    install_btn.tooltip_text = _("Update (requires authentication)");
                 }
+
+                bool is_update = b_update;
+                string captured_evr = repo_evr;
+                install_btn.clicked.connect (() => {
+                    if (install_btn.has_css_class ("ps-installed")) {
+                        toast (_("Package is already installed"));
+                        return;
+                    }
+                    win.installer.set_context (this, toast_overlay);
+                    win.installer.install.begin (name, install_btn, captured_evr, is_update,
+                                                 name_buttons.get (name));
+                });
                 row.add_suffix (install_btn);
             }
 
