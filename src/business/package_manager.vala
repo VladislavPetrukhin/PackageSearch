@@ -422,6 +422,7 @@ namespace Business {
             case Pk.Info.DOWNGRADING:   return _("Downgrading");
             case Pk.Info.PREPARING:     return _("Preparing");
             case Pk.Info.DECOMPRESSING: return _("Decompressing");
+            case Pk.Info.FINISHED:      return null;
             default:                    return i.to_localised_present ();
             }
         }
