@@ -26,7 +26,7 @@
   </provides>
 
   <releases>
-    <release version="@VERSION@" date="2026-06-01">
+    <release version="@VERSION@" date="2026-06-05">
       <description>
         <p>New release @VERSION@.</p>
       </description>
