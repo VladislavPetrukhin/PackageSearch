@@ -9,6 +9,8 @@ public class InstallController : GLib.Object {
     private Business.PackageManager pkg_mgr = new Business.PackageManager ();
     private GLib.Cancellable?     active_cancellable = null;
     private Adw.Dialog?           active_dialog = null;
+    private bool                  user_cancelled = false;
+    private Business.InstallResult last_result = Business.InstallResult.SUCCESS;
 
     public bool busy { get; private set; default = false; }
 
@@ -97,6 +99,7 @@ public class InstallController : GLib.Object {
         }
         if (plan.is_empty ()) {
             set_active (null);
+            pkg_mgr.invalidate_installed_cache ();
             group_mark_installed (group);
             toast (_("Already up to date"));
             return;
@@ -112,11 +115,13 @@ public class InstallController : GLib.Object {
         }
 
         group_label (group, is_update ? _("Updating…") : _("Installing…"));
-        var result = yield run_with_progress (pkg_name, repo_evr, is_update, flow);
+        yield run_with_progress (pkg_name, repo_evr, is_update, flow);
+        var result = last_result;
         set_active (null);
 
         switch (result) {
         case Business.InstallResult.SUCCESS:
+            pkg_mgr.invalidate_installed_cache ();
             group_mark_installed (group);
             toast ((is_update ? _("Updated %s") : _("Installed %s")).printf (pkg_name));
             install_finished (true);
@@ -201,7 +206,7 @@ public class InstallController : GLib.Object {
     private async Business.InstallResult run_with_progress (string pkg_name,
                                                             string? repo_evr, bool is_update,
                                                             GLib.Cancellable cancellable) {
-        bool user_cancelled = false;
+        user_cancelled = false;
 
         var pdlg = new InstallProgressDialog ();
         pdlg.set_package_label (
@@ -225,16 +230,16 @@ public class InstallController : GLib.Object {
         });
 
         string? err = null;
-        var result = yield pkg_mgr.run_install (pkg_name, repo_evr, cancellable, out err);
+        var raw = yield pkg_mgr.run_install (pkg_name, repo_evr, cancellable, out err);
+        bool cancelled = user_cancelled || cancellable.is_cancelled ();
+        var result = cancelled ? Business.InstallResult.CANCELLED : raw;
+        last_result = result;
 
         Source.remove (pulse_id);
         pkg_mgr.disconnect (sig_id);
         pkg_mgr.disconnect (pct_id);
         pdlg.force_close ();
         active_dialog = null;
-
-        if (user_cancelled || cancellable.is_cancelled ())
-            return Business.InstallResult.CANCELLED;
 
         if (result == Business.InstallResult.FAILED)
             warning ("[InstallController] install failed for %s:\n%s", pkg_name, err ?? "(no output)");

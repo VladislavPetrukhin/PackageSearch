@@ -120,6 +120,10 @@ namespace Business {
             return _installed_cache;
         }
 
+        public void invalidate_installed_cache () {
+            _installed_cache = null;
+        }
+
         public async bool is_installed (string pkg_name) {
             var pkgs = yield get_installed_packages ();
             return pkgs.has_key (pkg_name);
@@ -330,10 +334,8 @@ namespace Business {
                     if (cancellable.is_cancelled ()) return InstallResult.CANCELLED;
 
                     var exit = res.get_exit_code ();
-                    if (exit == Pk.Exit.SUCCESS) {
-                        _installed_cache = null;
+                    if (exit == Pk.Exit.SUCCESS)
                         return InstallResult.SUCCESS;
-                    }
                     if (exit == Pk.Exit.CANCELLED) return InstallResult.CANCELLED;
 
                     var err = res.get_error_code ();
@@ -378,19 +380,65 @@ namespace Business {
             }
         }
 
+        private static string status_text (Pk.Status s) {
+            switch (s) {
+            case Pk.Status.WAIT:             return _("Waiting");
+            case Pk.Status.SETUP:            return _("Setting up");
+            case Pk.Status.RUNNING:          return _("Running");
+            case Pk.Status.QUERY:            return _("Querying");
+            case Pk.Status.INFO:             return _("Getting information");
+            case Pk.Status.REMOVE:           return _("Removing packages");
+            case Pk.Status.REFRESH_CACHE:    return _("Refreshing package lists");
+            case Pk.Status.DOWNLOAD:         return _("Downloading packages");
+            case Pk.Status.INSTALL:          return _("Installing packages");
+            case Pk.Status.UPDATE:           return _("Updating packages");
+            case Pk.Status.CLEANUP:          return _("Cleaning up");
+            case Pk.Status.OBSOLETE:         return _("Obsoleting packages");
+            case Pk.Status.DEP_RESOLVE:      return _("Resolving dependencies");
+            case Pk.Status.SIG_CHECK:        return _("Verifying signatures");
+            case Pk.Status.TEST_COMMIT:      return _("Testing changes");
+            case Pk.Status.COMMIT:           return _("Applying changes");
+            case Pk.Status.REQUEST:          return _("Requesting data");
+            case Pk.Status.FINISHED:         return _("Finished");
+            case Pk.Status.CANCEL:           return _("Cancelling");
+            case Pk.Status.LOADING_CACHE:    return _("Loading cache");
+            case Pk.Status.WAITING_FOR_LOCK: return _("Waiting for package manager lock");
+            case Pk.Status.WAITING_FOR_AUTH: return _("Waiting for authentication");
+            case Pk.Status.COPY_FILES:       return _("Copying files");
+            case Pk.Status.RUN_HOOK:         return _("Running hooks");
+            case Pk.Status.REPACKAGING:      return _("Repackaging");
+            default:                         return s.to_localised_text ();
+            }
+        }
+
+        private static string? info_present (Pk.Info i) {
+            switch (i) {
+            case Pk.Info.DOWNLOADING:   return _("Downloading");
+            case Pk.Info.UPDATING:      return _("Updating");
+            case Pk.Info.INSTALLING:    return _("Installing");
+            case Pk.Info.REMOVING:      return _("Removing");
+            case Pk.Info.OBSOLETING:    return _("Obsoleting");
+            case Pk.Info.REINSTALLING:  return _("Reinstalling");
+            case Pk.Info.DOWNGRADING:   return _("Downgrading");
+            case Pk.Info.PREPARING:     return _("Preparing");
+            case Pk.Info.DECOMPRESSING: return _("Decompressing");
+            default:                    return i.to_localised_present ();
+            }
+        }
+
         private void on_progress (Pk.Progress progress, Pk.ProgressType type) {
             switch (type) {
             case Pk.ProgressType.PACKAGE:
                 var pkg = progress.get_package ();
                 if (pkg != null) {
-                    unowned string? verb = pkg.get_info ().to_localised_present ();
-                    install_progress ((verb != null)
+                    string? verb = info_present (pkg.get_info ());
+                    install_progress ((verb != null && verb != "")
                         ? "%s %s".printf (verb, pkg.get_name ())
                         : pkg.get_name ());
                 }
                 break;
             case Pk.ProgressType.STATUS:
-                install_progress (progress.get_status ().to_localised_text ());
+                install_progress (status_text (progress.get_status ()));
                 break;
             case Pk.ProgressType.PERCENTAGE:
                 int pct = progress.get_percentage ();

@@ -11,7 +11,6 @@ public class BugRow : Adw.ActionRow {
     public BugRow (Data.BugItem b) {
         Object ();
         title = "#" + b.id;
-        title_selectable = true;
         subtitle = GLib.Markup.escape_text (b.summary ?? "", -1);
 
         status_value = (b.status ?? "").strip ();
@@ -20,6 +19,7 @@ public class BugRow : Adw.ActionRow {
             status_badge.visible = true;
         }
 
+        this.set_cursor (new Gdk.Cursor.from_name ("pointer", null));
         string id = b.id;
         var click = new Gtk.GestureClick ();
         click.released.connect ((n, x, y) => {
@@ -65,6 +65,7 @@ public class LinkRow : Adw.ActionRow {
         if (url != null && url.strip () != "") {
             activatable = true;
             arrow.visible = true;
+            this.set_cursor (new Gdk.Cursor.from_name ("pointer", null));
             string u = url;
             activated.connect (() => Ui.open_uri (u));
         }

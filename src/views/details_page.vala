@@ -63,6 +63,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
 
     private void make_row_clickable (Adw.ActionRow row, owned RowClickFunc action) {
         row.activatable = false;
+        row.set_cursor (new Gdk.Cursor.from_name ("pointer", null));
         var click = new Gtk.GestureClick ();
         click.released.connect ((n, x, y) => {
             if (n == 1) action ();
@@ -805,9 +806,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private async void show_compare_dialog (string branch_a, string branch_b) {
-        compare_btn.set_size_request (compare_btn.get_width (), -1);
         compare_btn.sensitive = false;
-        compare_btn.label = _("Loading…");
 
         var api = new Data.PackageApi ();
         Data.PackageDetails? a = null;
@@ -819,13 +818,9 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
             if (cancel.is_cancelled ()) return;
             warning ("[DetailsPage] compare failed: %s", e.message);
             toast (_("Compare failed: %s").printf (e.message));
-            compare_btn.label = _("Compare selected");
-            compare_btn.set_size_request (-1, -1);
             compare_btn.sensitive = (selected_branches.size == 2);
             return;
         }
-        compare_btn.label = _("Compare selected");
-        compare_btn.set_size_request (-1, -1);
         compare_btn.sensitive = (selected_branches.size == 2);
 
         Data.SpecFileInfo? spec_a = null;
@@ -887,7 +882,7 @@ public class DetailsPage : Adw.NavigationPage, Ui.Findable {
     }
 
     private void add_download_row (Adw.ExpanderRow exp, Data.DownloadLink d) {
-        var row = new Adw.ActionRow () { title = d.name, title_selectable = true };
+        var row = new Adw.ActionRow () { title = d.name };
 
         string meta = "";
         if (Ui.is_nonempty (d.arch)) meta = d.arch;

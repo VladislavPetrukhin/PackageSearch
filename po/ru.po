@@ -851,6 +851,142 @@ msgstr "Владислав Петрухин"
 msgid "Copy name"
 msgstr "Копировать имя"
 
+#: src/business/package_manager.vala
+msgid "Waiting"
+msgstr "Ожидание"
+
+#: src/business/package_manager.vala
+msgid "Setting up"
+msgstr "Подготовка к установке"
+
+#: src/business/package_manager.vala
+msgid "Running"
+msgstr "Выполнение"
+
+#: src/business/package_manager.vala
+msgid "Querying"
+msgstr "Запрос"
+
+#: src/business/package_manager.vala
+msgid "Getting information"
+msgstr "Получение сведений"
+
+#: src/business/package_manager.vala
+msgid "Removing packages"
+msgstr "Удаление пакетов"
+
+#: src/business/package_manager.vala
+msgid "Refreshing package lists"
+msgstr "Обновление списков пакетов"
+
+#: src/business/package_manager.vala
+msgid "Downloading packages"
+msgstr "Загрузка пакетов"
+
+#: src/business/package_manager.vala
+msgid "Installing packages"
+msgstr "Установка пакетов"
+
+#: src/business/package_manager.vala
+msgid "Updating packages"
+msgstr "Обновление пакетов"
+
+#: src/business/package_manager.vala
+msgid "Cleaning up"
+msgstr "Очистка"
+
+#: src/business/package_manager.vala
+msgid "Obsoleting packages"
+msgstr "Замена устаревших пакетов"
+
+#: src/business/package_manager.vala
+msgid "Resolving dependencies"
+msgstr "Разрешение зависимостей"
+
+#: src/business/package_manager.vala
+msgid "Verifying signatures"
+msgstr "Проверка подписей"
+
+#: src/business/package_manager.vala
+msgid "Testing changes"
+msgstr "Проверка изменений"
+
+#: src/business/package_manager.vala
+msgid "Applying changes"
+msgstr "Применение изменений"
+
+#: src/business/package_manager.vala
+msgid "Requesting data"
+msgstr "Запрос данных"
+
+#: src/business/package_manager.vala
+msgid "Finished"
+msgstr "Готово"
+
+#: src/business/package_manager.vala
+msgid "Cancelling"
+msgstr "Отмена"
+
+#: src/business/package_manager.vala
+msgid "Loading cache"
+msgstr "Загрузка кэша"
+
+#: src/business/package_manager.vala
+msgid "Waiting for package manager lock"
+msgstr "Ожидание блокировки менеджера пакетов"
+
+#: src/business/package_manager.vala
+msgid "Waiting for authentication"
+msgstr "Ожидание аутентификации"
+
+#: src/business/package_manager.vala
+msgid "Copying files"
+msgstr "Копирование файлов"
+
+#: src/business/package_manager.vala
+msgid "Running hooks"
+msgstr "Выполнение перехватчиков"
+
+#: src/business/package_manager.vala
+msgid "Repackaging"
+msgstr "Переупаковка"
+
+#: src/business/package_manager.vala
+msgid "Downloading"
+msgstr "Загрузка"
+
+#: src/business/package_manager.vala
+msgid "Updating"
+msgstr "Обновление"
+
+#: src/business/package_manager.vala
+msgid "Installing"
+msgstr "Установка"
+
+#: src/business/package_manager.vala
+msgid "Removing"
+msgstr "Удаление"
+
+#: src/business/package_manager.vala
+msgid "Obsoleting"
+msgstr "Замена устаревшего"
+
+#: src/business/package_manager.vala
+msgid "Reinstalling"
+msgstr "Переустановка"
+
+#: src/business/package_manager.vala
+msgid "Downgrading"
+msgstr "Откат версии"
+
+#: src/business/package_manager.vala
+msgid "Preparing"
+msgstr "Подготовка"
+
+#: src/business/package_manager.vala
+msgid "Decompressing"
+msgstr "Распаковка"
+
 #: src/views/binary_card_dialog.vala
 msgid "Search files"
 msgstr "Поиск файлов"
