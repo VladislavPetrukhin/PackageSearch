@@ -20,7 +20,3 @@
 .cards-list > row:active {
   box-shadow: 0 1px 1px @card_shadow_color;
 }
-
-.tinted-status image {
-  color: @accent_color;
-}
